@@ -4,7 +4,9 @@ import '../services/search_history_service.dart';
 import 'rule_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
+  final String? initialQuery;
+
+  const SearchScreen({super.key, this.initialQuery});
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -23,6 +25,14 @@ class _SearchScreenState extends State<SearchScreen> {
   void initState() {
     super.initState();
     _loadRecentSearches();
+
+    // If an initial query was provided, perform the search
+    if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
+      _searchController.text = widget.initialQuery!;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _performSearch(widget.initialQuery!);
+      });
+    }
   }
 
   @override
@@ -263,7 +273,15 @@ class _SearchScreenState extends State<SearchScreen> {
 
   /// Builds formatted subrule content with spacing between subsections
   Widget _buildFormattedContent(String content) {
-    final lines = content.split('\n');
+    // Strip the leading subrule number from the first line since it's shown in the header
+    // Matches "201.1. " or "702.90a " (period OR letter after minor number)
+    final leadingNumberPattern = RegExp(r'^\d{3}\.\d+([a-z]|\.)\s+');
+    String processedContent = content;
+    if (leadingNumberPattern.hasMatch(content)) {
+      processedContent = content.replaceFirst(leadingNumberPattern, '');
+    }
+
+    final lines = processedContent.split('\n');
     final subsections = <String>[];
     // Matches "100.1." or "100.1a" (note: letter variants have NO dot after them)
     final subsectionPattern = RegExp(r'^\d{3}\.\d+([a-z]|\.)\s');

@@ -3,6 +3,7 @@ import 'sections_screen.dart';
 import 'glossary_screen.dart';
 import 'credits_screen.dart';
 import 'search_screen.dart';
+import 'bookmarks_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,11 +14,20 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  final _bookmarksKey = GlobalKey<BookmarksScreenState>();
 
-  static const List<Widget> _screens = [
-    SectionsScreen(),
-    GlossaryScreen(),
-    CreditsScreen(),
+  List<Widget> get _screens => [
+    const SectionsScreen(),
+    const GlossaryScreen(),
+    BookmarksScreen(key: _bookmarksKey),
+    const CreditsScreen(),
+  ];
+
+  static const List<String> _titles = [
+    'Rules',
+    'Glossary',
+    'Bookmarks',
+    'Credits',
   ];
 
   void _onItemTapped(int index) {
@@ -26,25 +36,46 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  List<Widget> _getAppBarActions() {
+    // Rules (0) and Glossary (1) have search
+    if (_selectedIndex == 0 || _selectedIndex == 1) {
+      return [
+        IconButton(
+          icon: const Icon(Icons.search),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SearchScreen(),
+              ),
+            );
+          },
+          tooltip: 'Search',
+        ),
+      ];
+    }
+    // Bookmarks (2) has edit button
+    if (_selectedIndex == 2) {
+      return [
+        IconButton(
+          icon: const Icon(Icons.edit),
+          onPressed: () {
+            _bookmarksKey.currentState?.toggleEditMode();
+          },
+          tooltip: 'Edit bookmarks',
+        ),
+      ];
+    }
+    // Credits (3) has no actions
+    return [];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('French Vanilla'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SearchScreen(),
-                ),
-              );
-            },
-            tooltip: 'Search',
-          ),
-        ],
+        title: Text(_titles[_selectedIndex]),
+        actions: _getAppBarActions(),
       ),
       body: _screens[_selectedIndex],
       bottomNavigationBar: NavigationBar(
@@ -60,6 +91,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.list_outlined),
             selectedIcon: Icon(Icons.list),
             label: 'Glossary',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.bookmark_outline),
+            selectedIcon: Icon(Icons.bookmark),
+            label: 'Bookmarks',
           ),
           NavigationDestination(
             icon: Icon(Icons.info_outline),

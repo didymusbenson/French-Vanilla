@@ -1,3 +1,29 @@
+# Next Feature: Development Log
+
+## Recent Work (2026-01-13)
+
+### Bookmarks Feature - COMPLETED
+- ✅ Created `FavoritesService` with SharedPreferences persistence
+- ✅ Created `BookmarksScreen` with edit mode, swipe-to-delete, batch operations
+- ✅ Added bookmark icons to all rule subrule cards and glossary term cards
+- ✅ Integrated bookmarks tab into home navigation (index 2)
+- ✅ Implemented preview bottom sheets for bookmarked rules and glossary terms
+- ✅ Added navigation from bookmarks to full rule/glossary views with highlighting
+
+### UI/UX Improvements - COMPLETED
+- ✅ Redesigned cards with header layout (subrule number on left, bookmark icon on right)
+- ✅ Removed redundant subrule numbers from card content body
+- ✅ Implemented clickable inline rule references (e.g., "rule 702.9a" → navigate to rule)
+- ✅ Added long-press context menus (bookmark/copy/share) to rules and glossary
+- ✅ Fixed scroll positioning for rule navigation (alignment: 0.01)
+- ✅ Added glossary term highlighting and scroll-to on navigation
+- ✅ Fixed share functionality with iPad popover positioning
+
+### Technical Debt
+- ⚠️ Remove debug print statements before release (rule_detail_screen.dart: `_scrollToSubrule`, `initState`, `_buildSubruleContent`)
+
+---
+
 # Next Feature: Initial App Development
 
 ## Project Overview
@@ -152,6 +178,7 @@
 ### Technical Debt / Future Considerations
 
 1. **Remove Debug Logging**: Production build should remove extensive debug print statements added during scroll debugging
+   - **NEW (2026-01-13)**: Remove additional debug logging in `rule_detail_screen.dart` (`_scrollToSubrule` method, `initState`, `_buildSubruleContent`) before release
 2. **Profile Widget Building**: Could optimize `_buildSubruleContent()` method - potential caching of parsed text
 3. **Consider Virtualization Alternative**: For massive rules, could explore `flutter_sticky_header` or custom slivers with better lazy loading support
 4. **Adjust Threshold**: Monitor real-world usage to see if 50 subrule threshold is optimal

@@ -6,14 +6,14 @@ class SectionsScreen extends StatelessWidget {
 
   static const List<Map<String, dynamic>> sections = [
     {'number': 1, 'title': 'Game Concepts', 'icon': Icons.casino},
-    {'number': 2, 'title': 'Parts of a Card', 'icon': Icons.credit_card},
+    {'number': 2, 'title': 'Parts of a Card', 'icon': Icons.auto_awesome_mosaic},
     {'number': 3, 'title': 'Card Types', 'icon': Icons.category},
     {'number': 4, 'title': 'Zones', 'icon': Icons.layers},
     {'number': 5, 'title': 'Turn Structure', 'icon': Icons.rotate_right},
     {'number': 6, 'title': 'Spells, Abilities, and Effects', 'icon': Icons.flash_on},
     {'number': 7, 'title': 'Additional Rules', 'icon': Icons.rule},
     {'number': 8, 'title': 'Multiplayer Rules', 'icon': Icons.groups},
-    {'number': 9, 'title': 'Casual Variants', 'icon': Icons.sports_esports},
+    {'number': 9, 'title': 'Casual Variants', 'icon': Icons.castle},
   ];
 
   @override

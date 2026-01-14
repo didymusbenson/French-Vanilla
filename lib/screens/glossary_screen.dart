@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../services/rules_data_service.dart';
+import '../services/favorites_service.dart';
 import '../models/glossary_term.dart';
 
 class GlossaryScreen extends StatefulWidget {
-  const GlossaryScreen({super.key});
+  final String? highlightTerm;
+
+  const GlossaryScreen({super.key, this.highlightTerm});
 
   @override
   State<GlossaryScreen> createState() => _GlossaryScreenState();
@@ -11,17 +17,46 @@ class GlossaryScreen extends StatefulWidget {
 
 class _GlossaryScreenState extends State<GlossaryScreen> {
   final _dataService = RulesDataService();
+  final _favoritesService = FavoritesService();
   final _searchController = TextEditingController();
+  final ItemScrollController _itemScrollController = ItemScrollController();
+  final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
   List<GlossaryTerm> _allTerms = [];
   List<GlossaryTerm> _filteredTerms = [];
   bool _isLoading = true;
   String? _error;
-  final Set<int> _expandedIndices = {};
+  final Map<String, bool> _bookmarkStatus = {};
 
   @override
   void initState() {
     super.initState();
     _loadGlossary();
+  }
+
+  void _scrollToTerm(String termName) {
+    final targetIndex = _filteredTerms.indexWhere(
+      (term) => term.term.toLowerCase() == termName.toLowerCase()
+    );
+
+    if (targetIndex != -1) {
+      _itemScrollController.scrollTo(
+        index: targetIndex,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        alignment: 0.01,
+      );
+    }
+  }
+
+  Future<void> _loadBookmarkStatuses() async {
+    for (final term in _allTerms) {
+      final isBookmarked = await _favoritesService.isBookmarked(term.term, BookmarkType.glossary);
+      if (mounted) {
+        setState(() {
+          _bookmarkStatus[term.term] = isBookmarked;
+        });
+      }
+    }
   }
 
   @override
@@ -38,6 +73,14 @@ class _GlossaryScreenState extends State<GlossaryScreen> {
         _filteredTerms = terms;
         _isLoading = false;
       });
+      await _loadBookmarkStatuses();
+
+      // Scroll to highlighted term if provided
+      if (widget.highlightTerm != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToTerm(widget.highlightTerm!);
+        });
+      }
     } catch (e) {
       setState(() {
         _error = 'Failed to load glossary: $e';
@@ -57,13 +100,106 @@ class _GlossaryScreenState extends State<GlossaryScreen> {
                  term.definition.toLowerCase().contains(lowerQuery);
         }).toList();
       }
-      _expandedIndices.clear();
     });
+  }
+
+  Future<void> _toggleBookmark(String termName, String definition) async {
+    await _favoritesService.toggleBookmark(termName, definition, BookmarkType.glossary);
+    final isBookmarked = await _favoritesService.isBookmarked(termName, BookmarkType.glossary);
+    setState(() {
+      _bookmarkStatus[termName] = isBookmarked;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isBookmarked ? 'Bookmark added' : 'Bookmark removed'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    }
+  }
+
+  void _copyTermContent(String termName, String definition) {
+    final plainText = '$termName\n\n$definition';
+    Clipboard.setData(ClipboardData(text: plainText));
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Term copied to clipboard'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    }
+  }
+
+  void _shareTermContent(String termName, String definition) {
+    final plainText = '$termName\n\n$definition';
+
+    // Get the render box for positioning on iPad
+    final box = context.findRenderObject() as RenderBox?;
+    final sharePositionOrigin = box != null
+        ? box.localToGlobal(Offset.zero) & box.size
+        : null;
+
+    Share.share(
+      plainText,
+      sharePositionOrigin: sharePositionOrigin,
+    );
+  }
+
+  void _showContextMenu(String termName, String definition) {
+    final isBookmarked = _bookmarkStatus[termName] ?? false;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(
+                isBookmarked ? Icons.bookmark_remove : Icons.bookmark_add,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: Text(isBookmarked ? 'Remove Bookmark' : 'Add Bookmark'),
+              onTap: () {
+                Navigator.pop(context);
+                _toggleBookmark(termName, definition);
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.copy,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: const Text('Copy Term'),
+              onTap: () {
+                Navigator.pop(context);
+                _copyTermContent(termName, definition);
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.share,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: const Text('Share Term'),
+              onTap: () {
+                Navigator.pop(context);
+                _shareTermContent(termName, definition);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final content = Column(
       children: [
         Padding(
           padding: const EdgeInsets.all(16.0),
@@ -93,6 +229,18 @@ class _GlossaryScreenState extends State<GlossaryScreen> {
         ),
       ],
     );
+
+    // Wrap in Scaffold when used standalone (with highlightTerm)
+    if (widget.highlightTerm != null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Glossary'),
+        ),
+        body: content,
+      );
+    }
+
+    return content;
   }
 
   Widget _buildBody() {
@@ -151,56 +299,84 @@ class _GlossaryScreenState extends State<GlossaryScreen> {
       );
     }
 
-    return ListView.builder(
+    return ScrollablePositionedList.builder(
+      itemScrollController: _itemScrollController,
+      itemPositionsListener: _itemPositionsListener,
       itemCount: _filteredTerms.length,
       itemBuilder: (context, index) {
         final term = _filteredTerms[index];
-        final isExpanded = _expandedIndices.contains(index);
+        final isBookmarked = _bookmarkStatus[term.term] ?? false;
+        final isHighlighted = widget.highlightTerm != null &&
+            term.term.toLowerCase() == widget.highlightTerm!.toLowerCase();
 
-        return Card(
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            children: [
-              ListTile(
-                title: Text(
-                  term.term,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                trailing: Icon(
-                  isExpanded ? Icons.expand_less : Icons.expand_more,
-                ),
-                onTap: () {
-                  setState(() {
-                    if (isExpanded) {
-                      _expandedIndices.remove(index);
-                    } else {
-                      _expandedIndices.add(index);
-                    }
-                  });
-                },
-              ),
-              if (isExpanded)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: SelectableText(
-                      term.definition,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        height: 1.5,
+        return GestureDetector(
+          onLongPress: () {
+            HapticFeedback.mediumImpact();
+            _showContextMenu(term.term, term.definition);
+          },
+          child: Card(
+            clipBehavior: Clip.antiAlias,
+            elevation: isHighlighted ? 8 : 2,
+            color: isHighlighted
+                ? Theme.of(context).colorScheme.primaryContainer
+                : null,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with term name and bookmark icon
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                        width: 1,
                       ),
                     ),
                   ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          term.term,
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: isHighlighted
+                                ? Theme.of(context).colorScheme.onPrimaryContainer
+                                : Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          isBookmarked ? Icons.bookmark : Icons.bookmark_outline,
+                          size: 20,
+                        ),
+                        color: isBookmarked
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                        onPressed: () => _toggleBookmark(term.term, term.definition),
+                        tooltip: isBookmarked ? 'Remove bookmark' : 'Add bookmark',
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ],
+                  ),
                 ),
-            ],
+                // Content
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    term.definition,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      height: 1.5,
+                      color: isHighlighted
+                          ? Theme.of(context).colorScheme.onPrimaryContainer
+                          : null,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
