@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
+import 'screens/heart_customization_screen.dart';
+import 'services/iap_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize IAP service
+  await IAPService().initialize();
+
   runApp(const FrenchVanillaApp());
 }
 
@@ -50,6 +57,9 @@ class FrenchVanillaApp extends StatelessWidget {
       ),
       themeMode: ThemeMode.system,
       home: const HomeScreen(),
+      routes: {
+        '/heart-customization': (context) => const HeartCustomizationScreen(),
+      },
     );
   }
 }

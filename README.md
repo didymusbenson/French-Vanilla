@@ -1,16 +1,47 @@
-# frenchvanilla
+# French Vanilla
 
-A new Flutter project.
+A Flutter application for browsing and searching the Magic: The Gathering Comprehensive Rules.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+**Rules Browser**
+- Display official MTG Comprehensive Rules organized by section
+- Navigate through rules and subrules with formatted content
+- Highlight and scroll to specific subrules
 
-A few resources to get you started if this is your first Flutter project:
+**Search**
+- Full-text search across all rules and glossary terms
+- Search history with result counts
+- Preview results in bottom sheets
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+**Glossary**
+- Complete glossary of MTG terms and definitions
+- Jump to glossary entries from anywhere in the app
+- Highlight and scroll to specific terms
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+**Bookmarks**
+- Save favorite rules and glossary terms
+- Swipe to delete or bulk edit mode
+- Quick access from bottom navigation
+
+**In-App Purchases**
+- Three supporter tiers (Thank You, Play, Collector)
+- Unlockable heart badges
+- Heart customization for Collector tier (25 Magic color combinations)
+
+## Technical Details
+
+- **Platform**: iOS and Android (Flutter)
+- **Data Source**: Parsed from official WotC Comprehensive Rules
+- **Storage**: Local JSON files + SharedPreferences for user data
+- **IAP**: Non-consumable purchases via in_app_purchase package
+
+## Data Updates
+
+Rules data is stored in `docs/rulesdocs/` as JSON files. To update:
+
+```bash
+python3 scripts/parse_rules.py
+```
+
+This parses `docs/rulesdocs/comprehensive_rules.md` into structured JSON.

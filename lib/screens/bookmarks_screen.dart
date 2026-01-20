@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/favorites_service.dart';
 import '../services/rules_data_service.dart';
-import 'rule_detail_screen.dart';
-import 'glossary_screen.dart';
+import '../mixins/preview_bottom_sheet_mixin.dart';
 
 class BookmarksScreen extends StatefulWidget {
   const BookmarksScreen({super.key});
@@ -11,7 +10,7 @@ class BookmarksScreen extends StatefulWidget {
   State<BookmarksScreen> createState() => BookmarksScreenState();
 }
 
-class BookmarksScreenState extends State<BookmarksScreen> {
+class BookmarksScreenState extends State<BookmarksScreen> with PreviewBottomSheetMixin {
   final _favoritesService = FavoritesService();
   final _dataService = RulesDataService();
   List<BookmarkedItem> _bookmarks = [];
@@ -266,144 +265,12 @@ class BookmarksScreenState extends State<BookmarksScreen> {
     return content;
   }
 
-  /// Builds formatted subrule content with spacing between subsections
-  Widget _buildFormattedContent(String content) {
-    // Strip the leading subrule number from the first line since it's shown in the header
-    // Matches "201.1. " or "702.90a " (period OR letter after minor number)
-    final leadingNumberPattern = RegExp(r'^\d{3}\.\d+([a-z]|\.)\s+');
-    String processedContent = content;
-    if (leadingNumberPattern.hasMatch(content)) {
-      processedContent = content.replaceFirst(leadingNumberPattern, '');
-    }
-
-    final lines = processedContent.split('\n');
-    final subsections = <String>[];
-    // Matches "100.1." or "100.1a" (note: letter variants have NO dot after them)
-    final subsectionPattern = RegExp(r'^\d{3}\.\d+([a-z]|\.)\s');
-
-    var currentSubsection = StringBuffer();
-
-    for (final line in lines) {
-      final trimmedLine = line.trim();
-
-      // Check if this is the start of a new subsection
-      if (subsectionPattern.hasMatch(trimmedLine)) {
-        // Save the previous subsection if it exists
-        if (currentSubsection.isNotEmpty) {
-          subsections.add(currentSubsection.toString().trim());
-          currentSubsection = StringBuffer();
-        }
-        currentSubsection.writeln(line);
-      } else if (trimmedLine.isNotEmpty) {
-        currentSubsection.writeln(line);
-      }
-    }
-
-    // Don't forget the last subsection
-    if (currentSubsection.isNotEmpty) {
-      subsections.add(currentSubsection.toString().trim());
-    }
-
-    // Build the widget with spacing between subsections
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (int i = 0; i < subsections.length; i++) ...[
-          SelectableText(
-            subsections[i],
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              height: 1.6,
-            ),
-          ),
-          if (i < subsections.length - 1)
-            Center(
-              child: Text(
-                '—',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                  fontSize: 16,
-                ),
-              ),
-            ),
-        ],
-      ],
-    );
-  }
-
   void _showBookmarkPreview(BookmarkedItem bookmark) async {
     if (bookmark.type == BookmarkType.glossary) {
-      // Show bottom sheet for glossary terms
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        builder: (context) => ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.9,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title
-                Text(
-                  bookmark.identifier,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Glossary Term',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Content - scrollable if needed
-                Flexible(
-                  child: SingleChildScrollView(
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: SelectableText(
-                        bookmark.content,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          height: 1.6,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Action button
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context); // Close bottom sheet
-                      // Navigate to glossary screen with this term highlighted
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => GlossaryScreen(
-                            highlightTerm: bookmark.identifier,
-                          ),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.arrow_forward),
-                    label: const Text('Go to Glossary'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      // Use mixin method for glossary terms
+      showGlossaryBottomSheet(
+        term: bookmark.identifier,
+        definition: bookmark.content,
       );
       return;
     }
@@ -425,10 +292,6 @@ class BookmarksScreenState extends State<BookmarksScreen> {
     final sectionNumber = int.parse(ruleNumberMatch.group(1)!);
     final ruleNumber = '${ruleNumberMatch.group(1)}${ruleNumberMatch.group(2)}';
 
-    // Strip letter suffix for highlighting (e.g., "702.9a" -> "702.9")
-    // since we only index base subrule groups
-    final highlightSubrule = '${ruleNumberMatch.group(1)}${ruleNumberMatch.group(2)}.${ruleNumberMatch.group(3)}';
-
     // Preload the section data
     try {
       final rules = await _dataService.getRulesForSection(sectionNumber);
@@ -439,73 +302,12 @@ class BookmarksScreenState extends State<BookmarksScreen> {
 
       if (!mounted) return;
 
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        builder: (context) => ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.9,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title
-                Text(
-                  '${rule.number}. ${rule.title}',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Subrule ${bookmark.identifier}',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Content - scrollable if needed
-                Flexible(
-                  child: SingleChildScrollView(
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: _buildFormattedContent(bookmark.content),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Action button
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context); // Close bottom sheet
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => RuleDetailScreen(
-                            rule: rule,
-                            sectionNumber: sectionNumber,
-                            highlightSubruleNumber: highlightSubrule,
-                          ),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.arrow_forward),
-                    label: Text('Go to Rule ${rule.number}'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      // Use mixin method for rule preview
+      showRuleBottomSheet(
+        rule: rule,
+        sectionNumber: sectionNumber,
+        subruleNumber: bookmark.identifier,
+        content: bookmark.content,
       );
     } catch (e) {
       if (mounted) {

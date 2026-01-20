@@ -1,5 +1,5 @@
 name: frenchvanilla
-description: "A new Flutter project."
+description: "MTG Comprehensive Rules reference"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -39,6 +39,7 @@ dependencies:
   scrollable_positioned_list: ^0.3.8
   package_info_plus: ^8.1.2
   share_plus: ^10.1.3
+  in_app_purchase: ^3.2.0
 
 dev_dependencies:
   flutter_test:

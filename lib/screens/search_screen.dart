@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/rules_data_service.dart';
 import '../services/search_history_service.dart';
-import 'rule_detail_screen.dart';
+import '../mixins/preview_bottom_sheet_mixin.dart';
 
 class SearchScreen extends StatefulWidget {
   final String? initialQuery;
@@ -12,7 +12,7 @@ class SearchScreen extends StatefulWidget {
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> {
+class _SearchScreenState extends State<SearchScreen> with PreviewBottomSheetMixin {
   final _searchController = TextEditingController();
   final _dataService = RulesDataService();
   final _historyService = SearchHistoryService();
@@ -260,9 +260,9 @@ class _SearchScreenState extends State<SearchScreen> {
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               if (result.type == SearchResultType.rule && result.rule != null) {
-                _showRuleBottomSheet(result);
+                _showRulePreview(result);
               } else if (result.type == SearchResultType.glossary) {
-                _showGlossaryTermDialog(result);
+                _showGlossaryPreview(result);
               }
             },
           ),
@@ -271,173 +271,27 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  /// Builds formatted subrule content with spacing between subsections
-  Widget _buildFormattedContent(String content) {
-    // Strip the leading subrule number from the first line since it's shown in the header
-    // Matches "201.1. " or "702.90a " (period OR letter after minor number)
-    final leadingNumberPattern = RegExp(r'^\d{3}\.\d+([a-z]|\.)\s+');
-    String processedContent = content;
-    if (leadingNumberPattern.hasMatch(content)) {
-      processedContent = content.replaceFirst(leadingNumberPattern, '');
-    }
-
-    final lines = processedContent.split('\n');
-    final subsections = <String>[];
-    // Matches "100.1." or "100.1a" (note: letter variants have NO dot after them)
-    final subsectionPattern = RegExp(r'^\d{3}\.\d+([a-z]|\.)\s');
-
-    var currentSubsection = StringBuffer();
-
-    for (final line in lines) {
-      final trimmedLine = line.trim();
-
-      // Check if this is the start of a new subsection
-      if (subsectionPattern.hasMatch(trimmedLine)) {
-        // Save the previous subsection if it exists
-        if (currentSubsection.isNotEmpty) {
-          subsections.add(currentSubsection.toString().trim());
-          currentSubsection = StringBuffer();
-        }
-        currentSubsection.writeln(line);
-      } else if (trimmedLine.isNotEmpty) {
-        currentSubsection.writeln(line);
-      }
-    }
-
-    // Don't forget the last subsection
-    if (currentSubsection.isNotEmpty) {
-      subsections.add(currentSubsection.toString().trim());
-    }
-
-    // Build the widget with spacing between subsections
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (int i = 0; i < subsections.length; i++) ...[
-          SelectableText(
-            subsections[i],
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              height: 1.6,
-            ),
-          ),
-          if (i < subsections.length - 1)
-            Center(
-              child: Text(
-                '—',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                  fontSize: 16,
-                ),
-              ),
-            ),
-        ],
-      ],
-    );
-  }
-
-  void _showRuleBottomSheet(SearchResult result) {
+  void _showRulePreview(SearchResult result) {
     // Start preloading the rule data for faster navigation
     if (result.sectionNumber != null) {
       print('Preloading section ${result.sectionNumber} for faster navigation');
       _dataService.getRulesForSection(result.sectionNumber!);
     }
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.9,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Title
-              Text(
-                result.subruleGroup != null
-                    ? '${result.rule!.number}. ${result.rule!.title}'
-                    : result.title,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (result.subruleGroup != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  'Subrule ${result.subruleGroup!.number}',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 16),
-              // Content - scrollable if needed
-              Flexible(
-                child: SingleChildScrollView(
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: result.subruleGroup != null
-                        ? _buildFormattedContent(result.subruleGroup!.content)
-                        : SelectableText(
-                            result.snippet,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              height: 1.6,
-                            ),
-                          ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Action button
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context); // Close bottom sheet
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => RuleDetailScreen(
-                          rule: result.rule!,
-                          sectionNumber: result.sectionNumber!,
-                          highlightSubruleNumber: result.subruleGroup?.number,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.arrow_forward),
-                  label: Text('Go to Rule ${result.rule!.number}'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    // Use mixin method
+    showRuleBottomSheet(
+      rule: result.rule!,
+      sectionNumber: result.sectionNumber!,
+      subruleNumber: result.subruleGroup!.number,
+      content: result.subruleGroup!.content,
     );
   }
 
-  void _showGlossaryTermDialog(SearchResult result) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(result.glossaryTerm!.term),
-        content: SingleChildScrollView(
-          child: SelectableText(result.glossaryTerm!.definition),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
+  void _showGlossaryPreview(SearchResult result) {
+    // Use mixin method instead of dialog
+    showGlossaryBottomSheet(
+      term: result.glossaryTerm!.term,
+      definition: result.glossaryTerm!.definition,
     );
   }
 }
