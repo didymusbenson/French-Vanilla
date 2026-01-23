@@ -121,7 +121,7 @@ class _GlossaryScreenState extends State<GlossaryScreen>
     setState(() {
       final lowerQuery = query.toLowerCase();
 
-      _filteredTerms = _allTerms.where((term) {
+      final matches = _allTerms.where((term) {
         // Apply text search filter
         final matchesSearch = query.isEmpty ||
             term.term.toLowerCase().contains(lowerQuery) ||
@@ -133,6 +133,38 @@ class _GlossaryScreenState extends State<GlossaryScreen>
 
         return matchesSearch && matchesCategory;
       }).toList();
+
+      // Sort results by relevance if there is a query
+      if (lowerQuery.isNotEmpty) {
+        matches.sort((a, b) {
+          final aTerm = a.term.toLowerCase();
+          final bTerm = b.term.toLowerCase();
+
+          // 1. Exact match
+          if (aTerm == lowerQuery && bTerm != lowerQuery) return -1;
+          if (bTerm == lowerQuery && aTerm != lowerQuery) return 1;
+
+          // 2. Starts with
+          final aStarts = aTerm.startsWith(lowerQuery);
+          final bStarts = bTerm.startsWith(lowerQuery);
+          if (aStarts && !bStarts) return -1;
+          if (bStarts && !aStarts) return 1;
+
+          // 3. Name match vs Definition match
+          final aNameMatch = aTerm.contains(lowerQuery);
+          final bNameMatch = bTerm.contains(lowerQuery);
+          if (aNameMatch && !bNameMatch) return -1;
+          if (bNameMatch && !aNameMatch) return 1;
+
+          // 4. Alphabetical fallback
+          return aTerm.compareTo(bTerm);
+        });
+      } else {
+        // Default alphabetical sort when no query
+        matches.sort((a, b) => a.term.compareTo(b.term)); // Assuming input is already sorted, but good safety
+      }
+
+      _filteredTerms = matches;
     });
   }
   
