@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/rules_data_service.dart';
 import '../services/iap_service.dart';
 import '../widgets/heart_icon.dart';
@@ -117,10 +119,12 @@ class _CreditsScreenState extends State<CreditsScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      GestureDetector(
-                        onTap: _showSupporterModal,
-                        child: _buildHeartRow(),
-                      ),
+                      // Only show hearts on mobile (iOS/Android)
+                      if (!kIsWeb)
+                        GestureDetector(
+                          onTap: _showSupporterModal,
+                          child: _buildHeartRow(),
+                        ),
                     ],
                   ),
                   if (_version.isNotEmpty) ...[
@@ -165,11 +169,17 @@ class _CreditsScreenState extends State<CreditsScreen> {
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: _showPurchaseMenu,
-                      icon: const Icon(Icons.favorite_border),
-                      label: const Text('Support French Vanilla'),
-                    ),
+                    child: kIsWeb
+                        ? OutlinedButton.icon(
+                            onPressed: _openKofi,
+                            icon: const Icon(Icons.favorite_border),
+                            label: const Text('Support the Dev on Ko-fi'),
+                          )
+                        : OutlinedButton.icon(
+                            onPressed: _showPurchaseMenu,
+                            icon: const Icon(Icons.favorite_border),
+                            label: const Text('Support French Vanilla'),
+                          ),
                   ),
                 ],
               ),
@@ -361,6 +371,19 @@ class _CreditsScreenState extends State<CreditsScreen> {
         });
       } else {
         setState(() {}); // Refresh to show new hearts
+      }
+    }
+  }
+
+  Future<void> _openKofi() async {
+    final uri = Uri.parse('https://ko-fi.com/theonlydidymus');
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open Ko-fi link'),
+          ),
+        );
       }
     }
   }

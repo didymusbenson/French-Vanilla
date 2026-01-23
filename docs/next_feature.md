@@ -979,6 +979,14 @@ This implementation has been verified against current App Store and Google Play 
 ### Technical Debt
 - ⚠️ Remove debug print statements before release (rule_detail_screen.dart: `_scrollToSubrule`, `initState`, `_buildSubruleContent`)
 
+### UX Refinements to Revisit
+- ⚠️ **Bookmark Snackbar Aggregation** - Currently implemented with `AggregatingSnackBarMixin` to prevent sequential snackbar queuing. Shows count (e.g., "Bookmark added (3)") when triggered rapidly. Works, but may need UX refinement:
+  - Consider alternative visual feedback (toast, inline icon animation, status bar indicator)
+  - Test user behavior patterns - do rapid bookmarks actually happen in practice?
+  - Potential issues: Counter resets after 2 seconds, different messages reset separately
+  - Alternative approach: Debounce and show final state only
+  - Implementation: `lib/mixins/aggregating_snackbar_mixin.dart`
+
 ---
 
 # Next Feature: Initial App Development

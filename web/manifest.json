@@ -1,11 +1,11 @@
 {
-    "name": "frenchvanilla",
-    "short_name": "frenchvanilla",
+    "name": "French Vanilla - MTG Rules",
+    "short_name": "French Vanilla",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#673AB7",
+    "theme_color": "#673AB7",
+    "description": "Magic: The Gathering comprehensive rules reference application",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
