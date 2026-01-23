@@ -6,6 +6,7 @@ import '../services/rules_data_service.dart';
 import '../services/favorites_service.dart';
 import '../models/glossary_term.dart';
 import '../mixins/rule_link_mixin.dart';
+import '../mixins/aggregating_snackbar_mixin.dart';
 
 class GlossaryScreen extends StatefulWidget {
   final String? highlightTerm;
@@ -16,7 +17,8 @@ class GlossaryScreen extends StatefulWidget {
   State<GlossaryScreen> createState() => _GlossaryScreenState();
 }
 
-class _GlossaryScreenState extends State<GlossaryScreen> with RuleLinkMixin {
+class _GlossaryScreenState extends State<GlossaryScreen>
+    with RuleLinkMixin, AggregatingSnackBarMixin {
   final _dataService = RulesDataService();
   final _favoritesService = FavoritesService();
   final _searchController = TextEditingController();
@@ -112,11 +114,8 @@ class _GlossaryScreenState extends State<GlossaryScreen> with RuleLinkMixin {
     });
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(isBookmarked ? 'Bookmark added' : 'Bookmark removed'),
-          duration: const Duration(seconds: 1),
-        ),
+      showAggregatingSnackBar(
+        isBookmarked ? 'Bookmark added' : 'Bookmark removed',
       );
     }
   }

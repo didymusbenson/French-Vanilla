@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import '../models/rule.dart';
 import '../services/favorites_service.dart';
 import '../mixins/rule_link_mixin.dart';
+import '../mixins/aggregating_snackbar_mixin.dart';
 
 class RuleDetailScreen extends StatefulWidget {
   final Rule rule;
@@ -22,7 +23,8 @@ class RuleDetailScreen extends StatefulWidget {
   State<RuleDetailScreen> createState() => _RuleDetailScreenState();
 }
 
-class _RuleDetailScreenState extends State<RuleDetailScreen> with RuleLinkMixin {
+class _RuleDetailScreenState extends State<RuleDetailScreen>
+    with RuleLinkMixin, AggregatingSnackBarMixin {
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
   final _favoritesService = FavoritesService();
@@ -69,11 +71,8 @@ class _RuleDetailScreenState extends State<RuleDetailScreen> with RuleLinkMixin 
 
     // Show feedback
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(isBookmarked ? 'Bookmark added' : 'Bookmark removed'),
-          duration: const Duration(seconds: 1),
-        ),
+      showAggregatingSnackBar(
+        isBookmarked ? 'Bookmark added' : 'Bookmark removed',
       );
     }
   }
