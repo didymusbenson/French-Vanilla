@@ -45,3 +45,11 @@ python3 scripts/parse_rules.py
 ```
 
 This parses `docs/rulesdocs/comprehensive_rules.md` into structured JSON.
+
+---
+
+## Support the Project
+
+If you find French Vanilla useful, consider supporting development on [Ko-fi](https://ko-fi.com/theonlydidymus). Your support helps keep the app ad-free and enables continued development of new features.
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/theonlydidymus)
