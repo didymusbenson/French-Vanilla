@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
@@ -32,6 +33,8 @@ class _GlossaryScreenState extends State<GlossaryScreen>
   final Map<String, bool> _bookmarkStatus = {};
   Set<GlossaryTermType> _selectedFilters = {};
   late Map<GlossaryTermType, int> _termCounts;
+  Timer? _debounce;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -67,6 +70,7 @@ class _GlossaryScreenState extends State<GlossaryScreen>
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -103,20 +107,30 @@ class _GlossaryScreenState extends State<GlossaryScreen>
     }
   }
 
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      setState(() {
+        _searchQuery = query;
+      });
+      _filterTerms(query);
+    });
+  }
+
   void _filterTerms(String query) {
     setState(() {
       final lowerQuery = query.toLowerCase();
-      
+
       _filteredTerms = _allTerms.where((term) {
         // Apply text search filter
         final matchesSearch = query.isEmpty ||
             term.term.toLowerCase().contains(lowerQuery) ||
             term.definition.toLowerCase().contains(lowerQuery);
-        
+
         // Apply category filter
         final matchesCategory = _selectedFilters.isEmpty ||
             _selectedFilters.contains(term.type);
-        
+
         return matchesSearch && matchesCategory;
       }).toList();
     });
@@ -286,7 +300,8 @@ class _GlossaryScreenState extends State<GlossaryScreen>
                       icon: const Icon(Icons.clear),
                       onPressed: () {
                         _searchController.clear();
-                        _filterTerms('');
+                        _searchController.clear();
+                        _onSearchChanged('');
                       },
                       tooltip: 'Clear search',
                     ),
@@ -296,7 +311,7 @@ class _GlossaryScreenState extends State<GlossaryScreen>
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            onChanged: _filterTerms,
+            onChanged: _onSearchChanged,
           ),
         ),
         Expanded(
@@ -418,15 +433,51 @@ class _GlossaryScreenState extends State<GlossaryScreen>
                             final match = RuleLinkMixin.rulePattern.firstMatch(term.definition);
                             final hasLink = match != null;
 
-                            Widget textWidget = Text(
-                              term.term,
-                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            // Helper to build text with potential highlights
+                            Widget buildText(String text, TextStyle? style) {
+                              if (_searchQuery.isEmpty) {
+                                return Text(text, style: style);
+                              }
+                              
+                              // Highlight search matches in the term title
+                              final spans = <TextSpan>[];
+                              final lowerText = text.toLowerCase();
+                              final lowerQuery = _searchQuery.toLowerCase();
+                              int lastIndex = 0;
+                              int index = lowerText.indexOf(lowerQuery);
+                              
+                              while (index != -1) {
+                                if (index > lastIndex) {
+                                  spans.add(TextSpan(text: text.substring(lastIndex, index)));
+                                }
+                                spans.add(TextSpan(
+                                  text: text.substring(index, index + lowerQuery.length),
+                                  style: style?.copyWith(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ));
+                                lastIndex = index + lowerQuery.length;
+                                index = lowerText.indexOf(lowerQuery, lastIndex);
+                              }
+                              
+                              if (lastIndex < text.length) {
+                                spans.add(TextSpan(text: text.substring(lastIndex)));
+                              }
+                              
+                              return RichText(
+                                text: TextSpan(children: spans, style: style),
+                              );
+                            }
+
+                            final style = Theme.of(context).textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: isHighlighted
                                     ? Theme.of(context).colorScheme.onPrimaryContainer
                                     : Theme.of(context).colorScheme.primary,
-                              ),
                             );
+
+                            Widget textWidget = buildText(term.term, style);
 
                             if (hasLink) {
                               final baseRule = match.group(1)!;
@@ -474,6 +525,7 @@ class _GlossaryScreenState extends State<GlossaryScreen>
                               ? Theme.of(context).colorScheme.onPrimaryContainer
                               : null,
                         ),
+                        searchQuery: _searchQuery,
                       ),
                     ),
                   ),
