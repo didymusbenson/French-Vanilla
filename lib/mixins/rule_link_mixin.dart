@@ -110,6 +110,16 @@ mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
     return matches;
   }
 
+  /// Normalizes text for search comparison (lowercase, smart quotes to normal quotes)
+  String normalizeText(String text) {
+    return text
+        .toLowerCase()
+        .replaceAll('’', "'")
+        .replaceAll('‘', "'")
+        .replaceAll('“', '"')
+        .replaceAll('”', '"');
+  }
+
   /// Parses text and creates TextSpan with tappable rule references
   /// If [searchQuery] is provided, matching text will be highlighted
   /// If [preCalculatedLinks] is provided, it uses those instead of running regex
@@ -122,7 +132,10 @@ mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
     Function(String)? onGlossaryTermTap,
   }) {
     final spans = <TextSpan>[];
-    final normalizedQuery = searchQuery?.trim().toLowerCase();
+    // Use normalizeText for consistent search matching
+    final normalizedQuery = searchQuery != null
+        ? normalizeText(searchQuery.trim())
+        : null;
     final shouldHighlight =
         normalizedQuery != null && normalizedQuery.isNotEmpty;
 
@@ -222,13 +235,15 @@ mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
   /// Helper to highlight search matches in a plain string
   List<TextSpan> _highlightSearchMatches(
     String text,
-    String query,
+    String normalizedQuery,
     TextStyle? baseStyle,
   ) {
     final spans = <TextSpan>[];
-    final lowerText = text.toLowerCase();
+    // Normalize text for finding matches, but keep original for display
+    final textNormalized = normalizeText(text);
+
     int lastIndex = 0;
-    int index = lowerText.indexOf(query);
+    int index = textNormalized.indexOf(normalizedQuery);
 
     while (index != -1) {
       // Add non-matching text before the match
@@ -241,7 +256,7 @@ mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
       // Add matching text with highlight
       spans.add(
         TextSpan(
-          text: text.substring(index, index + query.length),
+          text: text.substring(index, index + normalizedQuery.length),
           style: baseStyle?.copyWith(
             color: Theme.of(context).colorScheme.primary,
             fontWeight: FontWeight.w900,
@@ -249,8 +264,8 @@ mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
         ),
       );
 
-      lastIndex = index + query.length;
-      index = lowerText.indexOf(query, lastIndex);
+      lastIndex = index + normalizedQuery.length;
+      index = textNormalized.indexOf(normalizedQuery, lastIndex);
     }
 
     // Add remaining text

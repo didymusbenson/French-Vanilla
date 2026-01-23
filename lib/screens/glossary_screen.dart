@@ -22,8 +22,13 @@ class GlossaryScreen extends StatefulWidget {
 class _GlossaryItemViewModel {
   final GlossaryTerm term;
   final List<LinkMatch> links;
+  final String termLower;
 
-  const _GlossaryItemViewModel({required this.term, required this.links});
+  const _GlossaryItemViewModel({
+    required this.term,
+    required this.links,
+    required this.termLower,
+  });
 }
 
 class _GlossaryScreenState extends State<GlossaryScreen>
@@ -162,7 +167,11 @@ class _GlossaryScreenState extends State<GlossaryScreen>
           }
         }
 
-        return _GlossaryItemViewModel(term: term, links: nonOverlappingLinks);
+        return _GlossaryItemViewModel(
+          term: term,
+          links: nonOverlappingLinks,
+          termLower: term.term.toLowerCase(),
+        );
       }).toList();
 
       setState(() {
@@ -199,14 +208,18 @@ class _GlossaryScreenState extends State<GlossaryScreen>
 
   void _filterTerms(String query) {
     setState(() {
-      final lowerQuery = query.toLowerCase();
+      final normalizedQuery = normalizeText(query);
 
       final matches = _allTerms.where((vm) {
         // Apply text search filter
+        // We normalize both the query and the text to handle smart quotes
+        final termNormalized = normalizeText(vm.term.term);
+        final defNormalized = normalizeText(vm.term.definition);
+
         final matchesSearch =
             query.isEmpty ||
-            vm.term.term.toLowerCase().contains(lowerQuery) ||
-            vm.term.definition.toLowerCase().contains(lowerQuery);
+            termNormalized.contains(normalizedQuery) ||
+            defNormalized.contains(normalizedQuery);
 
         // Apply category filter
         final matchesCategory =
@@ -216,24 +229,24 @@ class _GlossaryScreenState extends State<GlossaryScreen>
       }).toList();
 
       // Sort results by relevance if there is a query
-      if (lowerQuery.isNotEmpty) {
+      if (normalizedQuery.isNotEmpty) {
         matches.sort((a, b) {
-          final aTerm = a.term.term.toLowerCase();
-          final bTerm = b.term.term.toLowerCase();
+          final aTerm = normalizeText(a.termLower);
+          final bTerm = normalizeText(b.termLower);
 
           // 1. Exact match
-          if (aTerm == lowerQuery && bTerm != lowerQuery) return -1;
-          if (bTerm == lowerQuery && aTerm != lowerQuery) return 1;
+          if (aTerm == normalizedQuery && bTerm != normalizedQuery) return -1;
+          if (bTerm == normalizedQuery && aTerm != normalizedQuery) return 1;
 
           // 2. Starts with
-          final aStarts = aTerm.startsWith(lowerQuery);
-          final bStarts = bTerm.startsWith(lowerQuery);
+          final aStarts = aTerm.startsWith(normalizedQuery);
+          final bStarts = bTerm.startsWith(normalizedQuery);
           if (aStarts && !bStarts) return -1;
           if (bStarts && !aStarts) return 1;
 
           // 3. Name match vs Definition match
-          final aNameMatch = aTerm.contains(lowerQuery);
-          final bNameMatch = bTerm.contains(lowerQuery);
+          final aNameMatch = aTerm.contains(normalizedQuery);
+          final bNameMatch = bTerm.contains(normalizedQuery);
           if (aNameMatch && !bNameMatch) return -1;
           if (bNameMatch && !aNameMatch) return 1;
 
@@ -242,7 +255,7 @@ class _GlossaryScreenState extends State<GlossaryScreen>
         });
       } else {
         // Default alphabetical sort when no query
-        matches.sort((a, b) => a.term.term.compareTo(b.term.term));
+        matches.sort((a, b) => a.termLower.compareTo(b.termLower));
       }
 
       _filteredTerms = matches;
@@ -512,7 +525,7 @@ class _GlossaryScreenState extends State<GlossaryScreen>
         final isBookmarked = _bookmarkStatus[term.term] ?? false;
         final isHighlighted =
             _highlightTermLowerCase != null &&
-            term.term.toLowerCase() == _highlightTermLowerCase;
+            vm.termLower == _highlightTermLowerCase;
 
         return GestureDetector(
           onLongPress: () {
@@ -561,10 +574,16 @@ class _GlossaryScreenState extends State<GlossaryScreen>
 
                               // Highlight search matches in the term title
                               final spans = <TextSpan>[];
-                              final lowerText = text.toLowerCase();
-                              final lowerQuery = _searchQuery.toLowerCase();
+                              // Normalize text for finding matches, but keep original for display
+                              final textNormalized = normalizeText(text);
+                              final queryNormalized = normalizeText(
+                                _searchQuery,
+                              );
+
                               int lastIndex = 0;
-                              int index = lowerText.indexOf(lowerQuery);
+                              int index = textNormalized.indexOf(
+                                queryNormalized,
+                              );
 
                               while (index != -1) {
                                 if (index > lastIndex) {
@@ -578,7 +597,7 @@ class _GlossaryScreenState extends State<GlossaryScreen>
                                   TextSpan(
                                     text: text.substring(
                                       index,
-                                      index + lowerQuery.length,
+                                      index + queryNormalized.length,
                                     ),
                                     style: style?.copyWith(
                                       color: Theme.of(
@@ -588,9 +607,9 @@ class _GlossaryScreenState extends State<GlossaryScreen>
                                     ),
                                   ),
                                 );
-                                lastIndex = index + lowerQuery.length;
-                                index = lowerText.indexOf(
-                                  lowerQuery,
+                                lastIndex = index + queryNormalized.length;
+                                index = textNormalized.indexOf(
+                                  queryNormalized,
                                   lastIndex,
                                 );
                               }

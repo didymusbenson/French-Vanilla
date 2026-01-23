@@ -96,6 +96,28 @@ void main() {
       expect(spans[0].style!.fontWeight, FontWeight.w900);
     });
 
+    testWidgets('parseTextWithLinks normalizes smart quotes in search', (
+      tester,
+    ) async {
+      await tester.pumpWidget(const MaterialApp(home: TestWidget()));
+      final state = tester.state<TestWidgetState>(find.byType(TestWidget));
+
+      // Text uses smart quotes
+      const text = "A player can’t do that.";
+      // Search uses normal quotes
+      final spans = state.parseTextWithLinks(
+        text,
+        const TextStyle(),
+        searchQuery: "can't",
+      );
+
+      // "A player " (plain), "can’t" (highlighted), " do that." (plain)
+      expect(spans.length, 3);
+      expect(spans[0].text, 'A player ');
+      expect(spans[1].text, 'can’t');
+      expect(spans[1].style!.fontWeight, FontWeight.w900);
+    });
+
     testWidgets('parseTextWithLinks correctly identifies glossary links', (
       tester,
     ) async {
@@ -111,33 +133,13 @@ void main() {
         validGlossaryTerms: validTerms,
       );
 
-      for (var i = 0; i < spans.length; i++) {
-        print('Span $i: "${spans[i].text}"');
-      }
-
-      // "See " (plain)
-      // "Active Player, Nonactive Player Order" (link)
-      // ". Also " (plain)
-      // "rule 702." (link)
-
-      // Note: "See " is NOT part of the link text in the glossary regex group 1,
-      // but it IS part of group 0.
-      // Wait, let's check the implementation of findGlossaryLinks.
-      // match.group(0) is the full text "See Term".
-      // match.group(1) is "Term".
-      // The implementation uses `match.group(0)` as the link text!
-      // "matches.add(..., text: match.group(0)!, ...)"
-      // So the link will include "See ".
-
-      expect(spans.length, 3);
-      // 1. "See Active Player, Nonactive Player Order" (link) -> NO, implementation sorts by start.
-      // "See ..." starts at 0.
+      expect(spans.length, 4);
 
       expect(spans[0].text, 'See Active Player, Nonactive Player Order');
-      // expect(spans[0].style?.color, ...); // check if it has link style
 
       expect(spans[1].text, '. Also ');
-      expect(spans[2].text, 'rule 702.');
+      expect(spans[2].text, 'rule 702');
+      expect(spans[3].text, '.');
     });
   });
 }

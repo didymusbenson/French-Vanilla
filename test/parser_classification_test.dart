@@ -59,5 +59,26 @@ $definition
       final terms = RulesParser.parseGlossary(content);
       expect(terms[0].type, GlossaryTermType.keyword);
     });
+
+    test('Classifies Energy Symbol correctly', () {
+      const term = 'Energy Symbol';
+      const definition =
+          'The symbol {E} represents one energy counter. See rule 107.14.';
+
+      final content =
+          '''
+Glossary
+
+$term
+$definition
+''';
+      final terms = RulesParser.parseGlossary(content);
+      // "Energy Symbol" is not a keyword, token, zone, etc.
+      // It references rule 107, which isn't 702 (keyword) or 701 (action).
+      // So it should default to 'other' or maybe 'counter' if we had logic for it.
+      // Current logic for 'counter' is rule 122.
+      // So 'other' is the expected correct behavior for now ensuring it doesn't misclassify.
+      expect(terms[0].type, GlossaryTermType.other);
+    });
   });
 }
