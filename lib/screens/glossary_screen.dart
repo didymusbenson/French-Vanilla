@@ -5,6 +5,7 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../services/rules_data_service.dart';
 import '../services/favorites_service.dart';
 import '../models/glossary_term.dart';
+import '../mixins/rule_link_mixin.dart';
 
 class GlossaryScreen extends StatefulWidget {
   final String? highlightTerm;
@@ -15,7 +16,7 @@ class GlossaryScreen extends StatefulWidget {
   State<GlossaryScreen> createState() => _GlossaryScreenState();
 }
 
-class _GlossaryScreenState extends State<GlossaryScreen> {
+class _GlossaryScreenState extends State<GlossaryScreen> with RuleLinkMixin {
   final _dataService = RulesDataService();
   final _favoritesService = FavoritesService();
   final _searchController = TextEditingController();
@@ -365,13 +366,17 @@ class _GlossaryScreenState extends State<GlossaryScreen> {
                 // Content
                 Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    term.definition,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      height: 1.5,
-                      color: isHighlighted
-                          ? Theme.of(context).colorScheme.onPrimaryContainer
-                          : null,
+                  child: RichText(
+                    text: TextSpan(
+                      children: parseTextWithLinks(
+                        term.definition,
+                        Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          height: 1.5,
+                          color: isHighlighted
+                              ? Theme.of(context).colorScheme.onPrimaryContainer
+                              : null,
+                        ),
+                      ),
                     ),
                   ),
                 ),

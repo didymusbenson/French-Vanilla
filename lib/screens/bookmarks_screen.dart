@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/favorites_service.dart';
 import '../services/rules_data_service.dart';
+import '../mixins/rule_link_mixin.dart';
 import '../mixins/preview_bottom_sheet_mixin.dart';
 
 class BookmarksScreen extends StatefulWidget {
@@ -10,7 +11,7 @@ class BookmarksScreen extends StatefulWidget {
   State<BookmarksScreen> createState() => BookmarksScreenState();
 }
 
-class BookmarksScreenState extends State<BookmarksScreen> with PreviewBottomSheetMixin {
+class BookmarksScreenState extends State<BookmarksScreen> with RuleLinkMixin, PreviewBottomSheetMixin {
   final _favoritesService = FavoritesService();
   final _dataService = RulesDataService();
   List<BookmarkedItem> _bookmarks = [];

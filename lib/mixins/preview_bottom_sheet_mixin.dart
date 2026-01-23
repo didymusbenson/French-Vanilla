@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import '../models/rule.dart';
 import '../screens/glossary_screen.dart';
 import '../screens/rule_detail_screen.dart';
+import 'rule_link_mixin.dart';
 
 /// Mixin providing shared bottom sheet functionality for previewing rules and glossary terms
 /// Used by BookmarksScreen and SearchScreen to reduce code duplication
-mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T> {
+/// Requires RuleLinkMixin to provide clickable rule references
+mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMixin<T> {
   /// Builds formatted subrule content with spacing between subsections
   Widget buildFormattedContent(String content) {
     // Strip the leading subrule number from the first line since it's shown in the header
@@ -44,15 +46,18 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T> {
       subsections.add(currentSubsection.toString().trim());
     }
 
+    final baseStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+      height: 1.6,
+    );
+
     // Build the widget with spacing between subsections
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (int i = 0; i < subsections.length; i++) ...[
-          SelectableText(
-            subsections[i],
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              height: 1.6,
+          RichText(
+            text: TextSpan(
+              children: parseTextWithLinks(subsections[i], baseStyle),
             ),
           ),
           if (i < subsections.length - 1)
@@ -112,10 +117,14 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T> {
                       color: Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: SelectableText(
-                      definition,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        height: 1.6,
+                    child: RichText(
+                      text: TextSpan(
+                        children: parseTextWithLinks(
+                          definition,
+                          Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            height: 1.6,
+                          ),
+                        ),
                       ),
                     ),
                   ),

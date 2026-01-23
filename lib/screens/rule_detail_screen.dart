@@ -1,11 +1,10 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/rule.dart';
 import '../services/favorites_service.dart';
-import '../services/rules_data_service.dart';
+import '../mixins/rule_link_mixin.dart';
 
 class RuleDetailScreen extends StatefulWidget {
   final Rule rule;
@@ -23,7 +22,7 @@ class RuleDetailScreen extends StatefulWidget {
   State<RuleDetailScreen> createState() => _RuleDetailScreenState();
 }
 
-class _RuleDetailScreenState extends State<RuleDetailScreen> {
+class _RuleDetailScreenState extends State<RuleDetailScreen> with RuleLinkMixin {
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
   final _favoritesService = FavoritesService();
@@ -203,124 +202,6 @@ class _RuleDetailScreenState extends State<RuleDetailScreen> {
     );
   }
 
-  /// Parses text and creates TextSpan with tappable rule references
-  List<TextSpan> _parseTextWithLinks(String text, TextStyle? baseStyle, bool isHighlighted) {
-    final spans = <TextSpan>[];
-    // Pattern matches: "rule 704", "rule 702.9", "rule 702.9a", "rules 702.9", etc.
-    // Also matches variations like "see rule 704" or "Rule 702.9a"
-    final rulePattern = RegExp(r'\brule(?:s)?\s+(\d{3})(?:\.(\d+)([a-z])?)?\b', caseSensitive: false);
-
-    int lastMatchEnd = 0;
-    for (final match in rulePattern.allMatches(text)) {
-      // Add text before the match
-      if (match.start > lastMatchEnd) {
-        spans.add(TextSpan(
-          text: text.substring(lastMatchEnd, match.start),
-          style: baseStyle,
-        ));
-      }
-
-      // Extract rule number (e.g., "702.9a" or just "704")
-      final baseRule = match.group(1)!; // Always captured (e.g., "704" or "702")
-      final minorPart = match.group(2); // Optional decimal part (e.g., "9")
-      final letterPart = match.group(3); // Optional letter (e.g., "a")
-
-      final ruleNumber = minorPart != null
-          ? '$baseRule.$minorPart${letterPart ?? ''}'
-          : baseRule;
-
-      final fullMatch = match.group(0)!; // Full matched text like "rule 704" or "rule 702.9a"
-
-      // Add the tappable link
-      spans.add(TextSpan(
-        text: fullMatch,
-        style: baseStyle?.copyWith(
-          color: Theme.of(context).colorScheme.primary,
-          decoration: TextDecoration.underline,
-          fontWeight: FontWeight.w500,
-        ),
-        recognizer: TapGestureRecognizer()
-          ..onTap = () => _navigateToRule(ruleNumber),
-      ));
-
-      lastMatchEnd = match.end;
-    }
-
-    // Add remaining text after the last match
-    if (lastMatchEnd < text.length) {
-      spans.add(TextSpan(
-        text: text.substring(lastMatchEnd),
-        style: baseStyle,
-      ));
-    }
-
-    return spans.isEmpty ? [TextSpan(text: text, style: baseStyle)] : spans;
-  }
-
-  /// Navigate to a referenced rule
-  Future<void> _navigateToRule(String ruleNumber) async {
-    // Parse the rule number to extract section and rule info
-    // Format: "704" -> section 7, rule "704"
-    // Format: "702.9a" -> section 7, rule "702", highlight subrule "702.9a"
-    final ruleMatch = RegExp(r'^(\d)(\d{2})(?:\.(\d+)([a-z])?)?$').firstMatch(ruleNumber);
-
-    if (ruleMatch == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to parse rule reference')),
-      );
-      return;
-    }
-
-    final sectionNumber = int.parse(ruleMatch.group(1)!);
-    final baseRuleNumber = '${ruleMatch.group(1)}${ruleMatch.group(2)}';
-
-    // Only highlight a specific subrule if the reference includes a decimal part
-    // Strip letter suffix (e.g., "702.9a" -> "702.9") since we only index base subrules
-    String? highlightSubrule;
-    if (ruleMatch.group(3) != null) {
-      highlightSubrule = '${ruleMatch.group(1)}${ruleMatch.group(2)}.${ruleMatch.group(3)}';
-    }
-
-    // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
-
-    try {
-      final rules = await RulesDataService().getRulesForSection(sectionNumber);
-      final targetRule = rules.firstWhere(
-        (r) => r.number == baseRuleNumber,
-        orElse: () => throw Exception('Rule not found'),
-      );
-
-      if (!mounted) return;
-
-      // Close loading indicator
-      Navigator.pop(context);
-
-      // Navigate to the rule detail screen
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => RuleDetailScreen(
-            rule: targetRule,
-            sectionNumber: sectionNumber,
-            highlightSubruleNumber: highlightSubrule,
-          ),
-        ),
-      );
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context); // Close loading indicator
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load rule: $e')),
-        );
-      }
-    }
-  }
-
   /// Builds formatted subrule content with spacing between subsections
   Widget _buildSubruleContent(String content, bool isHighlighted) {
     // Strip the leading subrule number from the first line since it's now in the header
@@ -375,7 +256,7 @@ class _RuleDetailScreenState extends State<RuleDetailScreen> {
         for (int i = 0; i < subsections.length; i++) ...[
           RichText(
             text: TextSpan(
-              children: _parseTextWithLinks(subsections[i], baseStyle, isHighlighted),
+              children: parseTextWithLinks(subsections[i], baseStyle),
             ),
           ),
           if (i < subsections.length - 1)
