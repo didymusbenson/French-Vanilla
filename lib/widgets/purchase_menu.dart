@@ -340,23 +340,23 @@ class _PurchaseMenuState extends State<PurchaseMenu> {
       children: [
         _buildTierCard(
           productId: IAPService.thankYouId,
-          tierName: 'Thank You Tier',
+          tierName: 'Say Thanks',
           heartStyle: HeartStyle.red(),
-          description: null,
+          description: 'Support the developer and unlock the exclusive red heart badge. Show your appreciation for French Vanilla!',
           isHighlighted: widget.scrollToTier == 'thank_you',
         ),
         _buildTierCard(
           productId: IAPService.playId,
-          tierName: 'Play Tier',
+          tierName: 'Say Thanks with a Play Booster',
           heartStyle: HeartStyle.blue(),
-          description: 'Includes Thank You + Play perks',
+          description: 'Buy the developer a pack of cards and unlock the exclusive blue heart badge. Show your appreciation for French Vanilla!',
           isHighlighted: widget.scrollToTier == 'play',
         ),
         _buildTierCard(
           productId: IAPService.collectorId,
-          tierName: 'Collector Tier',
+          tierName: 'Say Thanks with a Collector Booster',
           heartStyle: HeartStyle.rainbow(),
-          description: 'Includes all tier perks\n+ Heart customization!',
+          description: 'Buy the developer a collector pack and unlock the exclusive customizable WUBRG heart badge. Get full French Vanilla supporter bragging rights!',
           isHighlighted: widget.scrollToTier == 'collector',
         ),
       ],
@@ -417,14 +417,19 @@ class _PurchaseMenuState extends State<PurchaseMenu> {
               // Tier name and price
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    tierName,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                  Expanded(
+                    child: Text(
+                      tierName,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                      softWrap: true,
+                    ),
                   ),
-                  if (product != null)
+                  if (product != null) ...[
+                    const SizedBox(width: 8),
                     Text(
                       product.price,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -432,6 +437,7 @@ class _PurchaseMenuState extends State<PurchaseMenu> {
                             fontWeight: FontWeight.bold,
                           ),
                     ),
+                  ],
                 ],
               ),
               const SizedBox(height: 12),
