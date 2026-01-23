@@ -23,10 +23,12 @@ class RulesParser {
     void saveCurrentSubrule() {
       final subruleNum = currentSubruleNumber;
       if (subruleNum != null && currentSubruleContent.isNotEmpty) {
-        currentSubruleGroups.add(SubruleGroup(
-          number: subruleNum,
-          content: currentSubruleContent.toString().trim(),
-        ));
+        currentSubruleGroups.add(
+          SubruleGroup(
+            number: subruleNum,
+            content: currentSubruleContent.toString().trim(),
+          ),
+        );
         currentSubruleNumber = null;
         currentSubruleContent = StringBuffer();
       }
@@ -37,11 +39,13 @@ class RulesParser {
       final ruleNum = currentRuleNumber;
       final ruleTitle = currentRuleTitle;
       if (ruleNum != null && ruleTitle != null) {
-        rules.add(Rule(
-          number: ruleNum,
-          title: ruleTitle,
-          subruleGroups: List.from(currentSubruleGroups),
-        ));
+        rules.add(
+          Rule(
+            number: ruleNum,
+            title: ruleTitle,
+            subruleGroups: List.from(currentSubruleGroups),
+          ),
+        );
         currentSubruleGroups = [];
       }
     }
@@ -65,7 +69,8 @@ class RulesParser {
       final subruleMatch = firstLevelSubrulePattern.firstMatch(trimmedLine);
       if (subruleMatch != null) {
         saveCurrentSubrule();
-        currentSubruleNumber = '${subruleMatch.group(1)}.${subruleMatch.group(2)}';
+        currentSubruleNumber =
+            '${subruleMatch.group(1)}.${subruleMatch.group(2)}';
         currentSubruleContent.writeln(trimmedLine);
         continue;
       }
@@ -98,11 +103,13 @@ class RulesParser {
       if (term != null) {
         final def = currentDefinition.toString().trim();
         if (def.isNotEmpty) {
-          terms.add(GlossaryTerm(
-            term: term,
-            definition: def,
-            type: _classifyGlossaryTerm(term, def),
-          ));
+          terms.add(
+            GlossaryTerm(
+              term: term,
+              definition: def,
+              type: _classifyGlossaryTerm(term, def),
+            ),
+          );
         }
         currentTerm = null;
         currentDefinition.clear();
@@ -147,7 +154,10 @@ class RulesParser {
 
   /// Classifies a glossary term based on its name and definition content.
   /// Priority order matters: more specific matches take precedence.
-  static GlossaryTermType _classifyGlossaryTerm(String term, String definition) {
+  static GlossaryTermType _classifyGlossaryTerm(
+    String term,
+    String definition,
+  ) {
     // Obsolete terms are explicitly marked
     if (definition.contains('(Obsolete)')) {
       return GlossaryTermType.obsolete;
@@ -159,7 +169,7 @@ class RulesParser {
     }
 
     // Counters: End in "Counter", reference rule 122, or involve +1/+1 / -1/-1
-    if (term.endsWith(' Counter') || 
+    if (term.endsWith(' Counter') ||
         definition.contains('rule 122') ||
         definition.contains('+1/+1') ||
         definition.contains('-1/-1')) {

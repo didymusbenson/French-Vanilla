@@ -1,15 +1,15 @@
 /// Categories for glossary term filtering
 enum GlossaryTermType {
-  keyword,        // Keyword abilities (rule 702.X)
-  keywordAction,  // Keyword actions (rule 701.X)
-  cardType,       // Card types (rule 3XX)
-  zone,           // Zones (rule 4XX)
-  phaseStep,      // Phases and steps
-  token,          // Token types (*Token)
-  counter,        // Counters (rule 122)
-  multiplayer,    // Multiplayer variants (rule 8XX, 9XX)
-  obsolete,       // Obsolete terms
-  other,          // Default/uncategorized
+  keyword, // Keyword abilities (rule 702.X)
+  keywordAction, // Keyword actions (rule 701.X)
+  cardType, // Card types (rule 3XX)
+  zone, // Zones (rule 4XX)
+  phaseStep, // Phases and steps
+  token, // Token types (*Token)
+  counter, // Counters (rule 122)
+  multiplayer, // Multiplayer variants (rule 8XX, 9XX)
+  obsolete, // Obsolete terms
+  other, // Default/uncategorized
 }
 
 /// User-friendly display names for filter chips

@@ -19,15 +19,23 @@ class GlossaryScreen extends StatefulWidget {
   State<GlossaryScreen> createState() => _GlossaryScreenState();
 }
 
+class _GlossaryItemViewModel {
+  final GlossaryTerm term;
+  final List<RuleLinkMatch> links;
+
+  const _GlossaryItemViewModel({required this.term, required this.links});
+}
+
 class _GlossaryScreenState extends State<GlossaryScreen>
     with RuleLinkMixin, AggregatingSnackBarMixin {
   final _dataService = RulesDataService();
   final _favoritesService = FavoritesService();
   final _searchController = TextEditingController();
   final ItemScrollController _itemScrollController = ItemScrollController();
-  final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
-  List<GlossaryTerm> _allTerms = [];
-  List<GlossaryTerm> _filteredTerms = [];
+  final ItemPositionsListener _itemPositionsListener =
+      ItemPositionsListener.create();
+  List<_GlossaryItemViewModel> _allTerms = [];
+  List<_GlossaryItemViewModel> _filteredTerms = [];
   bool _isLoading = true;
   String? _error;
   final Map<String, bool> _bookmarkStatus = {};
@@ -35,16 +43,22 @@ class _GlossaryScreenState extends State<GlossaryScreen>
   late Map<GlossaryTermType, int> _termCounts;
   Timer? _debounce;
   String _searchQuery = '';
+  String? _highlightTermLowerCase;
 
   @override
   void initState() {
     super.initState();
+    if (widget.highlightTerm != null) {
+      _highlightTermLowerCase = widget.highlightTerm!.toLowerCase();
+    }
     _loadGlossary();
   }
 
   void _scrollToTerm(String termName) {
+    if (_highlightTermLowerCase == null) return;
+
     final targetIndex = _filteredTerms.indexWhere(
-      (term) => term.term.toLowerCase() == termName.toLowerCase()
+      (vm) => vm.term.term.toLowerCase() == _highlightTermLowerCase,
     );
 
     if (targetIndex != -1) {
@@ -58,11 +72,14 @@ class _GlossaryScreenState extends State<GlossaryScreen>
   }
 
   Future<void> _loadBookmarkStatuses() async {
-    for (final term in _allTerms) {
-      final isBookmarked = await _favoritesService.isBookmarked(term.term, BookmarkType.glossary);
+    for (final vm in _allTerms) {
+      final isBookmarked = await _favoritesService.isBookmarked(
+        vm.term.term,
+        BookmarkType.glossary,
+      );
       if (mounted) {
         setState(() {
-          _bookmarkStatus[term.term] = isBookmarked;
+          _bookmarkStatus[vm.term.term] = isBookmarked;
         });
       }
     }
@@ -78,16 +95,26 @@ class _GlossaryScreenState extends State<GlossaryScreen>
   Future<void> _loadGlossary() async {
     try {
       final terms = await _dataService.getGlossaryTerms();
-      
+
       // Calculate term counts by type
       final counts = <GlossaryTermType, int>{};
       for (final type in GlossaryTermType.values) {
         counts[type] = terms.where((t) => t.type == type).length;
       }
-      
+
+      // Convert to view models with pre-calculated links
+      final viewModels = terms
+          .map(
+            (term) => _GlossaryItemViewModel(
+              term: term,
+              links: findRuleLinks(term.definition),
+            ),
+          )
+          .toList();
+
       setState(() {
-        _allTerms = terms;
-        _filteredTerms = terms;
+        _allTerms = viewModels;
+        _filteredTerms = viewModels;
         _termCounts = counts;
         _isLoading = false;
       });
@@ -121,15 +148,16 @@ class _GlossaryScreenState extends State<GlossaryScreen>
     setState(() {
       final lowerQuery = query.toLowerCase();
 
-      final matches = _allTerms.where((term) {
+      final matches = _allTerms.where((vm) {
         // Apply text search filter
-        final matchesSearch = query.isEmpty ||
-            term.term.toLowerCase().contains(lowerQuery) ||
-            term.definition.toLowerCase().contains(lowerQuery);
+        final matchesSearch =
+            query.isEmpty ||
+            vm.term.term.toLowerCase().contains(lowerQuery) ||
+            vm.term.definition.toLowerCase().contains(lowerQuery);
 
         // Apply category filter
-        final matchesCategory = _selectedFilters.isEmpty ||
-            _selectedFilters.contains(term.type);
+        final matchesCategory =
+            _selectedFilters.isEmpty || _selectedFilters.contains(vm.term.type);
 
         return matchesSearch && matchesCategory;
       }).toList();
@@ -137,8 +165,8 @@ class _GlossaryScreenState extends State<GlossaryScreen>
       // Sort results by relevance if there is a query
       if (lowerQuery.isNotEmpty) {
         matches.sort((a, b) {
-          final aTerm = a.term.toLowerCase();
-          final bTerm = b.term.toLowerCase();
+          final aTerm = a.term.term.toLowerCase();
+          final bTerm = b.term.term.toLowerCase();
 
           // 1. Exact match
           if (aTerm == lowerQuery && bTerm != lowerQuery) return -1;
@@ -161,13 +189,13 @@ class _GlossaryScreenState extends State<GlossaryScreen>
         });
       } else {
         // Default alphabetical sort when no query
-        matches.sort((a, b) => a.term.compareTo(b.term)); // Assuming input is already sorted, but good safety
+        matches.sort((a, b) => a.term.term.compareTo(b.term.term));
       }
 
       _filteredTerms = matches;
     });
   }
-  
+
   Future<void> _showFilterSheet() async {
     await showGlossaryFilterSheet(
       context: context,
@@ -183,8 +211,15 @@ class _GlossaryScreenState extends State<GlossaryScreen>
   }
 
   Future<void> _toggleBookmark(String termName, String definition) async {
-    await _favoritesService.toggleBookmark(termName, definition, BookmarkType.glossary);
-    final isBookmarked = await _favoritesService.isBookmarked(termName, BookmarkType.glossary);
+    await _favoritesService.toggleBookmark(
+      termName,
+      definition,
+      BookmarkType.glossary,
+    );
+    final isBookmarked = await _favoritesService.isBookmarked(
+      termName,
+      BookmarkType.glossary,
+    );
     setState(() {
       _bookmarkStatus[termName] = isBookmarked;
     });
@@ -219,10 +254,7 @@ class _GlossaryScreenState extends State<GlossaryScreen>
         ? box.localToGlobal(Offset.zero) & box.size
         : null;
 
-    Share.share(
-      plainText,
-      sharePositionOrigin: sharePositionOrigin,
-    );
+    Share.share(plainText, sharePositionOrigin: sharePositionOrigin);
   }
 
   void _showContextMenu(String termName, String definition) {
@@ -346,18 +378,14 @@ class _GlossaryScreenState extends State<GlossaryScreen>
             onChanged: _onSearchChanged,
           ),
         ),
-        Expanded(
-          child: _buildBody(),
-        ),
+        Expanded(child: _buildBody()),
       ],
     );
 
     // Wrap in Scaffold when used standalone (with highlightTerm)
     if (widget.highlightTerm != null) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Glossary'),
-        ),
+        appBar: AppBar(title: const Text('Glossary')),
         body: content,
       );
     }
@@ -426,10 +454,12 @@ class _GlossaryScreenState extends State<GlossaryScreen>
       itemPositionsListener: _itemPositionsListener,
       itemCount: _filteredTerms.length,
       itemBuilder: (context, index) {
-        final term = _filteredTerms[index];
+        final vm = _filteredTerms[index];
+        final term = vm.term;
         final isBookmarked = _bookmarkStatus[term.term] ?? false;
-        final isHighlighted = widget.highlightTerm != null &&
-            term.term.toLowerCase() == widget.highlightTerm!.toLowerCase();
+        final isHighlighted =
+            _highlightTermLowerCase != null &&
+            term.term.toLowerCase() == _highlightTermLowerCase;
 
         return GestureDetector(
           onLongPress: () {
@@ -447,11 +477,16 @@ class _GlossaryScreenState extends State<GlossaryScreen>
               children: [
                 // Header with term name and bookmark icon
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     border: Border(
                       bottom: BorderSide(
-                        color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outlineVariant.withValues(alpha: 0.5),
                         width: 1,
                       ),
                     ),
@@ -462,83 +497,107 @@ class _GlossaryScreenState extends State<GlossaryScreen>
                         child: Builder(
                           builder: (context) {
                             // Try to find the first rule reference to link to
-                            final match = RuleLinkMixin.rulePattern.firstMatch(term.definition);
-                            final hasLink = match != null;
+                            // We can use the first pre-calculated link if available
+                            final hasLink = vm.links.isNotEmpty;
 
                             // Helper to build text with potential highlights
                             Widget buildText(String text, TextStyle? style) {
                               if (_searchQuery.isEmpty) {
                                 return Text(text, style: style);
                               }
-                              
+
                               // Highlight search matches in the term title
                               final spans = <TextSpan>[];
                               final lowerText = text.toLowerCase();
                               final lowerQuery = _searchQuery.toLowerCase();
                               int lastIndex = 0;
                               int index = lowerText.indexOf(lowerQuery);
-                              
+
                               while (index != -1) {
                                 if (index > lastIndex) {
-                                  spans.add(TextSpan(text: text.substring(lastIndex, index)));
+                                  spans.add(
+                                    TextSpan(
+                                      text: text.substring(lastIndex, index),
+                                    ),
+                                  );
                                 }
-                                spans.add(TextSpan(
-                                  text: text.substring(index, index + lowerQuery.length),
-                                  style: style?.copyWith(
-                                    color: Theme.of(context).colorScheme.primary,
-                                    fontWeight: FontWeight.w900,
+                                spans.add(
+                                  TextSpan(
+                                    text: text.substring(
+                                      index,
+                                      index + lowerQuery.length,
+                                    ),
+                                    style: style?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      fontWeight: FontWeight.w900,
+                                    ),
                                   ),
-                                ));
+                                );
                                 lastIndex = index + lowerQuery.length;
-                                index = lowerText.indexOf(lowerQuery, lastIndex);
+                                index = lowerText.indexOf(
+                                  lowerQuery,
+                                  lastIndex,
+                                );
                               }
-                              
+
                               if (lastIndex < text.length) {
-                                spans.add(TextSpan(text: text.substring(lastIndex)));
+                                spans.add(
+                                  TextSpan(text: text.substring(lastIndex)),
+                                );
                               }
-                              
+
                               return RichText(
                                 text: TextSpan(children: spans, style: style),
                               );
                             }
 
-                            final style = Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: isHighlighted
-                                    ? Theme.of(context).colorScheme.onPrimaryContainer
-                                    : Theme.of(context).colorScheme.primary,
-                            );
+                            final style = Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: isHighlighted
+                                      ? Theme.of(
+                                          context,
+                                        ).colorScheme.onPrimaryContainer
+                                      : Theme.of(context).colorScheme.primary,
+                                );
 
                             Widget textWidget = buildText(term.term, style);
 
                             if (hasLink) {
-                              final baseRule = match.group(1)!;
-                              final minorPart = match.group(2);
-                              final letterPart = match.group(3);
-                              final ruleNumber = minorPart != null
-                                  ? '$baseRule.$minorPart${letterPart ?? ''}'
-                                  : baseRule;
+                              // Use the first link found in the definition as the title link target
+                              // (Heuristic: usually the first link is the "main" rule)
+                              final ruleNumber = vm.links.first.ruleNumber;
 
-                              return GestureDetector(
-                                onTap: () => navigateToRule(ruleNumber),
-                                child: textWidget,
+                              return MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: GestureDetector(
+                                  onTap: () => navigateToRule(ruleNumber),
+                                  child: textWidget,
+                                ),
                               );
                             }
-                            
+
                             return textWidget;
                           },
                         ),
                       ),
                       IconButton(
                         icon: Icon(
-                          isBookmarked ? Icons.bookmark : Icons.bookmark_outline,
+                          isBookmarked
+                              ? Icons.bookmark
+                              : Icons.bookmark_outline,
                           size: 20,
                         ),
                         color: isBookmarked
                             ? Theme.of(context).colorScheme.primary
                             : Theme.of(context).colorScheme.onSurfaceVariant,
-                        onPressed: () => _toggleBookmark(term.term, term.definition),
-                        tooltip: isBookmarked ? 'Remove bookmark' : 'Add bookmark',
+                        onPressed: () =>
+                            _toggleBookmark(term.term, term.definition),
+                        tooltip: isBookmarked
+                            ? 'Remove bookmark'
+                            : 'Add bookmark',
                         visualDensity: VisualDensity.compact,
                       ),
                     ],
@@ -558,6 +617,7 @@ class _GlossaryScreenState extends State<GlossaryScreen>
                               : null,
                         ),
                         searchQuery: _searchQuery,
+                        preCalculatedLinks: vm.links,
                       ),
                     ),
                   ),

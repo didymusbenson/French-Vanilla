@@ -68,10 +68,7 @@ class _GlossaryFilterSheetState extends State<GlossaryFilterSheet> {
             // Header with title and action buttons
             Row(
               children: [
-                Text(
-                  'Filter by Category',
-                  style: theme.textTheme.titleLarge,
-                ),
+                Text('Filter by Category', style: theme.textTheme.titleLarge),
                 const Spacer(),
                 TextButton(
                   onPressed: hasFilters ? _clearAll : _selectAll,
@@ -113,7 +110,9 @@ class _GlossaryFilterSheetState extends State<GlossaryFilterSheet> {
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? theme.colorScheme.onPrimary.withValues(alpha: 0.2)
+                              ? theme.colorScheme.onPrimary.withValues(
+                                  alpha: 0.2,
+                                )
                               : theme.colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(10),
                         ),

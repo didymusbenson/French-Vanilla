@@ -26,7 +26,8 @@ class RuleDetailScreen extends StatefulWidget {
 class _RuleDetailScreenState extends State<RuleDetailScreen>
     with RuleLinkMixin, AggregatingSnackBarMixin {
   final ItemScrollController _itemScrollController = ItemScrollController();
-  final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
+  final ItemPositionsListener _itemPositionsListener =
+      ItemPositionsListener.create();
   final _favoritesService = FavoritesService();
   final Map<String, bool> _bookmarkStatus = {};
 
@@ -34,20 +35,12 @@ class _RuleDetailScreenState extends State<RuleDetailScreen>
   void initState() {
     super.initState();
 
-    print('=== RuleDetailScreen initState ===');
-    print('Rule: ${widget.rule.number}. ${widget.rule.title}');
-    print('Highlight subrule: ${widget.highlightSubruleNumber}');
-    print('Total subrule groups: ${widget.rule.subruleGroups.length}');
-    print('First few group numbers: ${widget.rule.subruleGroups.take(5).map((g) => g.number).toList()}');
-
     // Load bookmark statuses
     _loadBookmarkStatuses();
 
     // Scroll to highlighted subrule after build
     if (widget.highlightSubruleNumber != null) {
-      print('Scheduling scroll to: ${widget.highlightSubruleNumber}');
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        print('PostFrameCallback executing for: ${widget.highlightSubruleNumber}');
         _scrollToSubrule(widget.highlightSubruleNumber!);
       });
     }
@@ -55,7 +48,10 @@ class _RuleDetailScreenState extends State<RuleDetailScreen>
 
   Future<void> _loadBookmarkStatuses() async {
     for (final group in widget.rule.subruleGroups) {
-      final isBookmarked = await _favoritesService.isBookmarked(group.number, BookmarkType.rule);
+      final isBookmarked = await _favoritesService.isBookmarked(
+        group.number,
+        BookmarkType.rule,
+      );
       setState(() {
         _bookmarkStatus[group.number] = isBookmarked;
       });
@@ -63,8 +59,15 @@ class _RuleDetailScreenState extends State<RuleDetailScreen>
   }
 
   Future<void> _toggleBookmark(String ruleNumber, String content) async {
-    await _favoritesService.toggleBookmark(ruleNumber, content, BookmarkType.rule);
-    final isBookmarked = await _favoritesService.isBookmarked(ruleNumber, BookmarkType.rule);
+    await _favoritesService.toggleBookmark(
+      ruleNumber,
+      content,
+      BookmarkType.rule,
+    );
+    final isBookmarked = await _favoritesService.isBookmarked(
+      ruleNumber,
+      BookmarkType.rule,
+    );
     setState(() {
       _bookmarkStatus[ruleNumber] = isBookmarked;
     });
@@ -102,10 +105,7 @@ class _RuleDetailScreenState extends State<RuleDetailScreen>
         ? box.localToGlobal(Offset.zero) & box.size
         : null;
 
-    Share.share(
-      plainText,
-      sharePositionOrigin: sharePositionOrigin,
-    );
+    Share.share(plainText, sharePositionOrigin: sharePositionOrigin);
   }
 
   void _showContextMenu(String ruleNumber, String content) {
@@ -157,15 +157,10 @@ class _RuleDetailScreenState extends State<RuleDetailScreen>
   }
 
   void _scrollToSubrule(String subruleNumber) {
-    print('=== _scrollToSubrule called ===');
-    print('Target subrule: $subruleNumber');
-    print('Available subrule numbers: ${widget.rule.subruleGroups.map((g) => g.number).toList()}');
-
     // Find the index of the target subrule (add 1 for the header)
-    final targetIndex = widget.rule.subruleGroups
-        .indexWhere((group) => group.number == subruleNumber);
-
-    print('Target index: $targetIndex');
+    final targetIndex = widget.rule.subruleGroups.indexWhere(
+      (group) => group.number == subruleNumber,
+    );
 
     if (targetIndex != -1) {
       // Position item just below app bar with minimal spacing
@@ -179,9 +174,6 @@ class _RuleDetailScreenState extends State<RuleDetailScreen>
         curve: Curves.easeInOut,
         alignment: alignment,
       );
-      print('Scrolling to index ${targetIndex + 1} for subrule: $subruleNumber');
-    } else {
-      print('ERROR: Subrule not found: $subruleNumber');
     }
   }
 
@@ -264,8 +256,12 @@ class _RuleDetailScreenState extends State<RuleDetailScreen>
                 '—',
                 style: TextStyle(
                   color: isHighlighted
-                      ? Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.3)
-                      : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer.withValues(alpha: 0.3)
+                      : Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
                   fontSize: 16,
                 ),
               ),
@@ -297,9 +293,8 @@ class _RuleDetailScreenState extends State<RuleDetailScreen>
                   children: [
                     Text(
                       '${widget.rule.number}. ${widget.rule.title}',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
@@ -325,9 +320,8 @@ class _RuleDetailScreenState extends State<RuleDetailScreen>
                     padding: const EdgeInsets.only(bottom: 16.0),
                     child: Text(
                       '${widget.rule.number}. ${widget.rule.title}',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   );
                 }
@@ -335,7 +329,8 @@ class _RuleDetailScreenState extends State<RuleDetailScreen>
                 // Remaining items are subrule groups
                 final groupIndex = index - 1;
                 final group = widget.rule.subruleGroups[groupIndex];
-                final isHighlighted = widget.highlightSubruleNumber == group.number;
+                final isHighlighted =
+                    widget.highlightSubruleNumber == group.number;
                 final isBookmarked = _bookmarkStatus[group.number] ?? false;
 
                 return GestureDetector(
@@ -354,11 +349,17 @@ class _RuleDetailScreenState extends State<RuleDetailScreen>
                       children: [
                         // Header with subrule number and bookmark icon
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             border: Border(
                               bottom: BorderSide(
-                                color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .outlineVariant
+                                    .withValues(alpha: 0.5),
                                 width: 1,
                               ),
                             ),
@@ -368,24 +369,38 @@ class _RuleDetailScreenState extends State<RuleDetailScreen>
                               Expanded(
                                 child: Text(
                                   group.number,
-                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: isHighlighted
-                                        ? Theme.of(context).colorScheme.onPrimaryContainer
-                                        : Theme.of(context).colorScheme.primary,
-                                  ),
+                                  style: Theme.of(context).textTheme.titleSmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: isHighlighted
+                                            ? Theme.of(
+                                                context,
+                                              ).colorScheme.onPrimaryContainer
+                                            : Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
+                                      ),
                                 ),
                               ),
                               IconButton(
                                 icon: Icon(
-                                  isBookmarked ? Icons.bookmark : Icons.bookmark_outline,
+                                  isBookmarked
+                                      ? Icons.bookmark
+                                      : Icons.bookmark_outline,
                                   size: 20,
                                 ),
                                 color: isBookmarked
                                     ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(context).colorScheme.onSurfaceVariant,
-                                onPressed: () => _toggleBookmark(group.number, group.content),
-                                tooltip: isBookmarked ? 'Remove bookmark' : 'Add bookmark',
+                                    : Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                onPressed: () => _toggleBookmark(
+                                  group.number,
+                                  group.content,
+                                ),
+                                tooltip: isBookmarked
+                                    ? 'Remove bookmark'
+                                    : 'Add bookmark',
                                 visualDensity: VisualDensity.compact,
                               ),
                             ],
@@ -394,7 +409,10 @@ class _RuleDetailScreenState extends State<RuleDetailScreen>
                         // Content
                         Padding(
                           padding: const EdgeInsets.all(16.0),
-                          child: _buildSubruleContent(group.content, isHighlighted),
+                          child: _buildSubruleContent(
+                            group.content,
+                            isHighlighted,
+                          ),
                         ),
                       ],
                     ),

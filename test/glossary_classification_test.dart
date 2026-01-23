@@ -121,7 +121,7 @@ See rule 107.
       // Note: Energy Symbol currently falls to Other unless definition matches rule 122?
       // Wait, "Rule 122" is the key. Energy Symbol def in real glossary is:
       // "The energy symbol {E} represents one energy counter... See rule 122..."
-      
+
       const content2 = '''
 Glossary
 
@@ -131,7 +131,7 @@ See rule 122.
 
       final terms = RulesParser.parseGlossary(content);
       expect(terms[0].type, GlossaryTermType.counter);
-      
+
       final terms2 = RulesParser.parseGlossary(content2);
       expect(terms2[0].type, GlossaryTermType.counter);
     });
@@ -147,8 +147,16 @@ Wither
 deals damage to creatures in the form of -1/-1 counters.
 ''';
       final terms = RulesParser.parseGlossary(content);
-      expect(terms[0].type, GlossaryTermType.counter, reason: 'Adapt should be counter type');
-      expect(terms[1].type, GlossaryTermType.counter, reason: 'Wither should be counter type');
+      expect(
+        terms[0].type,
+        GlossaryTermType.counter,
+        reason: 'Adapt should be counter type',
+      );
+      expect(
+        terms[1].type,
+        GlossaryTermType.counter,
+        reason: 'Wither should be counter type',
+      );
     });
 
     test('Classifies multiplayer terms correctly', () {
@@ -165,7 +173,7 @@ See rule 903.
       expect(terms[0].type, GlossaryTermType.multiplayer);
       expect(terms[1].type, GlossaryTermType.multiplayer);
     });
-    
+
     test('Priority: Obsolete takes precedence', () {
       const content = '''
 Glossary
