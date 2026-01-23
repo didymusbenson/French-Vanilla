@@ -412,14 +412,38 @@ class _GlossaryScreenState extends State<GlossaryScreen>
                   child: Row(
                     children: [
                       Expanded(
-                        child: Text(
-                          term.term,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: isHighlighted
-                                ? Theme.of(context).colorScheme.onPrimaryContainer
-                                : Theme.of(context).colorScheme.primary,
-                          ),
+                        child: Builder(
+                          builder: (context) {
+                            // Try to find the first rule reference to link to
+                            final match = RuleLinkMixin.rulePattern.firstMatch(term.definition);
+                            final hasLink = match != null;
+
+                            Widget textWidget = Text(
+                              term.term,
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: isHighlighted
+                                    ? Theme.of(context).colorScheme.onPrimaryContainer
+                                    : Theme.of(context).colorScheme.primary,
+                              ),
+                            );
+
+                            if (hasLink) {
+                              final baseRule = match.group(1)!;
+                              final minorPart = match.group(2);
+                              final letterPart = match.group(3);
+                              final ruleNumber = minorPart != null
+                                  ? '$baseRule.$minorPart${letterPart ?? ''}'
+                                  : baseRule;
+
+                              return GestureDetector(
+                                onTap: () => navigateToRule(ruleNumber),
+                                child: textWidget,
+                              );
+                            }
+                            
+                            return textWidget;
+                          },
                         ),
                       ),
                       IconButton(
