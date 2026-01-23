@@ -181,13 +181,16 @@ class RulesParser {
       return GlossaryTermType.multiplayer;
     }
 
-    // Keyword abilities reference rule 702.X
-    if (RegExp(r'rule 702\.\d').hasMatch(definition)) {
+    // Keyword abilities reference rule 702.X or explicitly mention "keyword ability"
+    // Also matches implicit "See 702.X"
+    if (RegExp(r'(?:rule|see|refer to)?\s*702\.\d').hasMatch(definition) ||
+        definition.contains('keyword ability')) {
       return GlossaryTermType.keyword;
     }
 
-    // Keyword actions reference rule 701.X
-    if (RegExp(r'rule 701\.\d').hasMatch(definition)) {
+    // Keyword actions reference rule 701.X or explicitly mention "keyword action"
+    if (RegExp(r'(?:rule|see|refer to)?\s*701\.\d').hasMatch(definition) ||
+        definition.contains('keyword action')) {
       return GlossaryTermType.keywordAction;
     }
 

@@ -22,10 +22,11 @@ class RuleLinkMatch {
 mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
   final _ruleLinkDataService = RulesDataService();
 
-  // Pattern matches: "rule 704", "rule 702.9", "rule 702.9a", "rules 702.9", etc.
-  // Also matches variations like "see rule 704" or "Rule 702.9a"
+  // Pattern matches:
+  // 1. Explicit: "rule 704", "rules 702.9a"
+  // 2. Implicit contexts: "see 702.153", "refer to 100.1"
   static final rulePattern = RegExp(
-    r'\brule(?:s)?\s+(\d{3})(?:\.(\d+)([a-z])?)?\b',
+    r'\b(?:rule(?:s)?|see|refer to)\s+(\d{3})(?:\.(\d+)([a-z])?)?\b',
     caseSensitive: false,
   );
 

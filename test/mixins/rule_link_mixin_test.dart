@@ -35,6 +35,16 @@ void main() {
 
       expect(matches[1].ruleNumber, '500');
       expect(matches[1].text, 'rule 500');
+
+      // Test implicit "See XXX.XXX" pattern
+      const text2 = "Casualty 2. (See 702.153)";
+      final matches2 = state.findRuleLinks(text2);
+      expect(matches2.length, 1);
+      expect(matches2[0].ruleNumber, '702.153');
+      expect(
+        matches2[0].text,
+        'See 702.153',
+      ); // 'See' is part of the match group 0
     });
 
     testWidgets('parseTextWithLinks uses pre-calculated links', (tester) async {
