@@ -7,6 +7,7 @@ import '../services/favorites_service.dart';
 import '../models/glossary_term.dart';
 import '../mixins/rule_link_mixin.dart';
 import '../mixins/aggregating_snackbar_mixin.dart';
+import '../widgets/glossary_filter_sheet.dart';
 
 class GlossaryScreen extends StatefulWidget {
   final String? highlightTerm;
@@ -29,6 +30,8 @@ class _GlossaryScreenState extends State<GlossaryScreen>
   bool _isLoading = true;
   String? _error;
   final Map<String, bool> _bookmarkStatus = {};
+  Set<GlossaryTermType> _selectedFilters = {};
+  late Map<GlossaryTermType, int> _termCounts;
 
   @override
   void initState() {
@@ -71,9 +74,17 @@ class _GlossaryScreenState extends State<GlossaryScreen>
   Future<void> _loadGlossary() async {
     try {
       final terms = await _dataService.getGlossaryTerms();
+      
+      // Calculate term counts by type
+      final counts = <GlossaryTermType, int>{};
+      for (final type in GlossaryTermType.values) {
+        counts[type] = terms.where((t) => t.type == type).length;
+      }
+      
       setState(() {
         _allTerms = terms;
         _filteredTerms = terms;
+        _termCounts = counts;
         _isLoading = false;
       });
       await _loadBookmarkStatuses();
@@ -94,16 +105,35 @@ class _GlossaryScreenState extends State<GlossaryScreen>
 
   void _filterTerms(String query) {
     setState(() {
-      if (query.isEmpty) {
-        _filteredTerms = _allTerms;
-      } else {
-        final lowerQuery = query.toLowerCase();
-        _filteredTerms = _allTerms.where((term) {
-          return term.term.toLowerCase().contains(lowerQuery) ||
-                 term.definition.toLowerCase().contains(lowerQuery);
-        }).toList();
-      }
+      final lowerQuery = query.toLowerCase();
+      
+      _filteredTerms = _allTerms.where((term) {
+        // Apply text search filter
+        final matchesSearch = query.isEmpty ||
+            term.term.toLowerCase().contains(lowerQuery) ||
+            term.definition.toLowerCase().contains(lowerQuery);
+        
+        // Apply category filter
+        final matchesCategory = _selectedFilters.isEmpty ||
+            _selectedFilters.contains(term.type);
+        
+        return matchesSearch && matchesCategory;
+      }).toList();
     });
+  }
+  
+  Future<void> _showFilterSheet() async {
+    await showGlossaryFilterSheet(
+      context: context,
+      currentFilters: _selectedFilters,
+      termCounts: _termCounts,
+      onFiltersChanged: (newFilters) {
+        setState(() {
+          _selectedFilters = newFilters;
+        });
+        _filterTerms(_searchController.text);
+      },
+    );
   }
 
   Future<void> _toggleBookmark(String termName, String definition) async {
@@ -206,17 +236,62 @@ class _GlossaryScreenState extends State<GlossaryScreen>
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Filter glossary terms...',
-              prefixIcon: const Icon(Icons.filter_list),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
+              hintText: 'Search glossary terms...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Filter button with badge
+                  Stack(
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          _selectedFilters.isEmpty
+                              ? Icons.filter_alt_outlined
+                              : Icons.filter_alt,
+                        ),
+                        onPressed: _showFilterSheet,
+                        tooltip: 'Filter by category',
+                      ),
+                      if (_selectedFilters.isNotEmpty)
+                        Positioned(
+                          right: 4,
+                          top: 4,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Text(
+                              '${_selectedFilters.length}',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onPrimary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  // Clear button
+                  if (_searchController.text.isNotEmpty)
+                    IconButton(
                       icon: const Icon(Icons.clear),
                       onPressed: () {
                         _searchController.clear();
                         _filterTerms('');
                       },
-                    )
-                  : null,
+                      tooltip: 'Clear search',
+                    ),
+                ],
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),

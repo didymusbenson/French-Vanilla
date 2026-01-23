@@ -101,6 +101,7 @@ class RulesParser {
           terms.add(GlossaryTerm(
             term: term,
             definition: def,
+            type: _classifyGlossaryTerm(term, def),
           ));
         }
         currentTerm = null;
@@ -142,5 +143,48 @@ class RulesParser {
     saveCurrentTerm();
 
     return terms;
+  }
+
+  /// Classifies a glossary term based on its name and definition content.
+  /// Priority order matters: more specific matches take precedence.
+  static GlossaryTermType _classifyGlossaryTerm(String term, String definition) {
+    // Obsolete terms are explicitly marked
+    if (definition.contains('(Obsolete)')) {
+      return GlossaryTermType.obsolete;
+    }
+
+    // Tokens have a consistent naming pattern
+    if (term.endsWith(' Token')) {
+      return GlossaryTermType.token;
+    }
+
+    // Keyword abilities reference rule 702.X
+    if (RegExp(r'rule 702\.\d').hasMatch(definition)) {
+      return GlossaryTermType.keyword;
+    }
+
+    // Keyword actions reference rule 701.X
+    if (RegExp(r'rule 701\.\d').hasMatch(definition)) {
+      return GlossaryTermType.keywordAction;
+    }
+
+    // Phases and steps - check term name first for accuracy
+    if (term.contains('Step') || term.contains('Phase')) {
+      return GlossaryTermType.phaseStep;
+    }
+
+    // Zones reference rule 4XX (400-499)
+    if (RegExp(r'rule 4\d{2}').hasMatch(definition)) {
+      return GlossaryTermType.zone;
+    }
+
+    // Card types reference rule 3XX (300-399) or explicitly say "card type"
+    if (RegExp(r'rule 3\d{2}').hasMatch(definition) ||
+        definition.contains('card type') ||
+        definition.contains('A card type')) {
+      return GlossaryTermType.cardType;
+    }
+
+    return GlossaryTermType.other;
   }
 }
