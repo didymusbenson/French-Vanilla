@@ -3,17 +3,43 @@ import 'package:flutter/material.dart';
 import '../screens/rule_detail_screen.dart';
 import '../services/rules_data_service.dart';
 
-/// Data class to hold rule link match information
-class RuleLinkMatch {
+/// Data class to hold link match information
+abstract class LinkMatch {
+  int get start;
+  int get end;
+  String get text;
+}
+
+class RuleLinkMatch implements LinkMatch {
+  @override
   final int start;
+  @override
   final int end;
   final String ruleNumber;
+  @override
   final String text;
 
   const RuleLinkMatch({
     required this.start,
     required this.end,
     required this.ruleNumber,
+    required this.text,
+  });
+}
+
+class GlossaryLinkMatch implements LinkMatch {
+  @override
+  final int start;
+  @override
+  final int end;
+  final String term;
+  @override
+  final String text;
+
+  const GlossaryLinkMatch({
+    required this.start,
+    required this.end,
+    required this.term,
     required this.text,
   });
 }
@@ -28,6 +54,14 @@ mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
   static final rulePattern = RegExp(
     r'\b(?:rule(?:s)?|see|refer to)\s+(\d{3})(?:\.(\d+)([a-z])?)?\b',
     caseSensitive: false,
+  );
+
+  // Pattern matches "See [Capitalized Term]"
+  // - Matches "See "
+  // - Matches one or more capitalized words, possibly separated by space or comma
+  // - Stops before a period, parenthesis, or end of line
+  static final glossaryPattern = RegExp(
+    r'See (([A-Z][a-zA-Z]+(?:,?\s[A-Z][a-zA-Z]+)*))',
   );
 
   /// Finds all rule references in the given text
@@ -54,6 +88,28 @@ mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
     return matches;
   }
 
+  /// Finds all glossary term references in the given text based on provided valid terms
+  List<GlossaryLinkMatch> findGlossaryLinks(
+    String text,
+    Set<String> validTerms,
+  ) {
+    final matches = <GlossaryLinkMatch>[];
+    for (final match in glossaryPattern.allMatches(text)) {
+      final termCandidate = match.group(1);
+      if (termCandidate != null && validTerms.contains(termCandidate)) {
+        matches.add(
+          GlossaryLinkMatch(
+            start: match.start,
+            end: match.end,
+            term: termCandidate,
+            text: match.group(0)!,
+          ),
+        );
+      }
+    }
+    return matches;
+  }
+
   /// Parses text and creates TextSpan with tappable rule references
   /// If [searchQuery] is provided, matching text will be highlighted
   /// If [preCalculatedLinks] is provided, it uses those instead of running regex
@@ -61,14 +117,41 @@ mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
     String text,
     TextStyle? baseStyle, {
     String? searchQuery,
-    List<RuleLinkMatch>? preCalculatedLinks,
+    List<LinkMatch>? preCalculatedLinks,
+    Set<String>? validGlossaryTerms,
+    Function(String)? onGlossaryTermTap,
   }) {
     final spans = <TextSpan>[];
     final normalizedQuery = searchQuery?.trim().toLowerCase();
     final shouldHighlight =
         normalizedQuery != null && normalizedQuery.isNotEmpty;
 
-    final links = preCalculatedLinks ?? findRuleLinks(text);
+    // Use pre-calculated or find new links
+    List<LinkMatch> links;
+    if (preCalculatedLinks != null) {
+      links = preCalculatedLinks;
+    } else {
+      final ruleLinks = findRuleLinks(text);
+      final glossaryLinks = validGlossaryTerms != null
+          ? findGlossaryLinks(text, validGlossaryTerms)
+          : <GlossaryLinkMatch>[];
+
+      // Merge and sort
+      links = [...ruleLinks, ...glossaryLinks]
+        ..sort((a, b) => a.start.compareTo(b.start));
+
+      // Filter overlaps (prioritize rule links or first matches)
+      final nonOverlappingLinks = <LinkMatch>[];
+      int lastEnd = 0;
+      for (final link in links) {
+        if (link.start >= lastEnd) {
+          nonOverlappingLinks.add(link);
+          lastEnd = link.end;
+        }
+      }
+      links = nonOverlappingLinks;
+    }
+
     int lastMatchEnd = 0;
 
     for (final link in links) {
@@ -85,18 +168,38 @@ mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
       }
 
       // Add the link
-      spans.add(
-        TextSpan(
-          text: link.text,
-          style: baseStyle?.copyWith(
-            color: Theme.of(context).colorScheme.primary,
-            decoration: TextDecoration.underline,
-            fontWeight: FontWeight.w500,
+      if (link is RuleLinkMatch) {
+        spans.add(
+          TextSpan(
+            text: link.text,
+            style: baseStyle?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+              decoration: TextDecoration.underline,
+              fontWeight: FontWeight.w500,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () => navigateToRule(link.ruleNumber),
           ),
-          recognizer: TapGestureRecognizer()
-            ..onTap = () => navigateToRule(link.ruleNumber),
-        ),
-      );
+        );
+      } else if (link is GlossaryLinkMatch) {
+        spans.add(
+          TextSpan(
+            text: link.text,
+            style: baseStyle?.copyWith(
+              // Using primary color for consistency with rule links
+              color: Theme.of(context).colorScheme.primary,
+              decoration: TextDecoration.underline,
+              fontWeight: FontWeight.w500,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                if (onGlossaryTermTap != null) {
+                  onGlossaryTermTap(link.term);
+                }
+              },
+          ),
+        );
+      }
 
       lastMatchEnd = link.end;
     }

@@ -21,7 +21,7 @@ class GlossaryScreen extends StatefulWidget {
 
 class _GlossaryItemViewModel {
   final GlossaryTerm term;
-  final List<RuleLinkMatch> links;
+  final List<LinkMatch> links;
 
   const _GlossaryItemViewModel({required this.term, required this.links});
 }
@@ -55,19 +55,57 @@ class _GlossaryScreenState extends State<GlossaryScreen>
   }
 
   void _scrollToTerm(String termName) {
-    if (_highlightTermLowerCase == null) return;
+    if (termName.isEmpty) return;
+    final targetLower = termName.toLowerCase();
 
-    final targetIndex = _filteredTerms.indexWhere(
-      (vm) => vm.term.term.toLowerCase() == _highlightTermLowerCase,
+    // Exact match search in currently filtered list
+    int targetIndex = _filteredTerms.indexWhere(
+      (vm) => vm.term.term.toLowerCase() == targetLower,
     );
 
-    if (targetIndex != -1) {
-      _itemScrollController.scrollTo(
-        index: targetIndex,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-        alignment: 0.01,
+    // If not found, check if it exists globally and we need to clear filters
+    if (targetIndex == -1) {
+      final existsGloballyIndex = _allTerms.indexWhere(
+        (vm) => vm.term.term.toLowerCase() == targetLower,
       );
+
+      if (existsGloballyIndex != -1) {
+        // Clear filters and search to reveal the item
+        setState(() {
+          _searchController.clear();
+          _searchQuery = '';
+          _selectedFilters.clear();
+        });
+
+        // Re-run filter logic to populate _filteredTerms with everything
+        _filterTerms('');
+
+        targetIndex = _filteredTerms.indexWhere(
+          (vm) => vm.term.term.toLowerCase() == targetLower,
+        );
+
+        if (mounted) {
+          showAggregatingSnackBar('Jumped to "$termName" (filters cleared)');
+        }
+      }
+    }
+
+    if (targetIndex != -1) {
+      // Schedule scroll after frame to ensure list is rebuilt if filters were cleared
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _itemScrollController.scrollTo(
+            index: targetIndex,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOutCubic,
+            alignment: 0.0, // Snap to very top
+          );
+        }
+      });
+    } else {
+      if (mounted) {
+        showAggregatingSnackBar('Term "$termName" not found');
+      }
     }
   }
 
@@ -102,15 +140,30 @@ class _GlossaryScreenState extends State<GlossaryScreen>
         counts[type] = terms.where((t) => t.type == type).length;
       }
 
+      // Create a set of valid terms for linking
+      final validTerms = terms.map((t) => t.term).toSet();
+
       // Convert to view models with pre-calculated links
-      final viewModels = terms
-          .map(
-            (term) => _GlossaryItemViewModel(
-              term: term,
-              links: findRuleLinks(term.definition),
-            ),
-          )
-          .toList();
+      final viewModels = terms.map((term) {
+        final ruleLinks = findRuleLinks(term.definition);
+        final glossaryLinks = findGlossaryLinks(term.definition, validTerms);
+
+        // Merge and sort
+        final allLinks = <LinkMatch>[...ruleLinks, ...glossaryLinks]
+          ..sort((a, b) => a.start.compareTo(b.start));
+
+        // Filter overlaps (simple greedy strategy: if start < lastEnd, skip)
+        final nonOverlappingLinks = <LinkMatch>[];
+        int lastEnd = 0;
+        for (final link in allLinks) {
+          if (link.start >= lastEnd) {
+            nonOverlappingLinks.add(link);
+            lastEnd = link.end;
+          }
+        }
+
+        return _GlossaryItemViewModel(term: term, links: nonOverlappingLinks);
+      }).toList();
 
       setState(() {
         _allTerms = viewModels;
@@ -568,15 +621,31 @@ class _GlossaryScreenState extends State<GlossaryScreen>
                             if (hasLink) {
                               // Use the first link found in the definition as the title link target
                               // (Heuristic: usually the first link is the "main" rule)
-                              final ruleNumber = vm.links.first.ruleNumber;
-
-                              return MouseRegion(
-                                cursor: SystemMouseCursors.click,
-                                child: GestureDetector(
-                                  onTap: () => navigateToRule(ruleNumber),
-                                  child: textWidget,
-                                ),
-                              );
+                              // Only if it's a rule link
+                              final firstLink = vm.links.first;
+                              if (firstLink is RuleLinkMatch) {
+                                final ruleNumber = firstLink.ruleNumber;
+                                return MouseRegion(
+                                  cursor: SystemMouseCursors.click,
+                                  child: GestureDetector(
+                                    onTap: () => navigateToRule(ruleNumber),
+                                    child: textWidget,
+                                  ),
+                                );
+                              } else if (firstLink is GlossaryLinkMatch) {
+                                // Link to glossary term?
+                                // The user didn't explicitly ask for title links to other glossary terms,
+                                // but if the definition starts with "See [Term]", maybe we should?
+                                // For now let's just keep the existing behavior of linking to rules in title if possible.
+                                // If the first link is a Glossary Term, we CAN link to it.
+                                return MouseRegion(
+                                  cursor: SystemMouseCursors.click,
+                                  child: GestureDetector(
+                                    onTap: () => _scrollToTerm(firstLink.term),
+                                    child: textWidget,
+                                  ),
+                                );
+                              }
                             }
 
                             return textWidget;
@@ -618,6 +687,7 @@ class _GlossaryScreenState extends State<GlossaryScreen>
                         ),
                         searchQuery: _searchQuery,
                         preCalculatedLinks: vm.links,
+                        onGlossaryTermTap: _scrollToTerm,
                       ),
                     ),
                   ),
