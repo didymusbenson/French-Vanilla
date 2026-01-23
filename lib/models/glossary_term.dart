@@ -6,6 +6,8 @@ enum GlossaryTermType {
   zone,           // Zones (rule 4XX)
   phaseStep,      // Phases and steps
   token,          // Token types (*Token)
+  counter,        // Counters (rule 122)
+  multiplayer,    // Multiplayer variants (rule 8XX, 9XX)
   obsolete,       // Obsolete terms
   other,          // Default/uncategorized
 }
@@ -26,6 +28,10 @@ extension GlossaryTermTypeExtension on GlossaryTermType {
         return 'Phases & Steps';
       case GlossaryTermType.token:
         return 'Tokens';
+      case GlossaryTermType.counter:
+        return 'Counters';
+      case GlossaryTermType.multiplayer:
+        return 'Multiplayer';
       case GlossaryTermType.obsolete:
         return 'Obsolete';
       case GlossaryTermType.other:
@@ -47,6 +53,10 @@ extension GlossaryTermTypeExtension on GlossaryTermType {
         return 'Turn phases and steps';
       case GlossaryTermType.token:
         return 'Predefined token types';
+      case GlossaryTermType.counter:
+        return 'Game counters like Poison, Charge';
+      case GlossaryTermType.multiplayer:
+        return 'Multiplayer variants and rules';
       case GlossaryTermType.obsolete:
         return 'Outdated terms no longer used';
       case GlossaryTermType.other:

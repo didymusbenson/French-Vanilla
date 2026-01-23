@@ -158,6 +158,19 @@ class RulesParser {
       return GlossaryTermType.token;
     }
 
+    // Counters: End in "Counter", reference rule 122, or involve +1/+1 / -1/-1
+    if (term.endsWith(' Counter') || 
+        definition.contains('rule 122') ||
+        definition.contains('+1/+1') ||
+        definition.contains('-1/-1')) {
+      return GlossaryTermType.counter;
+    }
+
+    // Multiplayer: Reference rule 8XX or 9XX
+    if (RegExp(r'rule [89]\d{2}').hasMatch(definition)) {
+      return GlossaryTermType.multiplayer;
+    }
+
     // Keyword abilities reference rule 702.X
     if (RegExp(r'rule 702\.\d').hasMatch(definition)) {
       return GlossaryTermType.keyword;

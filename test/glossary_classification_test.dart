@@ -107,6 +107,64 @@ Some general definition.
       final terms = RulesParser.parseGlossary(content);
       expect(terms.first.type, GlossaryTermType.other);
     });
+
+    test('Classifies counters correctly', () {
+      const content = '''
+Glossary
+
+Poison Counter
+A counter that kills you. See rule 122.
+
+Energy Symbol
+See rule 107.
+''';
+      // Note: Energy Symbol currently falls to Other unless definition matches rule 122?
+      // Wait, "Rule 122" is the key. Energy Symbol def in real glossary is:
+      // "The energy symbol {E} represents one energy counter... See rule 122..."
+      
+      const content2 = '''
+Glossary
+
+Energy Symbol
+See rule 122.
+''';
+
+      final terms = RulesParser.parseGlossary(content);
+      expect(terms[0].type, GlossaryTermType.counter);
+      
+      final terms2 = RulesParser.parseGlossary(content2);
+      expect(terms2[0].type, GlossaryTermType.counter);
+    });
+
+    test('Classifies counter mechanics correctly', () {
+      const content = '''
+Glossary
+
+Adapt
+keyword action that puts +1/+1 counters on a creature.
+
+Wither
+deals damage to creatures in the form of -1/-1 counters.
+''';
+      final terms = RulesParser.parseGlossary(content);
+      expect(terms[0].type, GlossaryTermType.counter, reason: 'Adapt should be counter type');
+      expect(terms[1].type, GlossaryTermType.counter, reason: 'Wither should be counter type');
+    });
+
+    test('Classifies multiplayer terms correctly', () {
+      const content = '''
+Glossary
+
+Two-Headed Giant Variant
+See rule 810.
+
+Commander
+See rule 903.
+''';
+      final terms = RulesParser.parseGlossary(content);
+      expect(terms[0].type, GlossaryTermType.multiplayer);
+      expect(terms[1].type, GlossaryTermType.multiplayer);
+    });
     
     test('Priority: Obsolete takes precedence', () {
       const content = '''
