@@ -23,10 +23,12 @@ class RulesParser {
     void saveCurrentSubrule() {
       final subruleNum = currentSubruleNumber;
       if (subruleNum != null && currentSubruleContent.isNotEmpty) {
-        currentSubruleGroups.add(SubruleGroup(
-          number: subruleNum,
-          content: currentSubruleContent.toString().trim(),
-        ));
+        currentSubruleGroups.add(
+          SubruleGroup(
+            number: subruleNum,
+            content: currentSubruleContent.toString().trim(),
+          ),
+        );
         currentSubruleNumber = null;
         currentSubruleContent = StringBuffer();
       }
@@ -37,11 +39,13 @@ class RulesParser {
       final ruleNum = currentRuleNumber;
       final ruleTitle = currentRuleTitle;
       if (ruleNum != null && ruleTitle != null) {
-        rules.add(Rule(
-          number: ruleNum,
-          title: ruleTitle,
-          subruleGroups: List.from(currentSubruleGroups),
-        ));
+        rules.add(
+          Rule(
+            number: ruleNum,
+            title: ruleTitle,
+            subruleGroups: List.from(currentSubruleGroups),
+          ),
+        );
         currentSubruleGroups = [];
       }
     }
@@ -65,7 +69,8 @@ class RulesParser {
       final subruleMatch = firstLevelSubrulePattern.firstMatch(trimmedLine);
       if (subruleMatch != null) {
         saveCurrentSubrule();
-        currentSubruleNumber = '${subruleMatch.group(1)}.${subruleMatch.group(2)}';
+        currentSubruleNumber =
+            '${subruleMatch.group(1)}.${subruleMatch.group(2)}';
         currentSubruleContent.writeln(trimmedLine);
         continue;
       }
@@ -98,10 +103,13 @@ class RulesParser {
       if (term != null) {
         final def = currentDefinition.toString().trim();
         if (def.isNotEmpty) {
-          terms.add(GlossaryTerm(
-            term: term,
-            definition: def,
-          ));
+          terms.add(
+            GlossaryTerm(
+              term: term,
+              definition: def,
+              type: _classifyGlossaryTerm(term, def),
+            ),
+          );
         }
         currentTerm = null;
         currentDefinition.clear();
@@ -142,5 +150,67 @@ class RulesParser {
     saveCurrentTerm();
 
     return terms;
+  }
+
+  /// Classifies a glossary term based on its name and definition content.
+  /// Priority order matters: more specific matches take precedence.
+  static GlossaryTermType _classifyGlossaryTerm(
+    String term,
+    String definition,
+  ) {
+    // Obsolete terms are explicitly marked
+    if (definition.contains('(Obsolete)')) {
+      return GlossaryTermType.obsolete;
+    }
+
+    // Tokens have a consistent naming pattern
+    if (term.endsWith(' Token')) {
+      return GlossaryTermType.token;
+    }
+
+    // Counters: End in "Counter", reference rule 122, or involve +1/+1 / -1/-1
+    if (term.endsWith(' Counter') ||
+        definition.contains('rule 122') ||
+        definition.contains('+1/+1') ||
+        definition.contains('-1/-1')) {
+      return GlossaryTermType.counter;
+    }
+
+    // Multiplayer: Reference rule 8XX or 9XX
+    if (RegExp(r'rule [89]\d{2}').hasMatch(definition)) {
+      return GlossaryTermType.multiplayer;
+    }
+
+    // Keyword abilities reference rule 702.X or explicitly mention "keyword ability"
+    // Also matches implicit "See 702.X"
+    if (RegExp(r'(?:rule|see|refer to)?\s*702\.\d').hasMatch(definition) ||
+        definition.contains('keyword ability')) {
+      return GlossaryTermType.keyword;
+    }
+
+    // Keyword actions reference rule 701.X or explicitly mention "keyword action"
+    if (RegExp(r'(?:rule|see|refer to)?\s*701\.\d').hasMatch(definition) ||
+        definition.contains('keyword action')) {
+      return GlossaryTermType.keywordAction;
+    }
+
+    // Phases and steps - check term name first for accuracy
+    if (term.contains('Step') || term.contains('Phase')) {
+      return GlossaryTermType.phaseStep;
+    }
+
+    // Zones reference rule 4XX (400-499)
+    if (RegExp(r'rule 4\d{2}').hasMatch(definition)) {
+      return GlossaryTermType.zone;
+    }
+
+    // Card types reference rule 3XX (300-399) or explicitly say "card type"
+    if (RegExp(r'rule 3\d{2}').hasMatch(definition) ||
+        definition.contains('card type') ||
+        definition.contains('A card type')) {
+      return GlossaryTermType.cardType;
+    }
+
+    return GlossaryTermType.other;
   }
 }

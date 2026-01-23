@@ -3,62 +3,277 @@ import 'package:flutter/material.dart';
 import '../screens/rule_detail_screen.dart';
 import '../services/rules_data_service.dart';
 
+/// Data class to hold link match information
+abstract class LinkMatch {
+  int get start;
+  int get end;
+  String get text;
+}
+
+class RuleLinkMatch implements LinkMatch {
+  @override
+  final int start;
+  @override
+  final int end;
+  final String ruleNumber;
+  @override
+  final String text;
+
+  const RuleLinkMatch({
+    required this.start,
+    required this.end,
+    required this.ruleNumber,
+    required this.text,
+  });
+}
+
+class GlossaryLinkMatch implements LinkMatch {
+  @override
+  final int start;
+  @override
+  final int end;
+  final String term;
+  @override
+  final String text;
+
+  const GlossaryLinkMatch({
+    required this.start,
+    required this.end,
+    required this.term,
+    required this.text,
+  });
+}
+
 /// Mixin that provides rule linking functionality to parse and navigate to rule references
 mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
   final _ruleLinkDataService = RulesDataService();
 
-  /// Parses text and creates TextSpan with tappable rule references
-  List<TextSpan> parseTextWithLinks(String text, TextStyle? baseStyle) {
-    final spans = <TextSpan>[];
-    // Pattern matches: "rule 704", "rule 702.9", "rule 702.9a", "rules 702.9", etc.
-    // Also matches variations like "see rule 704" or "Rule 702.9a"
-    final rulePattern = RegExp(r'\brule(?:s)?\s+(\d{3})(?:\.(\d+)([a-z])?)?\b', caseSensitive: false);
+  // Pattern matches:
+  // 1. Explicit: "rule 704", "rules 702.9a"
+  // 2. Implicit contexts: "see 702.153", "refer to 100.1"
+  static final rulePattern = RegExp(
+    r'\b(?:rule(?:s)?|see|refer to)\s+(\d{3})(?:\.(\d+)([a-z])?)?\b',
+    caseSensitive: false,
+  );
 
-    int lastMatchEnd = 0;
+  // Pattern matches "See [Capitalized Term]"
+  // - Matches "See "
+  // - Matches one or more capitalized words, possibly separated by space or comma
+  // - Stops before a period, parenthesis, or end of line
+  static final glossaryPattern = RegExp(
+    r'See (([A-Z][a-zA-Z]+(?:,?\s[A-Z][a-zA-Z]+)*))',
+  );
+
+  /// Finds all rule references in the given text
+  List<RuleLinkMatch> findRuleLinks(String text) {
+    final matches = <RuleLinkMatch>[];
     for (final match in rulePattern.allMatches(text)) {
-      // Add text before the match
-      if (match.start > lastMatchEnd) {
-        spans.add(TextSpan(
-          text: text.substring(lastMatchEnd, match.start),
-          style: baseStyle,
-        ));
-      }
-
-      // Extract rule number (e.g., "702.9a" or just "704")
-      final baseRule = match.group(1)!; // Always captured (e.g., "704" or "702")
-      final minorPart = match.group(2); // Optional decimal part (e.g., "9")
-      final letterPart = match.group(3); // Optional letter (e.g., "a")
+      final baseRule = match.group(1)!;
+      final minorPart = match.group(2);
+      final letterPart = match.group(3);
 
       final ruleNumber = minorPart != null
           ? '$baseRule.$minorPart${letterPart ?? ''}'
           : baseRule;
 
-      final fullMatch = match.group(0)!; // Full matched text like "rule 704" or "rule 702.9a"
-
-      // Add the tappable link
-      spans.add(TextSpan(
-        text: fullMatch,
-        style: baseStyle?.copyWith(
-          color: Theme.of(context).colorScheme.primary,
-          decoration: TextDecoration.underline,
-          fontWeight: FontWeight.w500,
+      matches.add(
+        RuleLinkMatch(
+          start: match.start,
+          end: match.end,
+          ruleNumber: ruleNumber,
+          text: match.group(0)!,
         ),
-        recognizer: TapGestureRecognizer()
-          ..onTap = () => navigateToRule(ruleNumber),
-      ));
+      );
+    }
+    return matches;
+  }
 
-      lastMatchEnd = match.end;
+  /// Finds all glossary term references in the given text based on provided valid terms
+  List<GlossaryLinkMatch> findGlossaryLinks(
+    String text,
+    Set<String> validTerms,
+  ) {
+    final matches = <GlossaryLinkMatch>[];
+    for (final match in glossaryPattern.allMatches(text)) {
+      final termCandidate = match.group(1);
+      if (termCandidate != null && validTerms.contains(termCandidate)) {
+        matches.add(
+          GlossaryLinkMatch(
+            start: match.start,
+            end: match.end,
+            term: termCandidate,
+            text: match.group(0)!,
+          ),
+        );
+      }
+    }
+    return matches;
+  }
+
+  /// Normalizes text for search comparison (lowercase, smart quotes to normal quotes)
+  String normalizeText(String text) {
+    return text
+        .toLowerCase()
+        .replaceAll('’', "'")
+        .replaceAll('‘', "'")
+        .replaceAll('“', '"')
+        .replaceAll('”', '"');
+  }
+
+  /// Parses text and creates TextSpan with tappable rule references
+  /// If [searchQuery] is provided, matching text will be highlighted
+  /// If [preCalculatedLinks] is provided, it uses those instead of running regex
+  List<TextSpan> parseTextWithLinks(
+    String text,
+    TextStyle? baseStyle, {
+    String? searchQuery,
+    List<LinkMatch>? preCalculatedLinks,
+    Set<String>? validGlossaryTerms,
+    Function(String)? onGlossaryTermTap,
+  }) {
+    final spans = <TextSpan>[];
+    // Use normalizeText for consistent search matching
+    final normalizedQuery = searchQuery != null
+        ? normalizeText(searchQuery.trim())
+        : null;
+    final shouldHighlight =
+        normalizedQuery != null && normalizedQuery.isNotEmpty;
+
+    // Use pre-calculated or find new links
+    List<LinkMatch> links;
+    if (preCalculatedLinks != null) {
+      links = preCalculatedLinks;
+    } else {
+      final ruleLinks = findRuleLinks(text);
+      final glossaryLinks = validGlossaryTerms != null
+          ? findGlossaryLinks(text, validGlossaryTerms)
+          : <GlossaryLinkMatch>[];
+
+      // Merge and sort
+      links = [...ruleLinks, ...glossaryLinks]
+        ..sort((a, b) => a.start.compareTo(b.start));
+
+      // Filter overlaps (prioritize rule links or first matches)
+      final nonOverlappingLinks = <LinkMatch>[];
+      int lastEnd = 0;
+      for (final link in links) {
+        if (link.start >= lastEnd) {
+          nonOverlappingLinks.add(link);
+          lastEnd = link.end;
+        }
+      }
+      links = nonOverlappingLinks;
     }
 
-    // Add remaining text after the last match
+    int lastMatchEnd = 0;
+
+    for (final link in links) {
+      // Process text before the match
+      if (link.start > lastMatchEnd) {
+        final preMatchText = text.substring(lastMatchEnd, link.start);
+        if (shouldHighlight) {
+          spans.addAll(
+            _highlightSearchMatches(preMatchText, normalizedQuery, baseStyle),
+          );
+        } else {
+          spans.add(TextSpan(text: preMatchText, style: baseStyle));
+        }
+      }
+
+      // Add the link
+      if (link is RuleLinkMatch) {
+        spans.add(
+          TextSpan(
+            text: link.text,
+            style: baseStyle?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+              decoration: TextDecoration.underline,
+              fontWeight: FontWeight.w500,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () => navigateToRule(link.ruleNumber),
+          ),
+        );
+      } else if (link is GlossaryLinkMatch) {
+        spans.add(
+          TextSpan(
+            text: link.text,
+            style: baseStyle?.copyWith(
+              // Using primary color for consistency with rule links
+              color: Theme.of(context).colorScheme.primary,
+              decoration: TextDecoration.underline,
+              fontWeight: FontWeight.w500,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                if (onGlossaryTermTap != null) {
+                  onGlossaryTermTap(link.term);
+                }
+              },
+          ),
+        );
+      }
+
+      lastMatchEnd = link.end;
+    }
+
+    // Process remaining text after the last match
     if (lastMatchEnd < text.length) {
-      spans.add(TextSpan(
-        text: text.substring(lastMatchEnd),
-        style: baseStyle,
-      ));
+      final remainingText = text.substring(lastMatchEnd);
+      if (shouldHighlight) {
+        spans.addAll(
+          _highlightSearchMatches(remainingText, normalizedQuery, baseStyle),
+        );
+      } else {
+        spans.add(TextSpan(text: remainingText, style: baseStyle));
+      }
     }
 
     return spans.isEmpty ? [TextSpan(text: text, style: baseStyle)] : spans;
+  }
+
+  /// Helper to highlight search matches in a plain string
+  List<TextSpan> _highlightSearchMatches(
+    String text,
+    String normalizedQuery,
+    TextStyle? baseStyle,
+  ) {
+    final spans = <TextSpan>[];
+    // Normalize text for finding matches, but keep original for display
+    final textNormalized = normalizeText(text);
+
+    int lastIndex = 0;
+    int index = textNormalized.indexOf(normalizedQuery);
+
+    while (index != -1) {
+      // Add non-matching text before the match
+      if (index > lastIndex) {
+        spans.add(
+          TextSpan(text: text.substring(lastIndex, index), style: baseStyle),
+        );
+      }
+
+      // Add matching text with highlight
+      spans.add(
+        TextSpan(
+          text: text.substring(index, index + normalizedQuery.length),
+          style: baseStyle?.copyWith(
+            color: Theme.of(context).colorScheme.primary,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      );
+
+      lastIndex = index + normalizedQuery.length;
+      index = textNormalized.indexOf(normalizedQuery, lastIndex);
+    }
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      spans.add(TextSpan(text: text.substring(lastIndex), style: baseStyle));
+    }
+
+    return spans;
   }
 
   /// Navigate to a referenced rule
@@ -66,7 +281,9 @@ mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
     // Parse the rule number to extract section and rule info
     // Format: "704" -> section 7, rule "704"
     // Format: "702.9a" -> section 7, rule "702", highlight subrule "702.9a"
-    final ruleMatch = RegExp(r'^(\d)(\d{2})(?:\.(\d+)([a-z])?)?$').firstMatch(ruleNumber);
+    final ruleMatch = RegExp(
+      r'^(\d)(\d{2})(?:\.(\d+)([a-z])?)?$',
+    ).firstMatch(ruleNumber);
 
     if (ruleMatch == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -82,7 +299,8 @@ mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
     // Strip letter suffix (e.g., "702.9a" -> "702.9") since we only index base subrules
     String? highlightSubrule;
     if (ruleMatch.group(3) != null) {
-      highlightSubrule = '${ruleMatch.group(1)}${ruleMatch.group(2)}.${ruleMatch.group(3)}';
+      highlightSubrule =
+          '${ruleMatch.group(1)}${ruleMatch.group(2)}.${ruleMatch.group(3)}';
     }
 
     // Show loading indicator
@@ -93,7 +311,9 @@ mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
     );
 
     try {
-      final rules = await _ruleLinkDataService.getRulesForSection(sectionNumber);
+      final rules = await _ruleLinkDataService.getRulesForSection(
+        sectionNumber,
+      );
       final targetRule = rules.firstWhere(
         (r) => r.number == baseRuleNumber,
         orElse: () => throw Exception('Rule not found'),
@@ -118,9 +338,9 @@ mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // Close loading indicator
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load rule: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load rule: $e')));
       }
     }
   }

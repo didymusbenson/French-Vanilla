@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
@@ -7,6 +8,7 @@ import '../services/favorites_service.dart';
 import '../models/glossary_term.dart';
 import '../mixins/rule_link_mixin.dart';
 import '../mixins/aggregating_snackbar_mixin.dart';
+import '../widgets/glossary_filter_sheet.dart';
 
 class GlossaryScreen extends StatefulWidget {
   final String? highlightTerm;
@@ -17,46 +19,110 @@ class GlossaryScreen extends StatefulWidget {
   State<GlossaryScreen> createState() => _GlossaryScreenState();
 }
 
+class _GlossaryItemViewModel {
+  final GlossaryTerm term;
+  final List<LinkMatch> links;
+  final String termLower;
+
+  const _GlossaryItemViewModel({
+    required this.term,
+    required this.links,
+    required this.termLower,
+  });
+}
+
 class _GlossaryScreenState extends State<GlossaryScreen>
     with RuleLinkMixin, AggregatingSnackBarMixin {
   final _dataService = RulesDataService();
   final _favoritesService = FavoritesService();
   final _searchController = TextEditingController();
   final ItemScrollController _itemScrollController = ItemScrollController();
-  final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
-  List<GlossaryTerm> _allTerms = [];
-  List<GlossaryTerm> _filteredTerms = [];
+  final ItemPositionsListener _itemPositionsListener =
+      ItemPositionsListener.create();
+  List<_GlossaryItemViewModel> _allTerms = [];
+  List<_GlossaryItemViewModel> _filteredTerms = [];
   bool _isLoading = true;
   String? _error;
   final Map<String, bool> _bookmarkStatus = {};
+  Set<GlossaryTermType> _selectedFilters = {};
+  late Map<GlossaryTermType, int> _termCounts;
+  Timer? _debounce;
+  String _searchQuery = '';
+  String? _highlightTermLowerCase;
 
   @override
   void initState() {
     super.initState();
+    if (widget.highlightTerm != null) {
+      _highlightTermLowerCase = widget.highlightTerm!.toLowerCase();
+    }
     _loadGlossary();
   }
 
   void _scrollToTerm(String termName) {
-    final targetIndex = _filteredTerms.indexWhere(
-      (term) => term.term.toLowerCase() == termName.toLowerCase()
+    if (termName.isEmpty) return;
+    final targetLower = termName.toLowerCase();
+
+    // Exact match search in currently filtered list
+    int targetIndex = _filteredTerms.indexWhere(
+      (vm) => vm.term.term.toLowerCase() == targetLower,
     );
 
-    if (targetIndex != -1) {
-      _itemScrollController.scrollTo(
-        index: targetIndex,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-        alignment: 0.01,
+    // If not found, check if it exists globally and we need to clear filters
+    if (targetIndex == -1) {
+      final existsGloballyIndex = _allTerms.indexWhere(
+        (vm) => vm.term.term.toLowerCase() == targetLower,
       );
+
+      if (existsGloballyIndex != -1) {
+        // Clear filters and search to reveal the item
+        setState(() {
+          _searchController.clear();
+          _searchQuery = '';
+          _selectedFilters.clear();
+        });
+
+        // Re-run filter logic to populate _filteredTerms with everything
+        _filterTerms('');
+
+        targetIndex = _filteredTerms.indexWhere(
+          (vm) => vm.term.term.toLowerCase() == targetLower,
+        );
+
+        if (mounted) {
+          showAggregatingSnackBar('Jumped to "$termName" (filters cleared)');
+        }
+      }
+    }
+
+    if (targetIndex != -1) {
+      // Schedule scroll after frame to ensure list is rebuilt if filters were cleared
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _itemScrollController.scrollTo(
+            index: targetIndex,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOutCubic,
+            alignment: 0.0, // Snap to very top
+          );
+        }
+      });
+    } else {
+      if (mounted) {
+        showAggregatingSnackBar('Term "$termName" not found');
+      }
     }
   }
 
   Future<void> _loadBookmarkStatuses() async {
-    for (final term in _allTerms) {
-      final isBookmarked = await _favoritesService.isBookmarked(term.term, BookmarkType.glossary);
+    for (final vm in _allTerms) {
+      final isBookmarked = await _favoritesService.isBookmarked(
+        vm.term.term,
+        BookmarkType.glossary,
+      );
       if (mounted) {
         setState(() {
-          _bookmarkStatus[term.term] = isBookmarked;
+          _bookmarkStatus[vm.term.term] = isBookmarked;
         });
       }
     }
@@ -64,6 +130,7 @@ class _GlossaryScreenState extends State<GlossaryScreen>
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -71,9 +138,46 @@ class _GlossaryScreenState extends State<GlossaryScreen>
   Future<void> _loadGlossary() async {
     try {
       final terms = await _dataService.getGlossaryTerms();
+
+      // Calculate term counts by type
+      final counts = <GlossaryTermType, int>{};
+      for (final type in GlossaryTermType.values) {
+        counts[type] = terms.where((t) => t.type == type).length;
+      }
+
+      // Create a set of valid terms for linking
+      final validTerms = terms.map((t) => t.term).toSet();
+
+      // Convert to view models with pre-calculated links
+      final viewModels = terms.map((term) {
+        final ruleLinks = findRuleLinks(term.definition);
+        final glossaryLinks = findGlossaryLinks(term.definition, validTerms);
+
+        // Merge and sort
+        final allLinks = <LinkMatch>[...ruleLinks, ...glossaryLinks]
+          ..sort((a, b) => a.start.compareTo(b.start));
+
+        // Filter overlaps (simple greedy strategy: if start < lastEnd, skip)
+        final nonOverlappingLinks = <LinkMatch>[];
+        int lastEnd = 0;
+        for (final link in allLinks) {
+          if (link.start >= lastEnd) {
+            nonOverlappingLinks.add(link);
+            lastEnd = link.end;
+          }
+        }
+
+        return _GlossaryItemViewModel(
+          term: term,
+          links: nonOverlappingLinks,
+          termLower: term.term.toLowerCase(),
+        );
+      }).toList();
+
       setState(() {
-        _allTerms = terms;
-        _filteredTerms = terms;
+        _allTerms = viewModels;
+        _filteredTerms = viewModels;
+        _termCounts = counts;
         _isLoading = false;
       });
       await _loadBookmarkStatuses();
@@ -92,23 +196,96 @@ class _GlossaryScreenState extends State<GlossaryScreen>
     }
   }
 
-  void _filterTerms(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        _filteredTerms = _allTerms;
-      } else {
-        final lowerQuery = query.toLowerCase();
-        _filteredTerms = _allTerms.where((term) {
-          return term.term.toLowerCase().contains(lowerQuery) ||
-                 term.definition.toLowerCase().contains(lowerQuery);
-        }).toList();
-      }
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      setState(() {
+        _searchQuery = query;
+      });
+      _filterTerms(query);
     });
   }
 
+  void _filterTerms(String query) {
+    setState(() {
+      final normalizedQuery = normalizeText(query);
+
+      final matches = _allTerms.where((vm) {
+        // Apply text search filter
+        // We normalize both the query and the text to handle smart quotes
+        final termNormalized = normalizeText(vm.term.term);
+        final defNormalized = normalizeText(vm.term.definition);
+
+        final matchesSearch =
+            query.isEmpty ||
+            termNormalized.contains(normalizedQuery) ||
+            defNormalized.contains(normalizedQuery);
+
+        // Apply category filter
+        final matchesCategory =
+            _selectedFilters.isEmpty || _selectedFilters.contains(vm.term.type);
+
+        return matchesSearch && matchesCategory;
+      }).toList();
+
+      // Sort results by relevance if there is a query
+      if (normalizedQuery.isNotEmpty) {
+        matches.sort((a, b) {
+          final aTerm = normalizeText(a.termLower);
+          final bTerm = normalizeText(b.termLower);
+
+          // 1. Exact match
+          if (aTerm == normalizedQuery && bTerm != normalizedQuery) return -1;
+          if (bTerm == normalizedQuery && aTerm != normalizedQuery) return 1;
+
+          // 2. Starts with
+          final aStarts = aTerm.startsWith(normalizedQuery);
+          final bStarts = bTerm.startsWith(normalizedQuery);
+          if (aStarts && !bStarts) return -1;
+          if (bStarts && !aStarts) return 1;
+
+          // 3. Name match vs Definition match
+          final aNameMatch = aTerm.contains(normalizedQuery);
+          final bNameMatch = bTerm.contains(normalizedQuery);
+          if (aNameMatch && !bNameMatch) return -1;
+          if (bNameMatch && !aNameMatch) return 1;
+
+          // 4. Alphabetical fallback
+          return aTerm.compareTo(bTerm);
+        });
+      } else {
+        // Default alphabetical sort when no query
+        matches.sort((a, b) => a.termLower.compareTo(b.termLower));
+      }
+
+      _filteredTerms = matches;
+    });
+  }
+
+  Future<void> _showFilterSheet() async {
+    await showGlossaryFilterSheet(
+      context: context,
+      currentFilters: _selectedFilters,
+      termCounts: _termCounts,
+      onFiltersChanged: (newFilters) {
+        setState(() {
+          _selectedFilters = newFilters;
+        });
+        _filterTerms(_searchController.text);
+      },
+    );
+  }
+
   Future<void> _toggleBookmark(String termName, String definition) async {
-    await _favoritesService.toggleBookmark(termName, definition, BookmarkType.glossary);
-    final isBookmarked = await _favoritesService.isBookmarked(termName, BookmarkType.glossary);
+    await _favoritesService.toggleBookmark(
+      termName,
+      definition,
+      BookmarkType.glossary,
+    );
+    final isBookmarked = await _favoritesService.isBookmarked(
+      termName,
+      BookmarkType.glossary,
+    );
     setState(() {
       _bookmarkStatus[termName] = isBookmarked;
     });
@@ -143,10 +320,7 @@ class _GlossaryScreenState extends State<GlossaryScreen>
         ? box.localToGlobal(Offset.zero) & box.size
         : null;
 
-    Share.share(
-      plainText,
-      sharePositionOrigin: sharePositionOrigin,
-    );
+    Share.share(plainText, sharePositionOrigin: sharePositionOrigin);
   }
 
   void _showContextMenu(String termName, String definition) {
@@ -206,36 +380,78 @@ class _GlossaryScreenState extends State<GlossaryScreen>
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Filter glossary terms...',
-              prefixIcon: const Icon(Icons.filter_list),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
+              hintText: 'Search glossary terms...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Filter button with badge
+                  Stack(
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          _selectedFilters.isEmpty
+                              ? Icons.filter_alt_outlined
+                              : Icons.filter_alt,
+                        ),
+                        onPressed: _showFilterSheet,
+                        tooltip: 'Filter by category',
+                      ),
+                      if (_selectedFilters.isNotEmpty)
+                        Positioned(
+                          right: 4,
+                          top: 4,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Text(
+                              '${_selectedFilters.length}',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onPrimary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  // Clear button
+                  if (_searchController.text.isNotEmpty)
+                    IconButton(
                       icon: const Icon(Icons.clear),
                       onPressed: () {
                         _searchController.clear();
-                        _filterTerms('');
+                        _searchController.clear();
+                        _onSearchChanged('');
                       },
-                    )
-                  : null,
+                      tooltip: 'Clear search',
+                    ),
+                ],
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            onChanged: _filterTerms,
+            onChanged: _onSearchChanged,
           ),
         ),
-        Expanded(
-          child: _buildBody(),
-        ),
+        Expanded(child: _buildBody()),
       ],
     );
 
     // Wrap in Scaffold when used standalone (with highlightTerm)
     if (widget.highlightTerm != null) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Glossary'),
-        ),
+        appBar: AppBar(title: const Text('Glossary')),
         body: content,
       );
     }
@@ -304,10 +520,12 @@ class _GlossaryScreenState extends State<GlossaryScreen>
       itemPositionsListener: _itemPositionsListener,
       itemCount: _filteredTerms.length,
       itemBuilder: (context, index) {
-        final term = _filteredTerms[index];
+        final vm = _filteredTerms[index];
+        final term = vm.term;
         final isBookmarked = _bookmarkStatus[term.term] ?? false;
-        final isHighlighted = widget.highlightTerm != null &&
-            term.term.toLowerCase() == widget.highlightTerm!.toLowerCase();
+        final isHighlighted =
+            _highlightTermLowerCase != null &&
+            vm.termLower == _highlightTermLowerCase;
 
         return GestureDetector(
           onLongPress: () {
@@ -325,11 +543,16 @@ class _GlossaryScreenState extends State<GlossaryScreen>
               children: [
                 // Header with term name and bookmark icon
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     border: Border(
                       bottom: BorderSide(
-                        color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outlineVariant.withValues(alpha: 0.5),
                         width: 1,
                       ),
                     ),
@@ -337,26 +560,132 @@ class _GlossaryScreenState extends State<GlossaryScreen>
                   child: Row(
                     children: [
                       Expanded(
-                        child: Text(
-                          term.term,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: isHighlighted
-                                ? Theme.of(context).colorScheme.onPrimaryContainer
-                                : Theme.of(context).colorScheme.primary,
-                          ),
+                        child: Builder(
+                          builder: (context) {
+                            // Try to find the first rule reference to link to
+                            // We can use the first pre-calculated link if available
+                            final hasLink = vm.links.isNotEmpty;
+
+                            // Helper to build text with potential highlights
+                            Widget buildText(String text, TextStyle? style) {
+                              if (_searchQuery.isEmpty) {
+                                return Text(text, style: style);
+                              }
+
+                              // Highlight search matches in the term title
+                              final spans = <TextSpan>[];
+                              // Normalize text for finding matches, but keep original for display
+                              final textNormalized = normalizeText(text);
+                              final queryNormalized = normalizeText(
+                                _searchQuery,
+                              );
+
+                              int lastIndex = 0;
+                              int index = textNormalized.indexOf(
+                                queryNormalized,
+                              );
+
+                              while (index != -1) {
+                                if (index > lastIndex) {
+                                  spans.add(
+                                    TextSpan(
+                                      text: text.substring(lastIndex, index),
+                                    ),
+                                  );
+                                }
+                                spans.add(
+                                  TextSpan(
+                                    text: text.substring(
+                                      index,
+                                      index + queryNormalized.length,
+                                    ),
+                                    style: style?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                );
+                                lastIndex = index + queryNormalized.length;
+                                index = textNormalized.indexOf(
+                                  queryNormalized,
+                                  lastIndex,
+                                );
+                              }
+
+                              if (lastIndex < text.length) {
+                                spans.add(
+                                  TextSpan(text: text.substring(lastIndex)),
+                                );
+                              }
+
+                              return RichText(
+                                text: TextSpan(children: spans, style: style),
+                              );
+                            }
+
+                            final style = Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: isHighlighted
+                                      ? Theme.of(
+                                          context,
+                                        ).colorScheme.onPrimaryContainer
+                                      : Theme.of(context).colorScheme.primary,
+                                );
+
+                            Widget textWidget = buildText(term.term, style);
+
+                            if (hasLink) {
+                              // Use the first link found in the definition as the title link target
+                              // (Heuristic: usually the first link is the "main" rule)
+                              // Only if it's a rule link
+                              final firstLink = vm.links.first;
+                              if (firstLink is RuleLinkMatch) {
+                                final ruleNumber = firstLink.ruleNumber;
+                                return MouseRegion(
+                                  cursor: SystemMouseCursors.click,
+                                  child: GestureDetector(
+                                    onTap: () => navigateToRule(ruleNumber),
+                                    child: textWidget,
+                                  ),
+                                );
+                              } else if (firstLink is GlossaryLinkMatch) {
+                                // Link to glossary term?
+                                // The user didn't explicitly ask for title links to other glossary terms,
+                                // but if the definition starts with "See [Term]", maybe we should?
+                                // For now let's just keep the existing behavior of linking to rules in title if possible.
+                                // If the first link is a Glossary Term, we CAN link to it.
+                                return MouseRegion(
+                                  cursor: SystemMouseCursors.click,
+                                  child: GestureDetector(
+                                    onTap: () => _scrollToTerm(firstLink.term),
+                                    child: textWidget,
+                                  ),
+                                );
+                              }
+                            }
+
+                            return textWidget;
+                          },
                         ),
                       ),
                       IconButton(
                         icon: Icon(
-                          isBookmarked ? Icons.bookmark : Icons.bookmark_outline,
+                          isBookmarked
+                              ? Icons.bookmark
+                              : Icons.bookmark_outline,
                           size: 20,
                         ),
                         color: isBookmarked
                             ? Theme.of(context).colorScheme.primary
                             : Theme.of(context).colorScheme.onSurfaceVariant,
-                        onPressed: () => _toggleBookmark(term.term, term.definition),
-                        tooltip: isBookmarked ? 'Remove bookmark' : 'Add bookmark',
+                        onPressed: () =>
+                            _toggleBookmark(term.term, term.definition),
+                        tooltip: isBookmarked
+                            ? 'Remove bookmark'
+                            : 'Add bookmark',
                         visualDensity: VisualDensity.compact,
                       ),
                     ],
@@ -375,6 +704,9 @@ class _GlossaryScreenState extends State<GlossaryScreen>
                               ? Theme.of(context).colorScheme.onPrimaryContainer
                               : null,
                         ),
+                        searchQuery: _searchQuery,
+                        preCalculatedLinks: vm.links,
+                        onGlossaryTermTap: _scrollToTerm,
                       ),
                     ),
                   ),
