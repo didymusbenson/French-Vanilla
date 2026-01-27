@@ -10,9 +10,19 @@ mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
   /// Parses text and creates TextSpan with tappable rule references
   List<TextSpan> parseTextWithLinks(String text, TextStyle? baseStyle) {
     final spans = <TextSpan>[];
-    // Pattern matches: "rule 704", "rule 702.9", "rule 702.9a", "rules 702.9", etc.
-    // Also matches variations like "see rule 704" or "Rule 702.9a"
-    final rulePattern = RegExp(r'\brule(?:s)?\s+(\d{3})(?:\.(\d+)([a-z])?)?\b', caseSensitive: false);
+
+    // Pattern matches both:
+    // 1. "rule 704", "rule 702.9a", "rules 702.9" (traditional format)
+    // 2. Bare references like "601.2b" or "601.2f–h" (in citations)
+    // For ranges like "601.2f–h" or "601.2f-h", we only link the first part (601.2f)
+    final rulePattern = RegExp(
+      r'(?:'
+        r'\brule(?:s)?\s+(\d{3})(?:\.(\d+)([a-z])?)?'  // Traditional: "rule 601.2b"
+        r'|'
+        r'\b(\d{3})\.(\d+)([a-z])?(?:[–\-][a-z])?'  // Bare: "601.2f" or "601.2f–h" or "601.2f-h"
+      r')\b',
+      caseSensitive: false
+    );
 
     int lastMatchEnd = 0;
     for (final match in rulePattern.allMatches(text)) {
@@ -24,16 +34,28 @@ mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
         ));
       }
 
-      // Extract rule number (e.g., "702.9a" or just "704")
-      final baseRule = match.group(1)!; // Always captured (e.g., "704" or "702")
-      final minorPart = match.group(2); // Optional decimal part (e.g., "9")
-      final letterPart = match.group(3); // Optional letter (e.g., "a")
+      // Extract rule number from either format
+      String baseRule, ruleNumber, fullMatch;
 
-      final ruleNumber = minorPart != null
-          ? '$baseRule.$minorPart${letterPart ?? ''}'
-          : baseRule;
+      if (match.group(1) != null) {
+        // Traditional format: "rule 601.2b"
+        baseRule = match.group(1)!;
+        final minorPart = match.group(2);
+        final letterPart = match.group(3);
 
-      final fullMatch = match.group(0)!; // Full matched text like "rule 704" or "rule 702.9a"
+        ruleNumber = minorPart != null
+            ? '$baseRule.$minorPart${letterPart ?? ''}'
+            : baseRule;
+        fullMatch = match.group(0)!;
+      } else {
+        // Bare format: "601.2f" or "601.2f–h" (range)
+        baseRule = match.group(4)!;
+        final minorPart = match.group(5)!;
+        final letterPart = match.group(6) ?? '';
+
+        ruleNumber = '$baseRule.$minorPart$letterPart';
+        fullMatch = match.group(0)!;
+      }
 
       // Add the tappable link
       spans.add(TextSpan(

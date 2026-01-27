@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'section_detail_screen.dart';
+import 'glossary_detail_screen.dart';
 
 class SectionsScreen extends StatelessWidget {
   const SectionsScreen({super.key});
@@ -14,6 +15,7 @@ class SectionsScreen extends StatelessWidget {
     {'number': 7, 'title': 'Additional Rules', 'icon': Icons.rule},
     {'number': 8, 'title': 'Multiplayer Rules', 'icon': Icons.groups},
     {'number': 9, 'title': 'Casual Variants', 'icon': Icons.castle},
+    {'number': null, 'title': 'Glossary', 'icon': Icons.book}, // Glossary - no number
   ];
 
   @override
@@ -30,7 +32,9 @@ class SectionsScreen extends StatelessWidget {
               child: Icon(section['icon'] as IconData),
             ),
             title: Text(
-              '${section['number']}. ${section['title']}',
+              section['number'] != null
+                  ? '${section['number']}. ${section['title']}'
+                  : section['title'] as String,
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -38,15 +42,27 @@ class SectionsScreen extends StatelessWidget {
             ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => SectionDetailScreen(
-                    sectionNumber: section['number'] as int,
-                    sectionTitle: section['title'] as String,
+              // Navigate to Glossary or Section Detail
+              if (section['number'] == null) {
+                // Glossary
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const GlossaryDetailScreen(),
                   ),
-                ),
-              );
+                );
+              } else {
+                // Regular section
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SectionDetailScreen(
+                      sectionNumber: section['number'] as int,
+                      sectionTitle: section['title'] as String,
+                    ),
+                  ),
+                );
+              }
             },
           ),
         );

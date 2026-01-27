@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'sections_screen.dart';
-import 'glossary_screen.dart';
+import 'rulings_screen.dart';
+import 'mtr_ipg_screen.dart';
 import 'credits_screen.dart';
 import 'search_screen.dart';
 import 'bookmarks_screen.dart';
@@ -18,14 +19,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Widget> get _screens => [
     const SectionsScreen(),
-    const GlossaryScreen(),
+    const RulingsScreen(),
+    const MtrIpgScreen(),
     BookmarksScreen(key: _bookmarksKey),
     const CreditsScreen(),
   ];
 
   static const List<String> _titles = [
     'Rules',
-    'Glossary',
+    'Rulings',
+    'MTR/IPG',
     'Bookmarks',
     'Credits',
   ];
@@ -37,8 +40,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Widget> _getAppBarActions() {
-    // Rules (0) and Glossary (1) have search
-    if (_selectedIndex == 0 || _selectedIndex == 1) {
+    // Rules (0) has search
+    if (_selectedIndex == 0) {
       return [
         IconButton(
           icon: const Icon(Icons.search),
@@ -54,8 +57,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ];
     }
-    // Bookmarks (2) has edit button
-    if (_selectedIndex == 2) {
+    // Bookmarks (3) has edit button
+    if (_selectedIndex == 3) {
       return [
         IconButton(
           icon: const Icon(Icons.edit),
@@ -66,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ];
     }
-    // Credits (3) has no actions
+    // Other tabs have no actions
     return [];
   }
 
@@ -88,9 +91,14 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Rules',
           ),
           NavigationDestination(
-            icon: Icon(Icons.list_outlined),
-            selectedIcon: Icon(Icons.list),
-            label: 'Glossary',
+            icon: Icon(Icons.gavel_outlined),
+            selectedIcon: Icon(Icons.gavel),
+            label: 'Rulings',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.description_outlined),
+            selectedIcon: Icon(Icons.description),
+            label: 'MTR/IPG',
           ),
           NavigationDestination(
             icon: Icon(Icons.bookmark_outline),

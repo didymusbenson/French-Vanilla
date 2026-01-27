@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/rule.dart';
-import '../screens/glossary_screen.dart';
+import '../screens/glossary_detail_screen.dart';
 import '../screens/rule_detail_screen.dart';
 import 'rule_link_mixin.dart';
 
@@ -141,7 +141,7 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => GlossaryScreen(
+                        builder: (context) => GlossaryDetailScreen(
                           highlightTerm: term,
                         ),
                       ),

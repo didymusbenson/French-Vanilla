@@ -8,26 +8,29 @@ import '../models/glossary_term.dart';
 import '../mixins/rule_link_mixin.dart';
 import '../mixins/aggregating_snackbar_mixin.dart';
 
-class GlossaryScreen extends StatefulWidget {
+/// Displays glossary terms in a format similar to rule subrules.
+/// Each term is shown as a card with the term name as header and definition as content.
+class GlossaryDetailScreen extends StatefulWidget {
   final String? highlightTerm;
 
-  const GlossaryScreen({super.key, this.highlightTerm});
+  const GlossaryDetailScreen({super.key, this.highlightTerm});
 
   @override
-  State<GlossaryScreen> createState() => _GlossaryScreenState();
+  State<GlossaryDetailScreen> createState() => _GlossaryDetailScreenState();
 }
 
-class _GlossaryScreenState extends State<GlossaryScreen>
+class _GlossaryDetailScreenState extends State<GlossaryDetailScreen>
     with RuleLinkMixin, AggregatingSnackBarMixin {
   final _dataService = RulesDataService();
   final _favoritesService = FavoritesService();
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
-  List<GlossaryTerm> _allTerms = [];
-  List<GlossaryTerm> _filteredTerms = [];
+
+  List<GlossaryTerm> _terms = [];
   bool _isLoading = true;
   String? _error;
   final Map<String, bool> _bookmarkStatus = {};
+  final Map<String, GlobalKey> _termKeys = {};
 
   @override
   void initState() {
@@ -35,8 +38,37 @@ class _GlossaryScreenState extends State<GlossaryScreen>
     _loadGlossary();
   }
 
+  Future<void> _loadGlossary() async {
+    try {
+      final terms = await _dataService.getGlossaryTerms();
+      setState(() {
+        _terms = terms;
+        _isLoading = false;
+      });
+
+      // Create keys for each term
+      for (final term in terms) {
+        _termKeys[term.term] = GlobalKey();
+      }
+
+      await _loadBookmarkStatuses();
+
+      // Scroll to highlighted term if provided
+      if (widget.highlightTerm != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToTerm(widget.highlightTerm!);
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to load glossary: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
   void _scrollToTerm(String termName) {
-    final targetIndex = _filteredTerms.indexWhere(
+    final targetIndex = _terms.indexWhere(
       (term) => term.term.toLowerCase() == termName.toLowerCase()
     );
 
@@ -51,37 +83,13 @@ class _GlossaryScreenState extends State<GlossaryScreen>
   }
 
   Future<void> _loadBookmarkStatuses() async {
-    for (final term in _allTerms) {
+    for (final term in _terms) {
       final isBookmarked = await _favoritesService.isBookmarked(term.term, BookmarkType.glossary);
       if (mounted) {
         setState(() {
           _bookmarkStatus[term.term] = isBookmarked;
         });
       }
-    }
-  }
-
-  Future<void> _loadGlossary() async {
-    try {
-      final terms = await _dataService.getGlossaryTerms();
-      setState(() {
-        _allTerms = terms;
-        _filteredTerms = terms;
-        _isLoading = false;
-      });
-      await _loadBookmarkStatuses();
-
-      // Scroll to highlighted term if provided
-      if (widget.highlightTerm != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _scrollToTerm(widget.highlightTerm!);
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _error = 'Failed to load glossary: $e';
-        _isLoading = false;
-      });
     }
   }
 
@@ -178,19 +186,12 @@ class _GlossaryScreenState extends State<GlossaryScreen>
 
   @override
   Widget build(BuildContext context) {
-    final content = _buildBody();
-
-    // Wrap in Scaffold when used standalone (with highlightTerm)
-    if (widget.highlightTerm != null) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Glossary'),
-        ),
-        body: content,
-      );
-    }
-
-    return content;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Glossary'),
+      ),
+      body: _buildBody(),
+    );
   }
 
   Widget _buildBody() {
@@ -229,32 +230,17 @@ class _GlossaryScreenState extends State<GlossaryScreen>
       );
     }
 
-    if (_filteredTerms.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.search_off,
-              size: 64,
-              color: Theme.of(context).colorScheme.error.withValues(alpha: 0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No terms found',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
-      );
+    if (_terms.isEmpty) {
+      return const Center(child: Text('No glossary terms found.'));
     }
 
     return ScrollablePositionedList.builder(
       itemScrollController: _itemScrollController,
       itemPositionsListener: _itemPositionsListener,
-      itemCount: _filteredTerms.length,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: _terms.length,
       itemBuilder: (context, index) {
-        final term = _filteredTerms[index];
+        final term = _terms[index];
         final isBookmarked = _bookmarkStatus[term.term] ?? false;
         final isHighlighted = widget.highlightTerm != null &&
             term.term.toLowerCase() == widget.highlightTerm!.toLowerCase();
@@ -265,15 +251,17 @@ class _GlossaryScreenState extends State<GlossaryScreen>
             _showContextMenu(term.term, term.definition);
           },
           child: Card(
+            key: _termKeys[term.term],
             clipBehavior: Clip.antiAlias,
-            elevation: isHighlighted ? 8 : 2,
+            elevation: isHighlighted ? 8 : 1,
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             color: isHighlighted
                 ? Theme.of(context).colorScheme.primaryContainer
                 : null,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header with term name and bookmark icon
+                // Header with term name and bookmark icon (similar to subrule header)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
@@ -307,23 +295,23 @@ class _GlossaryScreenState extends State<GlossaryScreen>
                             : Theme.of(context).colorScheme.onSurfaceVariant,
                         onPressed: () => _toggleBookmark(term.term, term.definition),
                         tooltip: isBookmarked ? 'Remove bookmark' : 'Add bookmark',
-                        visualDensity: VisualDensity.compact,
                       ),
                     ],
                   ),
                 ),
-                // Content
+                // Definition content (similar to subrule content)
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: RichText(
                     text: TextSpan(
                       children: parseTextWithLinks(
                         term.definition,
-                        Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        TextStyle(
+                          fontSize: 15,
                           height: 1.5,
                           color: isHighlighted
                               ? Theme.of(context).colorScheme.onPrimaryContainer
-                              : null,
+                              : Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),

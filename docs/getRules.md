@@ -2,7 +2,9 @@
 
 The comprehensive rules for Magic: The Gathering are found at https://magic.wizards.com/en/rules.
 
-## Step-by-Step Update Process
+## Quick Update (Recommended)
+
+Use the automated update script that checks for new versions before downloading:
 
 ### 1. Find the Latest Rules URL
 
@@ -13,6 +15,40 @@ Visit https://magic.wizards.com/en/rules and find the hyperlink labeled "TXT" th
 https://media.wizards.com/YYYY/downloads/MagicCompRules YYYYMMDD.txt
 ```
 where YYYY is the year and YYYYMMDD is the date (e.g., `20260116` for January 16, 2026).
+
+### 2. Run the Update Script
+
+**Important**: URL-encode spaces as `%20` in the URL:
+
+```bash
+python3 scripts/update_rules.py "https://media.wizards.com/YYYY/downloads/MagicCompRules%20YYYYMMDD.txt"
+```
+
+Replace `YYYY` and `YYYYMMDD` with the actual year and date from the URL.
+
+The script will:
+1. Check your current rules version
+2. Fetch only the header of the new file (2KB instead of 9000+ lines)
+3. Compare effective dates
+4. **If already up to date**: Exit without downloading
+5. **If new version available**: Download, fix line endings, and parse automatically
+
+Example output when already current:
+```
+✓ Rules are already up to date!
+  Both versions are effective as of January 16, 2026
+  No download needed.
+```
+
+---
+
+## Manual Update Process (Alternative)
+
+If you prefer to update manually or the script fails:
+
+### 1. Find the Latest Rules URL
+
+(Same as above)
 
 ### 2. Download the Rules File
 
@@ -51,11 +87,18 @@ Execute the parsing script to generate the 12 JSON files:
 python3 scripts/parse_rules.py
 ```
 
+The script will:
+1. Read the downloaded comprehensive_rules.md file
+2. Extract the effective date from the file header
+3. Compare it to the existing credits.json effective date
+4. **If dates match**: Skip parsing and exit (rules already up to date)
+5. **If dates differ or no existing rules**: Proceed with parsing
+
 The script will output:
-- Effective date (verify this matches the latest rules date)
-- Total lines parsed (should be ~9,200-9,300)
-- Section boundaries found
-- Confirmation that 12 JSON files were created
+- Effective date from the new file
+- Existing effective date (if any)
+- Whether parsing is needed or rules are already current
+- If parsing: Total lines, section boundaries, and confirmation of 12 JSON files created
 
 ### 5. Verify the Update
 
@@ -89,11 +132,13 @@ The only file needed in the repository is `comprehensive_rules.md`. The generate
 
 ## What Gets Updated
 
-When you run the parser, these 12 files are regenerated:
+When you run the parser **and a new version is detected**, these 12 files are regenerated:
 - `index.json` - Table of contents
 - `section_1.json` through `section_9.json` - Main rule sections
 - `glossary.json` - Glossary of terms
 - `credits.json` - Credits and effective date
+
+**Note**: If the effective date in the downloaded file matches the existing `credits.json`, the parser will skip regenerating files and exit early. This prevents unnecessary file updates when you're already on the latest version.
 
 The app automatically picks up these changes on next launch.
 

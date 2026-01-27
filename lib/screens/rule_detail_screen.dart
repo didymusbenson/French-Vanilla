@@ -34,20 +34,12 @@ class _RuleDetailScreenState extends State<RuleDetailScreen>
   void initState() {
     super.initState();
 
-    print('=== RuleDetailScreen initState ===');
-    print('Rule: ${widget.rule.number}. ${widget.rule.title}');
-    print('Highlight subrule: ${widget.highlightSubruleNumber}');
-    print('Total subrule groups: ${widget.rule.subruleGroups.length}');
-    print('First few group numbers: ${widget.rule.subruleGroups.take(5).map((g) => g.number).toList()}');
-
     // Load bookmark statuses
     _loadBookmarkStatuses();
 
     // Scroll to highlighted subrule after build
     if (widget.highlightSubruleNumber != null) {
-      print('Scheduling scroll to: ${widget.highlightSubruleNumber}');
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        print('PostFrameCallback executing for: ${widget.highlightSubruleNumber}');
         _scrollToSubrule(widget.highlightSubruleNumber!);
       });
     }
@@ -157,15 +149,9 @@ class _RuleDetailScreenState extends State<RuleDetailScreen>
   }
 
   void _scrollToSubrule(String subruleNumber) {
-    print('=== _scrollToSubrule called ===');
-    print('Target subrule: $subruleNumber');
-    print('Available subrule numbers: ${widget.rule.subruleGroups.map((g) => g.number).toList()}');
-
     // Find the index of the target subrule (add 1 for the header)
     final targetIndex = widget.rule.subruleGroups
         .indexWhere((group) => group.number == subruleNumber);
-
-    print('Target index: $targetIndex');
 
     if (targetIndex != -1) {
       // Position item just below app bar with minimal spacing
@@ -179,9 +165,6 @@ class _RuleDetailScreenState extends State<RuleDetailScreen>
         curve: Curves.easeInOut,
         alignment: alignment,
       );
-      print('Scrolling to index ${targetIndex + 1} for subrule: $subruleNumber');
-    } else {
-      print('ERROR: Subrule not found: $subruleNumber');
     }
   }
 

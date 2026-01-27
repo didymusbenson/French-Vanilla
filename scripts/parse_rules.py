@@ -122,6 +122,29 @@ def extract_metadata(lines: List[str]) -> Dict[str, str]:
     return metadata
 
 
+def get_existing_effective_date(output_dir: str) -> str:
+    """
+    Get the effective date from the existing credits.json file.
+
+    Args:
+        output_dir: Directory containing the credits.json file
+
+    Returns:
+        The effective date string, or None if file doesn't exist or can't be read
+    """
+    credits_path = os.path.join(output_dir, 'credits.json')
+
+    if not os.path.exists(credits_path):
+        return None
+
+    try:
+        with open(credits_path, 'r', encoding='utf-8') as f:
+            credits_data = json.load(f)
+            return credits_data.get('metadata', {}).get('effective_date')
+    except (json.JSONDecodeError, IOError):
+        return None
+
+
 def parse_rules_file(input_path: str, output_dir: str):
     """
     Parse the comprehensive rules file and output structured JSON files.
@@ -142,7 +165,24 @@ def parse_rules_file(input_path: str, output_dir: str):
 
     # Extract metadata
     metadata = extract_metadata(lines)
-    print(f"Effective date: {metadata.get('effective_date', 'Unknown')}")
+    new_effective_date = metadata.get('effective_date', 'Unknown')
+    print(f"Effective date in downloaded file: {new_effective_date}")
+
+    # Check if we already have this version
+    existing_effective_date = get_existing_effective_date(output_dir)
+    if existing_effective_date:
+        print(f"Existing effective date: {existing_effective_date}")
+
+        if existing_effective_date == new_effective_date:
+            print("\n✓ Rules are already up to date!")
+            print(f"  Both versions are effective as of {existing_effective_date}")
+            print("  Skipping parsing. No changes needed.")
+            return
+        else:
+            print(f"\n→ Update detected: {existing_effective_date} → {new_effective_date}")
+            print("  Proceeding with parsing...")
+    else:
+        print("No existing credits.json found - proceeding with initial parsing...")
 
     # Find section boundaries
     print("Finding section boundaries...")
