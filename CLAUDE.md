@@ -53,6 +53,14 @@ The `.gitignore` is configured to exclude:
 - **Output**: 12 JSON files (index, 9 sections, glossary, credits)
 - **Re-run when rules update**: `python3 scripts/parse_rules.py`
 
+### ⚠️ Accessing Rules JSON Files
+- **NEVER use Read tool on `docs/rulesdocs/*.json` files** - they exceed the 25,000 token limit
+- **ALWAYS use**:
+  - Python scripts for complex queries
+  - `grep` with `-A` flags for targeted extraction
+  - `python3 -c` one-liners for JSON parsing
+- **Example**: See how rule 605.4a was extracted using Python regex
+
 ## App Architecture (Planned)
 
 ### Core Features
@@ -95,6 +103,11 @@ The `.gitignore` is configured to exclude:
 - User has experience shipping Flutter apps (see doubling-season)
 - User prefers clear communication about assumptions
 - When in doubt, ask before making significant architectural decisions
+- **ALWAYS validate builds before declaring tasks complete**
+  - Run `flutter analyze` to check for errors
+  - Run `flutter build ios --simulator --debug --no-codesign` for local validation
+  - Do NOT use real device builds for validation (can fail due to connection issues)
+  - If build fails, diagnose and fix before reporting completion
 
 ### Project Status
 - ✅ Flutter infrastructure initialized
@@ -104,4 +117,5 @@ The `.gitignore` is configured to exclude:
 
 ---
 
-**Last Updated**: 2026-01-04
+**Last Updated**: 2026-01-28
+- to memorize: Always perform build validations before calling something done. Do so with a build for local validation not real device validation. If the flutter build fails, diagnose or tell the human.

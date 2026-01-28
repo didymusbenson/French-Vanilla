@@ -16,10 +16,12 @@ class Rule {
 class SubruleGroup {
   final String number; // e.g., "700.1"
   final String content; // Full text including 700.1, 700.1a, 700.1b, etc.
+  final List<String> examples; // Example texts (without "Example:" prefix)
 
   SubruleGroup({
     required this.number,
     required this.content,
+    this.examples = const [],
   });
 
   @override
