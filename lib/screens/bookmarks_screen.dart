@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/favorites_service.dart';
 import '../services/rules_data_service.dart';
+import '../services/card_data_service.dart';
 import '../mixins/rule_link_mixin.dart';
 import '../mixins/preview_bottom_sheet_mixin.dart';
+import 'card_detail_screen.dart';
 
 class BookmarksScreen extends StatefulWidget {
   const BookmarksScreen({super.key});
@@ -14,6 +16,7 @@ class BookmarksScreen extends StatefulWidget {
 class BookmarksScreenState extends State<BookmarksScreen> with RuleLinkMixin, PreviewBottomSheetMixin {
   final _favoritesService = FavoritesService();
   final _dataService = RulesDataService();
+  final _cardService = CardDataService();
   List<BookmarkedItem> _bookmarks = [];
   bool _isLoading = true;
   bool _isEditMode = false;
@@ -198,7 +201,9 @@ class BookmarksScreenState extends State<BookmarksScreen> with RuleLinkMixin, Pr
                       : Icon(
                           bookmark.type == BookmarkType.rule
                               ? Icons.bookmark
-                              : Icons.bookmark,
+                              : bookmark.type == BookmarkType.card
+                                  ? Icons.style
+                                  : Icons.bookmark,
                           color: Theme.of(context).colorScheme.primary,
                         ),
                   title: Text(
@@ -276,6 +281,32 @@ class BookmarksScreenState extends State<BookmarksScreen> with RuleLinkMixin, Pr
       return;
     }
 
+    if (bookmark.type == BookmarkType.card) {
+      // Navigate to card detail screen
+      try {
+        final card = await _cardService.getCardByName(bookmark.identifier);
+        if (card != null && mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CardDetailScreen(card: card),
+            ),
+          );
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Card not found')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to load card: $e')),
+          );
+        }
+      }
+      return;
+    }
+
     // Handle rule bookmarks
     // Parse the rule number to extract section and rule info
     // Format: "702.9a" -> section 7, rule "702", subrule "702.9"
@@ -309,6 +340,7 @@ class BookmarksScreenState extends State<BookmarksScreen> with RuleLinkMixin, Pr
         sectionNumber: sectionNumber,
         subruleNumber: bookmark.identifier,
         content: bookmark.content,
+        highlightSubruleNumber: bookmark.identifier, // Highlight the bookmarked subrule
       );
     } catch (e) {
       if (mounted) {

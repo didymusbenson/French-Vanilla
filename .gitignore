@@ -132,6 +132,17 @@ android/build/
 *.freezed.dart.bak
 
 # ======================================
+# NON-SHIPPABLE DATA FILES
+# ======================================
+
+# MTGJSON data files (too large to commit)
+scripts/data/
+*.json.xz
+*.json.gz
+*.json.bz2
+AllPrintings.json
+
+# ======================================
 # CLAUDE CODE
 # ======================================
 

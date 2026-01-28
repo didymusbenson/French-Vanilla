@@ -1,3 +1,4 @@
+import 'dart:math' show pi;
 import 'package:flutter/material.dart';
 import 'sections_screen.dart';
 import 'rulings_screen.dart';
@@ -84,28 +85,34 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onItemTapped,
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.book_outlined),
             selectedIcon: Icon(Icons.book),
             label: 'Rules',
           ),
           NavigationDestination(
-            icon: Icon(Icons.gavel_outlined),
-            selectedIcon: Icon(Icons.gavel),
+            icon: Transform.rotate(
+              angle: pi,
+              child: const Icon(Icons.style_outlined),
+            ),
+            selectedIcon: Transform.rotate(
+              angle: pi,
+              child: const Icon(Icons.style),
+            ),
             label: 'Rulings',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.description_outlined),
-            selectedIcon: Icon(Icons.description),
+          const NavigationDestination(
+            icon: Icon(Icons.gavel_outlined),
+            selectedIcon: Icon(Icons.gavel),
             label: 'MTR/IPG',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.bookmark_outline),
             selectedIcon: Icon(Icons.bookmark),
             label: 'Bookmarks',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.info_outline),
             selectedIcon: Icon(Icons.info),
             label: 'Credits',

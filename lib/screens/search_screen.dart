@@ -279,12 +279,17 @@ class _SearchScreenState extends State<SearchScreen> with RuleLinkMixin, Preview
       _dataService.getRulesForSection(result.sectionNumber!);
     }
 
+    // Handle top-level rule matches (no specific subrule)
+    // Show the first subrule in the preview, but navigate to the whole rule
+    final subruleGroup = result.subruleGroup ?? result.rule!.subruleGroups.first;
+
     // Use mixin method
     showRuleBottomSheet(
       rule: result.rule!,
       sectionNumber: result.sectionNumber!,
-      subruleNumber: result.subruleGroup!.number,
-      content: result.subruleGroup!.content,
+      subruleNumber: subruleGroup.number,
+      content: subruleGroup.content,
+      highlightSubruleNumber: result.subruleGroup?.number, // null for top-level matches
     );
   }
 

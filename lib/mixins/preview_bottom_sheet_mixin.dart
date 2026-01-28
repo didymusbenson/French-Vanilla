@@ -164,6 +164,7 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
     required int sectionNumber,
     required String subruleNumber,
     required String content,
+    String? highlightSubruleNumber, // Optional - if null, no highlighting on navigation
   }) {
     showModalBottomSheet(
       context: context,
@@ -219,7 +220,7 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
                         builder: (context) => RuleDetailScreen(
                           rule: rule,
                           sectionNumber: sectionNumber,
-                          highlightSubruleNumber: subruleNumber,
+                          highlightSubruleNumber: highlightSubruleNumber,
                         ),
                       ),
                     );

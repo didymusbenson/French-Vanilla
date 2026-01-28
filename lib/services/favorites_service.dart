@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum BookmarkType { rule, glossary }
+enum BookmarkType { rule, glossary, card }
 
 class BookmarkedItem {
   final String identifier; // Rule number (e.g., "702.9a") or glossary term name
@@ -48,11 +48,12 @@ class FavoritesService {
             json.decode(jsonStr) as Map<String, dynamic>))
         .toList();
 
-    // Sort: rules by number, glossary terms alphabetically
+    // Sort: rules by number, glossary terms and cards alphabetically
     bookmarks.sort((a, b) {
-      // Group by type first (rules before glossary)
+      // Group by type first (rules before glossary before cards)
       if (a.type != b.type) {
-        return a.type == BookmarkType.rule ? -1 : 1;
+        final typeOrder = {BookmarkType.rule: 0, BookmarkType.glossary: 1, BookmarkType.card: 2};
+        return (typeOrder[a.type] ?? 3).compareTo(typeOrder[b.type] ?? 3);
       }
       // Within same type, sort appropriately
       if (a.type == BookmarkType.rule) {
