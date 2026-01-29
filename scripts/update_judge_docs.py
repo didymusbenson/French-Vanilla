@@ -272,45 +272,45 @@ def main():
         print(f"  IPG: {ipg_date}")
         print(f"    → Existing file: {ipg_pdf_path}")
         print(f"    → Text file: {ipg_txt_path}")
-        print("\n  No download needed.")
+        print("\n  No download needed. Running parsers...")
 
         # Clean up temp files
         temp_mtr.unlink()
         temp_ipg.unlink()
         temp_dir.rmdir()
 
-        return 0
-
-    # Step 6: Move new files to permanent location
-    print("Updates available:")
-    if mtr_is_new:
-        print(f"  MTR: {existing_mtr_date or 'none'} → {mtr_date}")
-        temp_mtr.replace(mtr_pdf_path)
+        # Skip to parsing step
     else:
-        print(f"  MTR: {mtr_date} (no change)")
-        temp_mtr.unlink()
+        # Step 6: Move new files to permanent location
+        print("Updates available:")
+        if mtr_is_new:
+            print(f"  MTR: {existing_mtr_date or 'none'} → {mtr_date}")
+            temp_mtr.replace(mtr_pdf_path)
+        else:
+            print(f"  MTR: {mtr_date} (no change)")
+            temp_mtr.unlink()
 
-    if ipg_is_new:
-        print(f"  IPG: {existing_ipg_date or 'none'} → {ipg_date}")
-        temp_ipg.replace(ipg_pdf_path)
-    else:
-        print(f"  IPG: {ipg_date} (no change)")
-        temp_ipg.unlink()
+        if ipg_is_new:
+            print(f"  IPG: {existing_ipg_date or 'none'} → {ipg_date}")
+            temp_ipg.replace(ipg_pdf_path)
+        else:
+            print(f"  IPG: {ipg_date} (no change)")
+            temp_ipg.unlink()
 
-    print()
+        print()
 
-    # Clean up temp directory
-    if temp_dir.exists():
-        temp_dir.rmdir()
+        # Clean up temp directory
+        if temp_dir.exists():
+            temp_dir.rmdir()
 
-    # Step 7: Extract text from PDFs
-    if mtr_is_new:
-        if not extract_text_from_pdf(mtr_pdf_path, mtr_txt_path):
-            return 1
+        # Step 7: Extract text from PDFs
+        if mtr_is_new:
+            if not extract_text_from_pdf(mtr_pdf_path, mtr_txt_path):
+                return 1
 
-    if ipg_is_new:
-        if not extract_text_from_pdf(ipg_pdf_path, ipg_txt_path):
-            return 1
+        if ipg_is_new:
+            if not extract_text_from_pdf(ipg_pdf_path, ipg_txt_path):
+                return 1
 
     # Step 8: Save version info
     new_versions = {
@@ -338,28 +338,60 @@ def main():
     print("=" * 80)
     print()
 
-    # Step 9: YELL AT THE USER
-    print("\n" + "🚨" * 40)
-    print("⚠️  WARNING WARNING WARNING ⚠️")
-    print("🚨" * 40)
+    # Step 9: Run parsing scripts
+    print("Running parsing scripts...")
     print()
-    print("HEY! YOU NEED TO UPDATE THIS COMMAND!")
+
+    # Parse MTR
+    print("Parsing MTR...")
+    parse_mtr_script = script_dir / 'parse_mtr.py'
+    result = subprocess.run(
+        ['python3', str(parse_mtr_script)],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        print(f"ERROR: MTR parsing failed:")
+        print(result.stderr)
+        return 1
+
+    print(result.stdout)
+
+    # Parse IPG
+    print("Parsing IPG...")
+    parse_ipg_script = script_dir / 'parse_ipg.py'
+    result = subprocess.run(
+        ['python3', str(parse_ipg_script)],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        print(f"ERROR: IPG parsing failed:")
+        print(result.stderr)
+        return 1
+
+    print(result.stdout)
+
+    # Final success message
     print()
-    print("The PDFs have been downloaded and text has been extracted to .txt files,")
-    print("but you still need to:")
+    print("=" * 80)
+    print("✓ JUDGE DOCUMENTS UPDATE COMPLETE!")
+    print("=" * 80)
     print()
-    print("  1. Create parsing scripts to structure the judge documents")
-    print("  2. Decide on the JSON format for MTR and IPG data")
-    print("  3. Integrate parsed data into the app")
-    print("  4. Update this script to automatically run the parsing scripts")
+    print(f"Downloaded and parsed:")
+    print(f"  MTR: {mtr_date}")
+    print(f"    → PDF:  {mtr_pdf_path}")
+    print(f"    → Text: {mtr_txt_path}")
+    print(f"    → JSON: assets/judgedocs/mtr_*.json")
     print()
-    print(f"Your files are here:")
-    print(f"  MTR PDF:  {mtr_pdf_path}")
-    print(f"  MTR Text: {mtr_txt_path}")
-    print(f"  IPG PDF:  {ipg_pdf_path}")
-    print(f"  IPG Text: {ipg_txt_path}")
+    print(f"  IPG: {ipg_date}")
+    print(f"    → PDF:  {ipg_pdf_path}")
+    print(f"    → Text: {ipg_txt_path}")
+    print(f"    → JSON: assets/judgedocs/ipg_*.json")
     print()
-    print("🚨" * 40)
+    print("=" * 80)
     print()
 
     return 0

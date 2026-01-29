@@ -1,0 +1,57 @@
+{
+  "title": "Magic Tournament Rules",
+  "document_type": "mtr",
+  "metadata": {
+    "effective_date": "November 10, 2025"
+  },
+  "sections": [
+    {
+      "section_number": 1,
+      "title": "1. Tournament Fundamentals",
+      "section_key": "mtr_section_1",
+      "rule_count": 12
+    },
+    {
+      "section_number": 2,
+      "title": "2. Tournament Mechanics",
+      "section_key": "mtr_section_2",
+      "rule_count": 13
+    },
+    {
+      "section_number": 3,
+      "title": "3. Tournament Rules",
+      "section_key": "mtr_section_3",
+      "rule_count": 16
+    },
+    {
+      "section_number": 4,
+      "title": "4. Communication",
+      "section_key": "mtr_section_4",
+      "rule_count": 9
+    },
+    {
+      "section_number": 5,
+      "title": "5. Tournament Violations",
+      "section_key": "mtr_section_5",
+      "rule_count": 6
+    },
+    {
+      "section_number": 6,
+      "title": "6. Constructed Tournament Rules",
+      "section_key": "mtr_section_6",
+      "rule_count": 7
+    },
+    {
+      "section_number": 7,
+      "title": "7. Limited Tournament Rules",
+      "section_key": "mtr_section_7",
+      "rule_count": 7
+    },
+    {
+      "section_number": 8,
+      "title": "8. Team Tournament Rules",
+      "section_key": "mtr_section_8",
+      "rule_count": 6
+    }
+  ]
+}

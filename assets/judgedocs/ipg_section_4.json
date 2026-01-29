@@ -1,0 +1,142 @@
+{
+  "section_number": 4,
+  "title": "4. Unsporting Conduct",
+  "section_key": "ipg_section_4",
+  "metadata": {
+    "effective_date": "September 23, 2024"
+  },
+  "infractions": [
+    {
+      "number": "4.1",
+      "title": "Unsporting Conduct — Minor Warning",
+      "penalty": "Warning",
+      "definition": "A player takes action that is disruptive to the tournament or its participants. It may affect the\ncomfort level of those around the individual, but determining whether this is the case is not\nrequired.",
+      "examples": [
+        "A. A player uses excessively vulgar and profane language.",
+        "B. A player inappropriately demands to a judge that their opponent receive a penalty.",
+        "C. A player appeals to the Head Judge before waiting for the floor judge to issue a ruling.",
+        "D. A player throws their deck on the ground after losing a game.",
+        "E. A player leaves excessive trash in the play area after leaving the table.",
+        "F. A player fails to follow the request of a tournament official to leave the play area."
+      ],
+      "philosophy": "All participants should expect a safe and enjoyable environment at a tournament, and a player\nneeds to be made aware if their behavior is unacceptable so that this environment may be\nmaintained.",
+      "additional_remedy": "The player must correct the problem immediately. Subsequent Unsporting Conduct — Minor\ninfractions, even for different offenses, will result in a Game Loss. If a Game Loss is issued for\nrepeated infractions, and it occurs at the end of a game, it is acceptable for the judge to apply the\npenalty to the next game instead.",
+      "upgrade": null
+    },
+    {
+      "number": "4.2",
+      "title": "Unsporting Conduct — Major Match Loss",
+      "penalty": "Match Loss",
+      "definition": "A player takes action towards one or more individuals that could reasonably be expected to\ncreate a feeling of being harassed, threatened, bullied, or stalked. This may include insults based\non race, color, religion, national origin, age, gender, disability, or sexual orientation. Threats of\nphysical violence should be treated as Unsporting Conduct – Aggressive Behavior.\nIt is possible for an offender to commit this infraction without intending malice or harm to the\nsubject of the harassment.",
+      "examples": [
+        "A. A player uses a racial slur against their opponent.",
+        "B. A player intentionally misgenders their opponent.",
+        "C. A player takes inappropriate photos of another player without express permission.",
+        "D. A player asks a spectator for a date, is denied, and continues to press the issue.",
+        "E. A player purposefully obstructs another player with the intent of inducing physical\ncontact.",
+        "F. A spectator uses social media to bully another player."
+      ],
+      "philosophy": "A safe environment is a basic expectation of any tournament attendee. Harassment undermines\nthe safety and integrity of a tournament. Players who purposefully create harmful or\nunwelcoming situations in a tournament are expected to immediately correct the behavior and\ndemonstrate remorse or be removed.\nBecause of the confrontational nature of this infraction, judges need to end any match in progress\nand separate the players. Care should be taken not to escalate the situation if at all possible. The\noffender will be removed from the area to receive the penalty, and education about why the\nbehavior is unacceptable regardless of excuse. They may need a few moments to cool down\nafterwards. Apologizing is encouraged, but the desire of the other individuals to not interact with\ntheir harasser must be respected.\nOfficials must investigate these matters as soon as they are brought to their attention. If they\ndetermine that the infraction does not meet the criteria for Unsporting Conduct – Major, it is still\nrecommended that the players be talked to to avoid future misunderstandings.",
+      "additional_remedy": "The player must correct the behavior immediately. If the offense occurs at the end of a match, it\nis acceptable for the judge to apply the penalty to the next match instead.\nUpgrade: If the offense was committed with malicious intent, the player displays no remorse, or\nthe offense is repeated at a later time, the penalty is Disqualification and removal from the venue.",
+      "upgrade": null
+    },
+    {
+      "number": "4.3",
+      "title": "Unsporting Conduct — Improperly Determining a Winner Match Loss",
+      "penalty": "Match Loss",
+      "definition": "A player uses or offers to use a method that is not part of the current game (including actions not\nlegal in the current game) to determine the outcome of a game or match, or uses language\ndesigned to trick someone who may not know it’s against the rules to make such an offer.\nIf the player was aware that what they were doing was against the rules, the infraction is\nUnsporting Conduct — Cheating.",
+      "examples": [
+        "A. As time is called, two players about to draw roll a die to determine the winner.",
+        "B. A player offers to flip a coin to determine the winner of a match.",
+        "C. Two players arm wrestle to determine the winner of the match.",
+        "D. Two players play rock-paper-scissors to decide if they should play the match or draw.",
+        "E. Two players compare the converted mana costs of the top cards of their libraries to\ndetermine the winner of a game at the end of extra turns.",
+        "F. Two players reveal cards from the top of their libraries to see “who would win” after\nextra turns.",
+        "G. A player says “Oh no, we’re going to draw, that’s terrible for us. If only there were\nsomething we could do about it.”"
+      ],
+      "philosophy": "Using an outside-the-game method to determine a winner compromises the integrity of the\ntournament.\nMatches that result in a draw due to time are expected to be reported as such and are not\nexcluded from this penalty if the players use an illegal method to determine the outcome.",
+      "additional_remedy": null,
+      "upgrade": null
+    },
+    {
+      "number": "4.4",
+      "title": "Unsporting Conduct — Bribery and Wagering Match Loss",
+      "penalty": "Match Loss",
+      "definition": "A player offers an incentive to entice an opponent into conceding, drawing, or changing the\nresults of a match, encourages such an offer, or accepts such an offer. Refer to section 5.2 of the\nMagic Tournament Rules for a more detailed description of what constitutes bribery.\nWagering occurs when a player or spectator at a tournament places or offers to place a bet on the\noutcome of a tournament, match or any portion of a tournament or match. The wager does not\nneed to be monetary, nor is it relevant if a player is not betting on their own match.\nIf the player was aware that what they were doing was against the rules, the infraction is\nUnsporting Conduct — Cheating.",
+      "examples": [
+        "A. A player in a Swiss round offers their opponent $100 to concede the match.",
+        "B. A player offers their opponent a card in exchange for a draw.",
+        "C. A player asks for a concession in exchange for a prize split.",
+        "D. Two players agree that the winner of the match will be able to choose a rare card out of\nthe other person’s deck after the match.",
+        "E. Two spectators place a bet on the number of games that will be needed to decide a match."
+      ],
+      "philosophy": "Bribery and wagering disrupt the integrity of the tournament and are strictly forbidden.",
+      "additional_remedy": null,
+      "upgrade": null
+    },
+    {
+      "number": "4.5",
+      "title": "Unsporting Conduct — Aggressive Behavior Disqualification",
+      "penalty": "Disqualification",
+      "definition": "A player acts in a threatening way towards others or their property.",
+      "examples": [
+        "A. A player threatens to hit another player who won’t concede to them.",
+        "B. A player pulls a chair out from under another player, causing them to fall to the ground.",
+        "C. A player makes threats against a judge after receiving a ruling.",
+        "D. A player tears up a card belonging to another player.",
+        "E. A player intentionally turns over a table."
+      ],
+      "philosophy": "The safety of all people at a tournament is of paramount importance. There will be no tolerance\nof physical abuse or intimidation.",
+      "additional_remedy": "The offender should be asked to leave the venue by the organizer.",
+      "upgrade": null
+    },
+    {
+      "number": "4.6",
+      "title": "Unsporting Conduct — Theft of Tournament Material Disqualification",
+      "penalty": "Disqualification",
+      "definition": "A player steals materials from the tournament, including but not limited to cards or tournament\nequipment.",
+      "examples": [
+        "A. A player steals cards from the sideboard of their opponent.",
+        "B. A player steals the table number from a table.",
+        "C. A player realizes they have a previous opponent’s card, but they hide it instead of telling\na tournament official."
+      ],
+      "philosophy": "Players enter a tournament expecting that their materials will be protected. This does not absolve\nthe players from their responsibility to keep an eye on their possessions, but they should expect\nto be able to retain the product they began with or were given for the tournament. Other instances\nof theft not involving tournament materials are the responsibility of the Tournament Organizer,\nthough judges are encouraged to help in any way possible.",
+      "additional_remedy": "The offender should be asked to leave the venue by the organizer.",
+      "upgrade": null
+    },
+    {
+      "number": "4.7",
+      "title": "Unsporting Conduct — Stalling Disqualification",
+      "penalty": "Disqualification",
+      "definition": "A player intentionally plays slowly in order to take advantage of the time limit. If the slow play\nis not intentional, please refer to Tournament Error — Slow Play instead.",
+      "examples": [
+        "A. A player has two lands in their hand, no options available to significantly affect the game,\nand spends excessive time “thinking” about what to do to eat up time on the clock.",
+        "B. A player is ahead in games and significantly slows down their pace of play so the\nopponent has little chance to catch up.",
+        "C. A player playing slowly appeals a warning in an attempt to gain advantage by having\nmore time to make a decision.",
+        "D. A player intentionally mulligans slowly before the third game in an attempt to make it\nharder for their opponent to win in time.",
+        "E. A player losing a game starts slowing down the pace of play in an attempt to run out the\nclock."
+      ],
+      "philosophy": null,
+      "additional_remedy": null,
+      "upgrade": null
+    },
+    {
+      "number": "4.8",
+      "title": "Unsporting Conduct — Cheating Disqualification",
+      "penalty": "Disqualification",
+      "definition": "A person breaks a rule defined by the tournament documents, lies to a tournament official, or\nnotices an offense committed in their (or a teammate's) match and does not call attention to it.\nAdditionally, the offense must meet the following criteria for it to be considered Cheating:\n• The player must be attempting to gain advantage from their action.\n• The player must be aware that they are doing something illegal.\nIf all criteria are not met, the offense is not Cheating and is handled by a different infraction.\nCheating will often appear on the surface as a Game Play Error or Tournament Error, and must\nbe investigated by the judge to make a determination of intent and awareness.",
+      "examples": [
+        "A. A player alters the results on a match slip without their opponent’s knowledge.",
+        "B. A player lies to a tournament official about what happened in a game to make their case\nstronger.",
+        "C. A player allows their opponent to put a creature into the graveyard even though the\ncreature has not been dealt lethal damage.",
+        "D. A player notices that their opponent resolved only half of the triggered ability of Sword\nof Feast and Famine and decides not to call attention to the error.",
+        "E. A player peeks at another player’s picks during the draft.",
+        "F. A player adds cards to their Sealed Deck pool.",
+        "G. A player realizes they have accidentally drawn an extra card, then fails to call a judge in\norder to avoid a penalty.\nAPPENDIX A — PENALTY QUICK REFERENCE\nInfraction Penalty\nGame Play Errors\nMissed Trigger None\nLooking at Extra Cards Warning\nHidden Card Error Warning\nMulligan Procedure Error Warning\nGame Rule Violation Warning\nFailure to Maintain Game State Warning\nTournament Errors\nTardiness Game Loss\nOutside Assistance Match Loss\nSlow Play Warning\nDecklist Problem Game Loss\nDeck Problem Warning\nLimited Procedure Violation Warning\nCommunication Policy Violation Warning\nMarked Cards Warning\nInsufficient Shuffling Warning\nUnsporting Conduct\nUnsporting Conduct — Minor Warning\nUnsporting Conduct — Major Match Loss\nImproperly Determining a Winner Match Loss\nBribery and Wagering Match Loss\nAggressive Behavior Disqualification\nTheft of Tournament Material Disqualification\nStalling Disqualification\nCheating Disqualification\nAPPENDIX B — CHANGES FROM PREVIOUS VERSIONS\nSeptember 23, 2024\n1.2: Removed specific details of how penalties are collected and stored, as it varies depending on the\nsoftware being used.\n2.1: Treat missed Saga turn actions as missed triggers.\n2.1: Missed triggers still count as having triggered.\n2.5: Object-in-wrong-zone changed to always be a partial fix, but only when the incorrect zone is the\nroot GRV.\n3.5: Wrong number of cards upgrade has been split into two paragraphs for clarity, as it has slightly\ndifferent criteris for pre- and post-sideboard games.\nApril 15, 2024\n2.3: Made it clearer that a morph returned to hand without reveal is not part of the upgrade path.\n2.3: Added a clarification that the player needs to identify a morph problem before it is about to be\ndiscovered by the opponent.\n3.4: Added wording to make presenting the wrong decklist to an opponent a Decklist Problem.\n3.5: Clarity on the order of when things happen once a problem has been discovered.\n3.5: Companion restriction fix now parallels the normal error fix.\n3.5: Removed the requirement that multiple copies of the card have to be discovered after the game has\nbegun (can now happen during pregame procedures).\nFebruary 2, 2024\n2.3: Upgrade language changed to account for disguise ability.\nNovember 13, 2023\n3.5: Rephrased first sentences in the remedy to make the order of actions clearer.\n4.2: Added intentional misgendering as an example of USC-Major.\nSeptember 4, 2023\n1.1: Added link to report disqualifications. Removed outdated link to additional DQ information.\n2.1: Missed triggers can now do a simple backup in limited situations.\n3.5: Opponent chooses the timing of when to return the cards to the deck.\nAll trademarks are property of Wizards of the Coast LLC in the U.S.A. and other countries. ©2024 Wizards."
+      ],
+      "philosophy": null,
+      "additional_remedy": null,
+      "upgrade": null
+    }
+  ]
+}

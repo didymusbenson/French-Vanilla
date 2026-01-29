@@ -1,0 +1,33 @@
+{
+  "title": "Infraction Procedure Guide",
+  "document_type": "ipg",
+  "metadata": {
+    "effective_date": "September 23, 2024"
+  },
+  "sections": [
+    {
+      "section_number": 1,
+      "title": "1. General Philosophy",
+      "section_key": "ipg_section_1",
+      "infraction_count": 5
+    },
+    {
+      "section_number": 2,
+      "title": "2. Game Play Errors",
+      "section_key": "ipg_section_2",
+      "infraction_count": 6
+    },
+    {
+      "section_number": 3,
+      "title": "3. Tournament Errors",
+      "section_key": "ipg_section_3",
+      "infraction_count": 9
+    },
+    {
+      "section_number": 4,
+      "title": "4. Unsporting Conduct",
+      "section_key": "ipg_section_4",
+      "infraction_count": 8
+    }
+  ]
+}

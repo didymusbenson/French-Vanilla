@@ -1,0 +1,60 @@
+{
+  "section_number": 1,
+  "title": "1. General Philosophy",
+  "section_key": "ipg_section_1",
+  "metadata": {
+    "effective_date": "September 23, 2024"
+  },
+  "infractions": [
+    {
+      "number": "1.1",
+      "title": "DEFINITION OF PENALTIES",
+      "penalty": null,
+      "definition": "Warning\nWarnings are used in situations of incorrect play when a small amount of time is needed to\nimplement the corrective procedure. The purpose of a Warning is to alert judges and players\ninvolved that a problem has occurred and to keep a permanent record of the infraction. A time\nextension should be issued if the ruling has taken more than a minute.\nGame Loss\nA Game Loss ends the current game immediately and the player who committed the infraction is\nconsidered to have lost the game for the purpose of match reporting. The player receiving a\nGame Loss chooses whether to play or draw in the next game of that match, if applicable. If a\nGame Loss is issued before the match begins, neither player in that match may use sideboards (if\nthe tournament uses them) for the first game they play.\nGame Losses are applied immediately if the game is still ongoing, or to the player’s next game if\nit is not, unless otherwise specified. If a player would receive multiple Game Losses at the same\ntime, they only receive one. If simultaneous Game Loss penalties are issued to each player, they\nare recorded, but do not affect the match score.\nMatch Loss\nA Match Loss is a severe penalty that is usually issued when the match itself has been\ncompromised.\nMatch Losses are applied to the match during which the offense occurred unless the offender’s\nmatch has already ended, in which case the penalty will be applied to that player’s next match.\nDisqualification\nA Disqualification is issued for activity that damages the integrity of a tournament as a whole or\nfor severe unsporting conduct.\nThe recipient of a Disqualification does not need to be a player in the tournament. They may be a\nspectator or other bystander.\nDisqualification can occur without proof of action so long as the Head Judge determines\nsufficient information exists to believe the tournament’s integrity may have been compromised.\nIt is recommended that the Head Judge’s report reflect this fact.\nWhen this penalty is applied, the player loses their current match and is dropped from the\ntournament. If a player has already received prizes at the time they are disqualified, that player\nmay keep those prizes but does not receive any additional prizes or awards they may be due.\nWhen a player is disqualified during a tournament, they are removed from the tournament and do\nnot take up a place in the standings. This means that all players in the tournament will advance\none spot in the standings and are entitled to any prizes the new standing would offer. If the\nDisqualification takes place after a cut is made, no additional players advance in place of the\ndisqualified player although they do move up a spot in the standings. For example, if a player is\ndisqualified during the quarterfinal round of a Magic Tabletop Mythic Qualifier, the former 9th\nplace finisher does not advance into the single elimination top 8, but they do move into 8th place\nin the standings.\nDisqualifications should be reported here\n. Please include the Wizards Account email address of\nthe disqualified player and that player’s opponent.",
+      "examples": [],
+      "philosophy": null,
+      "additional_remedy": null,
+      "upgrade": null
+    },
+    {
+      "number": "1.2",
+      "title": "APPLYING PENALTIES",
+      "penalty": null,
+      "definition": "Any penalty of Game Loss or higher should be reported to the Head Judge, and it is\nrecommended that only the Head Judge issue penalties of this nature (with the exception of\nTardiness (3.1) and Decklist Problems (3.4)).\nBeing enrolled in the tournament is not a requirement to receive a penalty. Although these\nguidelines refer to players, other people in the venue, such as spectators, staff, or judges may be\nenrolled into (and dropped from) the tournament in order to receive a penalty. Penalties are still\nissued even if a player drops from the tournament before it would take effect.\nAny time a penalty is issued, the judge must explain the infraction, the procedure for fixing the\nsituation, and the penalty to all players involved. If the Head Judge chooses to deviate from the\nInfraction Procedure Guide, the Head Judge is expected to explain the standard penalty and the\nreason for deviation.\nSome infractions include remedies to handle the offense beyond the base penalty. These\nprocedures exist to protect officials from accusations of unfairness, bias, or favoritism. If a judge\nmakes a ruling that is consistent with quoted text, then the complaints of a player shift from\naccusation of unfairness by the judge to accusations of unfair policy. Deviations from these\nprocedures may raise accusations against the judge from the player(s) involved, or from those\nwho hear about it. These procedures do not, and should not, take into account the game being\nplayed, the current situation that the game is in, or who will benefit strategically from the\nprocedure associated with a penalty. While it is tempting to try to “fix” game situations, the\ndanger of missing a subtle detail or showing favoritism to a player (even unintentionally) makes\nit a bad idea.\nIf an error leads to multiple related infractions, only issue one with the most severe penalty.",
+      "examples": [],
+      "philosophy": null,
+      "additional_remedy": null,
+      "upgrade": null
+    },
+    {
+      "number": "1.3",
+      "title": "RANDOMIZING A LIBRARY",
+      "penalty": null,
+      "definition": "The remedy for some infractions in this document includes shuffling the randomized portion of\nthe library. This requires first determining whether any portion of the library is non-random, such\nas cards that have been manipulated on the top or bottom of the library, and separating those.\nCheck with both players to verify this, and check the graveyard, exile, and battlefield for library\nmanipulation cards, such as Brainstorm and cards with the scry mechanic. Once the library has\nbeen shuffled, any manipulated cards are returned to their correct locations.\nShuffles performed by a judge as part of a remedy are not considered shuffles for game purposes.",
+      "examples": [],
+      "philosophy": null,
+      "additional_remedy": null,
+      "upgrade": null
+    },
+    {
+      "number": "1.4",
+      "title": "BACKING UP",
+      "penalty": null,
+      "definition": "Some infractions in this document permit the judge to consider the possibility of a backup. Due\nto the amount of information that may become available to players and might affect their play,\nbackups are regarded as a solution of last resort, only applied in situations where leaving the\ngame in the current state is a substantially worse solution. A good backup will result in a\nsituation where the gained information makes no difference and the line of play remains the\nsame (excepting the error, which has been fixed). This means limiting backups to situations with\nminimal decision trees.\nOnly the Head Judge may authorize a backup. At large tournaments, they may choose to delegate\nthis responsibility to Team Leaders.\nTo perform a backup, each individual action since the point of the error is reversed, starting with\nthe most recent ones and working backwards. Every action must be reversed; no parts of the\nsequence should be omitted or reordered. If the identity of a card involved in reversing an action\nis unknown to one of the players (usually because it was drawn), a random card is chosen from\nthe possible candidates. Actions that caused a player to learn the identity of cards at a specific\nlocation in the library are reversed by shuffling those cards into the random portion of the library\nunless they were subsequently drawn; cards being returned to the library as part of the backup\nshould not be shuffled at that stage if their identity was known to only one player.\nBackups involving random/unknown elements should be approached with extreme caution,\nespecially if they cause or threaten to cause a situation in which a player will end up with\ndifferent cards than they would once they have correctly drawn those cards. For example,\nreturning cards to the library when a player has the ability to shuffle their library is not\nsomething that should be done except in extreme situations.\nSome remedies state a simple backup may be performed. A simple backup is backing up the last\naction completed (or one currently in progress) and is sometimes used to make another portion of\nthe prescribed remedy smoother. A simple backup should not involve any random elements.",
+      "examples": [],
+      "philosophy": null,
+      "additional_remedy": null,
+      "upgrade": null
+    },
+    {
+      "number": "1.5",
+      "title": "SETS",
+      "penalty": null,
+      "definition": "Some infractions in this document refer to “sets” of cards. A set is a physically distinct group of\ncards defined by a game rule or effect. It may correspond to a specific zone, or may only\nrepresent a part of a zone. A set may consist of a single card.\nCards are considered to be part of a set until they join another set. There is no in-between state\nand any card that has not yet been seen is part of the previous set (unless the new set is hidden).",
+      "examples": [],
+      "philosophy": null,
+      "additional_remedy": null,
+      "upgrade": null
+    }
+  ]
+}

@@ -1,0 +1,140 @@
+{
+  "section_number": 3,
+  "title": "3. Tournament Errors",
+  "section_key": "ipg_section_3",
+  "metadata": {
+    "effective_date": "September 23, 2024"
+  },
+  "infractions": [
+    {
+      "number": "3.1",
+      "title": "Tournament Error — Tardiness Game Loss",
+      "penalty": "Game Loss",
+      "definition": "A player is not in their seat at the beginning of a round, or has not completed tasks assigned\nwithin the time allocated. If a round begins before the previous round would have ended (due to\nall players finishing early), tardiness does not apply until the scheduled end of the previous\nround.\nIf, before or during a match, a player requests and receives permission from a judge for a delay\nfor a legitimate task, such as a bathroom break or finding replacements for missing cards, that\nplayer has up to 10 minutes to perform that task before they are considered tardy. If the player\ntakes more than 10 minutes, a Match Loss will be applied. Otherwise, no penalty will be applied\nand a time extension given for the time taken.",
+      "examples": [
+        "A. A player arrives to their seat 5 minutes after the round begins.",
+        "B. A player hands in their decklist after the time designated by the judge or organizer.",
+        "C. A player loses their deck and cannot find replacement cards within the first 10 minutes of\nthe round.",
+        "D. A player sits at an incorrect table and plays the wrong opponent."
+      ],
+      "philosophy": "Players are responsible for being on time and in the correct seat for their matches, and for\ncompleting registrations in a timely manner. The Tournament Organizer may announce that they\nare giving the players some additional time before a penalty is issued. Otherwise, the penalty is\nissued as soon as the round begins.",
+      "additional_remedy": "The players are given a time extension corresponding to the length of the tardiness.\nUpgrade: A player not in their seat 10 minutes into the round will receive a Match Loss and will\nbe dropped from the tournament unless they report to the Head Judge or Scorekeeper before the\nend of the round.\nDowngrade: A player who arrives at their seat before 1 minute has elapsed in the round receives\na Warning.",
+      "upgrade": null
+    },
+    {
+      "number": "3.2",
+      "title": "Tournament Error — Outside Assistance Match Loss",
+      "penalty": "Match Loss",
+      "definition": "A player, spectator, or other tournament participant does any of the following:\n• Seeks play advice or private information about their match from others once they have sat\nfor their match.\n• Gives play advice or reveals private information to players who have sat for their match.\n• During a game, refers to notes (other than Oracle™ pages) made before the official\nbeginning of the current match.\nThese criteria also apply to any deck construction and draft portions of a limited tournament.\nAdditionally, no notes of any kind may be made during a draft. Some team formats have\nadditional communication rules that may modify the definition of this infraction.\nNotes made outside the current match may only be referenced between games, and must have\nbeen in the player’s possession since the beginning of the match.",
+      "examples": [
+        "A. During a game, a player references play notes that were created before the tournament.",
+        "B. A spectator points out the correct play to a player who had not solicited the information."
+      ],
+      "philosophy": "Tournaments test the skill of a player, not their ability to follow external advice or directions.\nAny strategy advice, play advice, or construction advice from an external source is considered\noutside assistance.\nVisual modifications to cards, including brief text, that provide minor strategic information or\nhints are acceptable and not considered notes. Detailed instructions or complex strategic advice\nmay not be written on cards. The Head Judge is the final arbiter on what cards and notes are\nacceptable for a tournament. Spectators who commit this infraction may be asked to leave the\nvenue if they are not enrolled in the tournament.\nDowngrade: If the information acquired is information that the player would have access to\nbetween games, the penalty is a Game Loss.",
+      "additional_remedy": null,
+      "upgrade": null
+    },
+    {
+      "number": "3.3",
+      "title": "Tournament Error — Slow Play Warning",
+      "penalty": "Warning",
+      "definition": "A player takes longer than is reasonably required to complete game actions. If a judge believes a\nplayer is intentionally playing slowly to take advantage of a time limit, the infraction is\nUnsporting Conduct — Stalling.\nIt is also slow play if a player continues to execute a loop without being able to provide an exact\nnumber of iterations and the expected resulting game state.",
+      "examples": [
+        "A. A player repeatedly reviews their opponent’s graveyard without any significant change in\ngame state.",
+        "B. A player spends time writing down the contents of an opponent’s library while resolving\nThought Hemorrhage.",
+        "C. A player takes an excessive amount of time to shuffle their deck between games.",
+        "D. A player gets up from their seat to look at standings or goes to the bathroom without\npermission of an official."
+      ],
+      "philosophy": "All players have the responsibility to play quickly enough so that their opponents are not at a\nsignificant disadvantage because of the time limit. A player may be playing slowly without\nrealizing it. A comment of “I need you to play faster” is often appropriate and all that is needed.\nFurther slow play should be penalized.",
+      "additional_remedy": "In the event that the match exceeds the time limit, two additional turns are added to the number\nof additional turns played. This turn extension occurs before any end-of-match procedure can\nbegin and after any time extensions that may have been issued.\nNo additional turns are awarded if the match is already in additional turns, though the Warning\nstill applies.",
+      "upgrade": null
+    },
+    {
+      "number": "3.4",
+      "title": "Tournament Error — Deck list Problem Game Loss",
+      "penalty": "Game Loss",
+      "definition": "The decklist is illegal, doesn’t match what the player intended to play, needs to be modified due\nto card loss over the course of the tournament, or is presented to the opponent with errors in it.\nThis infraction does not cover errors in registration made by another participant prior to a sealed\npool swap. Those should be corrected at the discretion of the judge.",
+      "examples": [
+        "A. A player in a Legacy tournament lists Mana Drain (a banned card) on their decklist.",
+        "B. A player has a 56-card decklist. Their actual deck contains 60 cards, with four Dispels\nnot listed.",
+        "C. A player lists ‘Sarkhan’ in a format with both Sarkhan, the Dragonspeaker and Sarkhan\nUnbroken.",
+        "D. A player loses some cards and is unable to find replacement copies, making them unable\nto play a deck that matches their decklist.",
+        "E. A player registers Ajani, Valiant Protector, but they are playing Ajani Unyielding."
+      ],
+      "philosophy": "Decklists are used to ensure that decks are not altered in the course of a tournament. Judges and\nother tournament officials should be vigilant about reminding players before the tournament\nbegins of the importance of submitting a legal decklist, and playing with a legal deck. A player\nnormally receives a Game Loss if their decklist is altered after tournament play has begun.\nPenalties for decklist errors discovered outside the context of the match and its procedures (such\nas those discovered through decklist counting) are issued at the start of the next match unless the\njudge believes there is strong evidence the deck itself is illegal.\nAmbiguous or unclear names on a decklist may allow a player to manipulate the contents of their\ndeck up until the point at which they are discovered. Truncated names of storyline characters on\ndecklists (planeswalkers and other legendary permanents) are acceptable as long as they are the\nonly representation of that character in the format and are treated as referring to that card, even if\nother cards begin with the same name.\nThe Head Judge may choose to not issue this penalty if they believe that what the player wrote\non their decklist is obvious and unambiguous, even if not entirely accurate. In Limited\ntournaments, the Head Judge may choose not to issue this penalty for incorrectly marked basic\nland counts if they believe the correct land count is obvious. This should be determined solely by\nwhat is written on the decklist, and not based on intent or the actual contents of the deck; needing\nto check the deck for confirmation is a sign that the entry is not obvious.\nCompanions affect what the player intended to play, and may produce a situation in which the\ndeck and decklist match, but violate the restriction on the intended companion. In these\nsituations, it is acceptable to alter the deck and sideboard configuration to meet the restriction.\nIn tournaments with open decklists, if the wrong decklist is provided to an opponent and it is\ndiscovered during the game, the opponent may have made strategic decisions throughout the\ngame based on the error, and that cannot be fully assessed or offset.",
+      "additional_remedy": "If the decklist contains illegal cards, remove them. If the decklist is being adjusted to allow for\nan intended companion, the player exchanges cards between the deck and sideboard until the\nrestriction is met.\nAlter the decklist to match the deck the player is actually playing. If the deck/sideboard and\ndecklist both violate a maximum cards restriction (usually too many cards in a sideboard, more\nthan four of a card, or the same card in two decks in a Unified Constructed format), remove cards\nas directed by the player to make the decklist legal.\nIf the deck contains too few cards, the player chooses to add any combination of cards named\nPlains, Island, Swamp, Mountain or Forest to reach the minimum number. Alter the decklist to\nreflect this. These changes may be reverted without penalty if the player is subsequently able to\nlocate identical replacements to legal original cards.",
+      "upgrade": null
+    },
+    {
+      "number": "3.5",
+      "title": "Tournament Error — Deck Problem Warning",
+      "penalty": "Warning",
+      "definition": "The contents of a deck or sideboard do not match the decklist registered and the decklist\nrepresents what the player intended to play.\nIf there are extra cards stored with the sideboard that could conceivably be played in the player’s\ndeck, they will be considered a part of the sideboard unless they are:\n• Promotional cards that have been handed out as part of the event.\n• Double-faced cards represented by substitute cards in the deck.\n• Damaged cards that have been officially proxied for the tournament.\n• Double-faced cards being used to represent the back side of cards in the deck. These\ncards must not be sleeved in the same way as cards in the main deck and/or sideboard.\nCards in different sleeves, tokens, and double-faced cards for which substitute cards are being\nused are ignored when determining deck (not sideboard) legality.\nIf a player is unable to locate cards (or identical equivalents) from their main deck, treat it as a\nDecklist Problem instead. If sideboard cards are missing, make a note of this, but issue no\npenalty.\nThe discovery of a card that violates a companion restriction is a Deck Problem if the player\ndoes not wish to modify their decklist to accommodate the companion restriction.",
+      "examples": [
+        "A. A player has 59 cards in their deck, but 60 listed on their decklist.",
+        "B. A player has a Pacifism in their deck from a previous opponent.",
+        "C. In game one of a match, A player has Pithing Needle in their deck, but only has one\nregistered in their sideboard."
+      ],
+      "philosophy": "Players are expected to call attention to deck errors immediately, and not gain any potential\nadvantage from having the cards in their deck.\nThe most common forms of deck error are failure to desideboard and having a card in the wrong\ndeck. Both of these are difficult to gain advantage from without obvious cheating. Allowing the\nopponent to choose which card they would otherwise be working with is sufficient to\ncompensate for the easily discovered situations. Duplicates of cards that begin in the main deck\nare more problematic, as they are not as easy to realize and catch, and thus mandate an upgraded\npenalty.\nA window in which the error is a Game Loss is necessary to discourage intentional abuse of the\nminimum number of cards in the deck. Once that point has passed, the opponent agrees that the\ndeck is valid. Judges should always be mindful of the abuse possibilities when investigating\nthese infractions.",
+      "additional_remedy": "Locate any cards missing from the deck and any incorrect cards in any game zone. Reveal those\ncards to the opponent. If the game has started, the opponent chooses whether to fix the problem\nnow or when a player would next get priority. Then, at the appropriatre time, they specify which\nof the missing cards replaces each incorrect card; any extras are shuffled into the random portion\nof the library. If more cards are being removed than added, prioritize ones not in the library first.\nIf there are still additional cards not in the library that need replacing, they are replaced by cards\nfrom the random portion of the library. If the missing card(s) are with the sideboard and it isn’t\nthe first game, choose the ones to be returned to the deck at random from main deck cards in the\nsideboard.\nIf the error caused a violation of a companion restriction and it is a post-sideboard game (or a\npre-sideboard game and the player has elected to continue with the deck they registered that does\nnot match the revealed companion condition), locate all cards violating the restriction. Then,\nreveal all cards in the sideboard that meet the companion restriction. The opponent decides\nwhich of those cards replaces each illegal card. If making the deck match the companion\ncondition is impossible, upgrade the penalty to a Game Loss.\nIf the missing card(s) were in a previous or current opponent’s deck, issue penalties to both\nplayers.\nUpgrade: In games before sideboarding, while the deck is presented to the opponent for pre-\ngame shuffling or during a deckcheck, if the deck contains fewer cards than registered (and any\nmissing cards are not in the opponent’s deck) or the sideboard contains more cards than\nregistered, the penalty is a Game Loss.\nIn games after sideboarding, while the deck is presented to the opponent for pre-game shuffling\nor during a deckcheck, if the deck contains fewer cards than the format minimum (and any\nmissing cards are not in the opponent’s deck) or the sideboard contains more cards than the\nformat maximum, the penalty is a Game Loss.\nUpgrade: If an opponent may have made strategic decisions based on the presence of a\nsideboard card (such as having seen it in the hand or library during a search effect), the penalty is\na Game Loss.\nUpgrade: If an error resulted in more copies of a main deck card being played than were\nregistered or allowed by companion restriction, the penalty is a Game Loss unless all copies of\nthe card are still in the random portion of the library. For example if the decklist has two copies\nof Shock in the main deck and two in the sideboard, but a search finds two copies of Shock in the\nlibrary with another already in the graveyard, the penalty is upgraded.",
+      "upgrade": null
+    },
+    {
+      "number": "3.6",
+      "title": "Tournament Error — Limited Procedure Violation Warning",
+      "penalty": "Warning",
+      "definition": "A player commits a technical error during a draft.",
+      "examples": [
+        "A. A player passes a booster to their left when it is supposed to go to their right.",
+        "B. A player exceeds the amount of time allotted for a draft pick.",
+        "C. A player puts a card on top of their draft pile, then pulls it back.",
+        "D. A player moves their head to the side at inappropriate times."
+      ],
+      "philosophy": "Errors in draft are disruptive and may become more so if they are not caught quickly.\nAnnouncements prior to the draft or the specific tournament rules for the format may specify\nadditional penalties for Limited Procedure Violations.",
+      "additional_remedy": null,
+      "upgrade": null
+    },
+    {
+      "number": "3.7",
+      "title": "Tournament Error — Communication Policy Violation Warning",
+      "penalty": "Warning",
+      "definition": "A player violates the Communication policies detailed in section 4 of the Magic Tournament\nRules and the judge believes their opponent has taken an in-game action or clearly chosen not to\nact based on the erroneous information. This infraction only applies to violations of that policy\nand not to general communication confusion.",
+      "examples": [
+        "A. A player is asked how many cards they have in their hand and answers “Three.” A few\nmoments later, their opponent casts a discard spell and they realize that they have four.",
+        "B. A player keeps their Llanowar Elf in with their land, and their opponent attacks thinking\nthey have no blockers.",
+        "C. A player casts Path to Exile, forgets to remind their opponent that they have the\nopportunity to search for a basic land and, as a result, they don’t."
+      ],
+      "philosophy": "Clear communication is essential when playing Magic. Though many offenses will be\nintentional, it is possible for a player to make a genuine mistake that causes confusion and these\nshould not be penalized harshly.\nA player may commit this infraction in situations where they have not spoken. A physically\nambiguous board state is not automatically a penalty, but judges are encouraged to tell players to\nfix ambiguous placements before they might become problematic.\nMisapplication of a shortcut is usually not a Communication Policy Violation, as the default\ninterpretation applies in ambiguous situations and the opponent is able to act on that shortcut.\nAny deviation from a tournament shortcut requires a clear explanation.",
+      "additional_remedy": "A backup may be considered to the point of the action, not the erroneous communication.",
+      "upgrade": null
+    },
+    {
+      "number": "3.8",
+      "title": "Tournament Error — Marked Cards Warning",
+      "penalty": "Warning",
+      "definition": "Cards or sleeves in a player’s deck have inconsistencies on them that might allow them to be\ndifferentiated from each other while in the library. This includes scuff marks, nail marks,\ndiscoloration, bent corners, and curving from foils.",
+      "examples": [
+        "A. A player has small marks on a few of their sleeves. The markings are on a Mountain, a\nLoxodon Hierarch, and a Lightning Helix.",
+        "B. A player has several foil cards that stand out significantly from the rest of their deck.",
+        "C. The basic lands in a player’s unsleeved deck are from a set with notably lighter backs."
+      ],
+      "philosophy": "Sleeves and cards often become worn over the course of a tournament, and, as long as the player\nis not attempting to take advantage of this, addressing the situation is sufficient in most cases.\nNote that almost all sleeves can be considered marked in some way; judges should keep this in\nmind when determining penalties. In cases of marked cards, educating players to shuffle their\ncards and sleeves before sleeving the cards is very important.\nThis infraction applies only to cards in a player’s deck. Differently-marked sleeves in the\nsideboard are not illegal unless they are put into the deck without being changed. Unless\ninvestigating, judges are encouraged to alert players about concerns with marked sideboard\ncards.",
+      "additional_remedy": "The player needs to replace the card(s) or sleeve(s) with an unmarked version or, if no sleeves\nare being used, use sleeves that conceal the markings. If the cards themselves have become\nmarked through play in the tournament, the Head Judge may decide to issue a proxy.\nUpgrade: If the player is unable to find replacement cards, they may replace those cards with\nany combination of cards named Plains, Island, Swamp, Mountain or Forest. As the decklist is\nbeing changed to match the new contents of the deck, the penalty is a Game Loss. This change\nmay be reverted at a later point without further penalty if replacements for marked cards are\nfound.\nUpgrade: If the Head Judge believes that a deck’s owner noticing the pattern of markings would\nbe able to gain substantial advantage from this knowledge, the penalty is a Game Loss.",
+      "upgrade": null
+    },
+    {
+      "number": "3.9",
+      "title": "Tournament Error — Insufficient Shuffling Warning",
+      "penalty": "Warning",
+      "definition": "A player unintentionally fails to sufficiently shuffle their deck or a portion of their deck before\npresenting it to their opponent, or fails to present it to their opponent for further randomization.\nA deck is not shuffled if the judge believes a player could know the position or distribution of\none or more cards in their deck.",
+      "examples": [
+        "A. A player forgets to shuffle their library after searching for a card.",
+        "B. A player searches for a card, then gives the library a single riffle-shuffle before\npresenting the library to their opponent.",
+        "C. A player fails to shuffle the portion of their library revealed during the resolution of a\ncascade ability."
+      ],
+      "philosophy": "Players are expected to shuffle their deck thoroughly when it is required and are expected to have\nthe skill and understanding of randomization to do so. However, as the opponent has the\nopportunity to shuffle after the player does, the potential for advantage is lowered if tournament\npolicy is followed.\nAny time cards in a deck could be seen, including during shuffling, it is no longer shuffled, even\nif the player only knows the position of one or two cards. Players are expected to take care in\nshuffling not to reveal cards to themselves, their teammates, or their opponents.\nA player should shuffle their deck using multiple methods. Patterned pile-shuffling is only\nallowed at the start of a game. Any manipulation, weaving, or stacking prior to randomization is\nacceptable, as long as the deck is thoroughly shuffled afterwards.",
+      "additional_remedy": "Shuffle the appropriate portion of the deck thoroughly.",
+      "upgrade": null
+    }
+  ]
+}
