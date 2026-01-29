@@ -3,77 +3,13 @@ import '../models/rule.dart';
 import '../screens/glossary_detail_screen.dart';
 import '../screens/rule_detail_screen.dart';
 import 'rule_link_mixin.dart';
+import 'formatted_content_mixin.dart';
 
 /// Mixin providing shared bottom sheet functionality for previewing rules and glossary terms
 /// Used by BookmarksScreen and SearchScreen to reduce code duplication
 /// Requires RuleLinkMixin to provide clickable rule references
-mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMixin<T> {
-  /// Builds formatted subrule content with spacing between subsections
-  Widget buildFormattedContent(String content) {
-    // Strip the leading subrule number from the first line since it's shown in the header
-    // Matches "201.1. " or "702.90a " (period OR letter after minor number)
-    final leadingNumberPattern = RegExp(r'^\d{3}\.\d+([a-z]|\.)\s+');
-    String processedContent = content;
-    if (leadingNumberPattern.hasMatch(content)) {
-      processedContent = content.replaceFirst(leadingNumberPattern, '');
-    }
-
-    final lines = processedContent.split('\n');
-    final subsections = <String>[];
-    // Matches "100.1." or "100.1a" (note: letter variants have NO dot after them)
-    final subsectionPattern = RegExp(r'^\d{3}\.\d+([a-z]|\.)\s');
-
-    var currentSubsection = StringBuffer();
-
-    for (final line in lines) {
-      final trimmedLine = line.trim();
-
-      // Check if this is the start of a new subsection
-      if (subsectionPattern.hasMatch(trimmedLine)) {
-        // Save the previous subsection if it exists
-        if (currentSubsection.isNotEmpty) {
-          subsections.add(currentSubsection.toString().trim());
-          currentSubsection = StringBuffer();
-        }
-        currentSubsection.writeln(line);
-      } else if (trimmedLine.isNotEmpty) {
-        currentSubsection.writeln(line);
-      }
-    }
-
-    // Don't forget the last subsection
-    if (currentSubsection.isNotEmpty) {
-      subsections.add(currentSubsection.toString().trim());
-    }
-
-    final baseStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      height: 1.6,
-    );
-
-    // Build the widget with spacing between subsections
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (int i = 0; i < subsections.length; i++) ...[
-          RichText(
-            text: TextSpan(
-              children: parseTextWithLinks(subsections[i], baseStyle),
-            ),
-          ),
-          if (i < subsections.length - 1)
-            Center(
-              child: Text(
-                '—',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                  fontSize: 16,
-                ),
-              ),
-            ),
-        ],
-      ],
-    );
-  }
+/// Uses FormattedContentMixin for consistent example rendering
+mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMixin<T>, FormattedContentMixin<T> {
 
   /// Shows a bottom sheet preview for a glossary term
   void showGlossaryBottomSheet({

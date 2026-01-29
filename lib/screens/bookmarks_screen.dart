@@ -1,8 +1,10 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../services/favorites_service.dart';
 import '../services/rules_data_service.dart';
 import '../services/card_data_service.dart';
 import '../mixins/rule_link_mixin.dart';
+import '../mixins/formatted_content_mixin.dart';
 import '../mixins/preview_bottom_sheet_mixin.dart';
 import 'card_detail_screen.dart';
 
@@ -13,7 +15,7 @@ class BookmarksScreen extends StatefulWidget {
   State<BookmarksScreen> createState() => BookmarksScreenState();
 }
 
-class BookmarksScreenState extends State<BookmarksScreen> with RuleLinkMixin, PreviewBottomSheetMixin {
+class BookmarksScreenState extends State<BookmarksScreen> with RuleLinkMixin, FormattedContentMixin, PreviewBottomSheetMixin {
   final _favoritesService = FavoritesService();
   final _dataService = RulesDataService();
   final _cardService = CardDataService();
@@ -198,14 +200,20 @@ class BookmarksScreenState extends State<BookmarksScreen> with RuleLinkMixin, Pr
                           value: isSelected,
                           onChanged: (_) => _toggleSelection(bookmark.identifier),
                         )
-                      : Icon(
-                          bookmark.type == BookmarkType.rule
-                              ? Icons.bookmark
-                              : bookmark.type == BookmarkType.card
-                                  ? Icons.style
+                      : bookmark.type == BookmarkType.card
+                          ? Transform.rotate(
+                              angle: pi,
+                              child: Icon(
+                                Icons.style,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            )
+                          : Icon(
+                              bookmark.type == BookmarkType.rule
+                                  ? Icons.bookmark
                                   : Icons.bookmark,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
                   title: Text(
                     displayTitle,
                     style: const TextStyle(fontWeight: FontWeight.bold),

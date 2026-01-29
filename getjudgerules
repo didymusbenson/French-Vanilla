@@ -1,0 +1,10 @@
+#!/bin/bash
+#
+# getjudgerules - Fetch and update MTG Judge Documents (MTR and IPG)
+#
+# Usage: ./getjudgerules
+#
+
+cd "$(dirname "$0")" || exit 1
+
+python3 scripts/update_judge_docs.py

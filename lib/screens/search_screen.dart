@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/rules_data_service.dart';
 import '../services/search_history_service.dart';
 import '../mixins/rule_link_mixin.dart';
+import '../mixins/formatted_content_mixin.dart';
 import '../mixins/preview_bottom_sheet_mixin.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -13,7 +14,7 @@ class SearchScreen extends StatefulWidget {
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> with RuleLinkMixin, PreviewBottomSheetMixin {
+class _SearchScreenState extends State<SearchScreen> with RuleLinkMixin, FormattedContentMixin, PreviewBottomSheetMixin {
   final _searchController = TextEditingController();
   final _dataService = RulesDataService();
   final _historyService = SearchHistoryService();

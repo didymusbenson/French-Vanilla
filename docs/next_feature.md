@@ -158,4 +158,21 @@ static const String collectorId = 'com.loosetie.frenchvanilla.collector';
 
 ---
 
-**Last Updated**: 2026-01-26
+## Tooling Improvements
+
+### Data Update Commands
+- [ ] Create `getcards` wrapper script (matching `getjudgerules` pattern)
+  - Should call `python3 scripts/process_cards.py`
+  - Provides consistent interface with other data update commands
+- [ ] Create `getrules` wrapper script (matching `getjudgerules` pattern)
+  - Should call `python3 scripts/update_rules.py "<url>"`
+  - Provides consistent interface with other data update commands
+
+**Current status:**
+- ✅ `getjudgerules` - Complete with wrapper script + Claude command
+- ⏳ `getcards` - Python script exists, needs wrapper
+- ⏳ `getrules` - Python script exists, needs wrapper
+
+---
+
+**Last Updated**: 2026-01-28
