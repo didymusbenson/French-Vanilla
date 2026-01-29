@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum BookmarkType { rule, glossary, card }
+enum BookmarkType { rule, glossary, card, mtr, ipg }
 
 class BookmarkedItem {
   final String identifier; // Rule number (e.g., "702.9a") or glossary term name
