@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """
-Parse Infraction Procedure Guide (IPG) text file into structured JSON.
+Parse Infraction Procedure Guide (IPG) PDF into structured JSON.
 
-This script:
-1. Cleans extracted PDF text (removes page dividers, fixes broken words)
-2. Parses IPG structure (sections and infractions with subsections)
-3. Outputs JSON files to assets/judgedocs/
+This script uses pdfplumber for clean text extraction with proper
+paragraph and list formatting.
 
 IPG has structured content:
 - Definition
@@ -13,41 +11,40 @@ IPG has structured content:
 - Philosophy
 - Additional Remedy (optional)
 - Upgrade (optional)
+
+Outputs JSON files to assets/judgedocs/
 """
 
 import json
-import os
 import re
 from pathlib import Path
+import pdfplumber
 
 
-def clean_text(text):
+def extract_text_from_pdf(pdf_path):
     """
-    Clean extracted PDF text.
+    Extract text from PDF using pdfplumber.
 
-    Removes:
-    - Page dividers (==== PAGE X of Y ====)
-    - Fixes broken words across lines (F\nRAMEWORK -> FRAMEWORK)
-    - Normalizes whitespace
+    Returns clean text with proper paragraph breaks and list formatting.
     """
-    # Remove page dividers and page numbers
-    text = re.sub(
-        r'={70,}\s*\nPAGE \d+ of \d+\s*\n={70,}\s*\n+\d+\s*\n+',
-        '\n\n',
-        text
-    )
+    text_parts = []
 
-    # Fix broken words across lines (capital letters split)
-    # Example: F\nRAMEWORK -> FRAMEWORK
-    text = re.sub(r'([A-Z])\n([A-Z]+)', r'\1\2', text)
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            # Extract text with layout preservation
+            page_text = page.extract_text(layout=True, x_tolerance=3, y_tolerance=3)
+            if page_text:
+                text_parts.append(page_text)
 
-    # Normalize multiple blank lines to double newline
-    text = re.sub(r'\n{3,}', '\n\n', text)
+    # Join pages with double newline
+    full_text = '\n\n'.join(text_parts)
 
-    # Clean up extra spaces
-    text = re.sub(r' {2,}', ' ', text)
+    # Clean up common PDF artifacts
+    # Remove excessive whitespace while preserving paragraph structure
+    full_text = re.sub(r' +', ' ', full_text)  # Multiple spaces to single
+    full_text = re.sub(r'\n{4,}', '\n\n', full_text)  # Excessive newlines to double
 
-    return text.strip()
+    return full_text.strip()
 
 
 def extract_metadata(text):
@@ -89,13 +86,16 @@ def parse_table_of_contents(text):
     """
     Parse the table of contents to identify section boundaries.
 
-    Returns dict mapping section numbers to their titles.
+    Returns dict mapping section identifiers to their titles.
+    For numbered sections: integer keys (1-4)
+    For appendices: string keys ("A"-"B")
     """
     sections = {}
 
     # Look for main sections in TOC
-    # Pattern: "2. Game Play Errors"
-    toc_pattern = r'^(\d+)\.\s+([A-Za-z\s]+)\.{2,}'
+    # Pattern: "       2. Game Play Errors ....."
+    # Allow for leading whitespace
+    toc_pattern = r'^\s*(\d+)\.\s+([A-Za-z\s]+)\s*\.{2,}'
 
     for match in re.finditer(toc_pattern, text, re.MULTILINE):
         section_num = int(match.group(1))
@@ -105,7 +105,48 @@ def parse_table_of_contents(text):
         if 1 <= section_num <= 4:
             sections[section_num] = section_title
 
+    # Look for appendices like "       Appendix A — Penalty Quick Reference  ....."
+    # Allow for leading whitespace
+    appendix_pattern = r'^\s*Appendix\s+([A-B])\s*[—–-]\s*([^.]+?)\s*\.{2,}'
+
+    for match in re.finditer(appendix_pattern, text, re.MULTILINE):
+        appendix_letter = match.group(1)
+        appendix_title = match.group(2).strip()
+        sections[appendix_letter] = appendix_title
+
     return sections
+
+
+def clean_infraction_content(content):
+    """
+    Clean up PDF line break artifacts in infraction content.
+
+    Preserves paragraph breaks (double newlines) but removes
+    mid-sentence line breaks that are PDF layout artifacts.
+    Also strips page numbers.
+    """
+    # First, normalize paragraph breaks
+    # Replace any sequence of whitespace with newlines to double newline
+    content = re.sub(r'\n\s*\n', '\n\n', content)
+
+    # Split into paragraphs
+    paragraphs = content.split('\n\n')
+
+    cleaned_paragraphs = []
+    for para in paragraphs:
+        # Within each paragraph, replace single newlines with spaces
+        # This joins lines that were broken for PDF layout
+        para = re.sub(r'\n', ' ', para)
+        # Clean up multiple spaces
+        para = re.sub(r' +', ' ', para)
+        para = para.strip()
+
+        # Skip if this is just a page number (1-3 digits)
+        if para and not re.match(r'^\d{1,3}$', para):
+            cleaned_paragraphs.append(para)
+
+    # Join paragraphs with double newline
+    return '\n\n'.join(cleaned_paragraphs)
 
 
 def parse_infraction(infraction_text, infraction_num, infraction_title):
@@ -131,8 +172,6 @@ def parse_infraction(infraction_text, infraction_num, infraction_title):
     }
 
     # Find subsection headers (they're typically in Title Case or ALL CAPS)
-    # Pattern: line starting with subsection name
-
     # Split text by subsection headers
     subsections = {}
     current_section = 'definition'  # Default to definition at start
@@ -179,8 +218,9 @@ def parse_infraction(infraction_text, infraction_num, infraction_title):
     if current_content:
         subsections[current_section] = '\n'.join(current_content).strip()
 
-    # Populate result
-    result['definition'] = subsections.get('definition', '')
+    # Populate result - clean up line breaks in each subsection
+    definition = subsections.get('definition', '')
+    result['definition'] = clean_infraction_content(definition) if definition else None
 
     # Parse examples (format: "A. Example text", "B. Example text", etc.)
     examples_text = subsections.get('examples', '')
@@ -191,30 +231,120 @@ def parse_infraction(infraction_text, infraction_num, infraction_title):
         for match in re.finditer(example_pattern, examples_text, re.DOTALL):
             letter = match.group(1)
             example_text = match.group(2).strip()
+            # Clean up line breaks in example text
+            example_text = clean_infraction_content(example_text)
             examples.append(f"{letter}. {example_text}")
 
         result['examples'] = examples
 
-    result['philosophy'] = subsections.get('philosophy')
-    result['additional_remedy'] = subsections.get('additional_remedy')
-    result['upgrade'] = subsections.get('upgrade')
+    philosophy = subsections.get('philosophy')
+    result['philosophy'] = clean_infraction_content(philosophy) if philosophy else None
+
+    additional_remedy = subsections.get('additional_remedy')
+    result['additional_remedy'] = clean_infraction_content(additional_remedy) if additional_remedy else None
+
+    upgrade = subsections.get('upgrade')
+    result['upgrade'] = clean_infraction_content(upgrade) if upgrade else None
 
     return result
 
 
+def parse_general_philosophy_entries(section_text, section_num):
+    """
+    Parse Section 1 (General Philosophy) entries.
+
+    These are NOT infractions - just informational entries with plain text.
+    Pattern can be either:
+      - "       1.1." with title on next line
+      - "       1.2.  TITLE" with title on same line
+    Returns list of simple entry dicts (no subsections like Definition/Examples).
+    """
+    entries = []
+
+    # Pattern: entry number (e.g., "       1.1.") with period, optionally followed by title
+    # Handles both: "1.1." (title on next line) and "1.2.  TITLE" (title on same line)
+    # Allow for leading whitespace
+    entry_pattern = rf'^\s*{section_num}\.(\d+)\.\s*(.*)$'
+
+    # Find all entry starts
+    entry_starts = []
+    for match in re.finditer(entry_pattern, section_text, re.MULTILINE):
+        title_on_same_line = match.group(2).strip()
+
+        # Check if this is a TOC entry (has multiple dots)
+        if title_on_same_line and re.search(r'\.{3,}', title_on_same_line):
+            continue
+
+        title = None
+        title_line_end = match.end()
+
+        if title_on_same_line:
+            # Title is on the same line as the number
+            title = title_on_same_line
+        else:
+            # Title is on the next non-empty line
+            lines_after = section_text[match.end():].split('\n')
+            for line in lines_after:
+                stripped = line.strip()
+                if stripped:
+                    title = stripped
+                    # Calculate where this title line ends
+                    title_line_end = section_text.find(line, match.end()) + len(line)
+                    break
+
+        if not title:
+            continue
+
+        entry_starts.append({
+            'pos': match.start(),
+            'title_end': title_line_end,
+            'number': f"{section_num}.{match.group(1)}",
+            'title': title
+        })
+
+    # Extract content between entry starts
+    for i, entry_start in enumerate(entry_starts):
+        # Get content from after the title line to next entry (or end of section)
+        content_start = entry_start['title_end']
+        if i + 1 < len(entry_starts):
+            content_end = entry_starts[i + 1]['pos']
+        else:
+            content_end = len(section_text)
+
+        content = section_text[content_start:content_end].strip()
+
+        # Clean up PDF line break artifacts
+        content = clean_infraction_content(content)
+
+        # Simple structure - just plain content, no subsections
+        entries.append({
+            'number': entry_start['number'],
+            'title': entry_start['title'],
+            'penalty': None,
+            'definition': content,  # Store all content as "definition" for compatibility
+            'examples': [],
+            'philosophy': None,
+            'additional_remedy': None,
+            'upgrade': None
+        })
+
+    return entries
+
+
 def parse_infractions_in_section(section_text, section_num):
     """
-    Parse individual infractions within a section.
+    Parse individual infractions within a section (Sections 2-4).
 
     Infractions are numbered like 2.1, 2.2, etc.
     Returns list of infraction dicts with structured content.
     """
     infractions = []
 
-    # Pattern: infraction number (e.g., "2.1"), spaces, title with penalty (rest of line)
-    # Example: "2.1.      Game Play Error — Missed Trigger  No Penalty"
-    # IMPORTANT: Exclude TOC entries which have dots (e.g., "2.1. Game Play Error — Missed Trigger .....7")
-    infraction_pattern = rf'^{section_num}\.(\d+)\.\s+([^\n]+)'
+    # Pattern: infraction number (e.g., "       2.1."), spaces, title with penalty (rest of line)
+    # Example: "       2.1.      Game Play Error — Missed Trigger  No Penalty"
+    # IMPORTANT: Exclude TOC entries which have dots (e.g., "         2.1. Game Play Error — Missed Trigger .....7")
+    # Allow for leading whitespace
+    infraction_pattern = rf'^\s*{section_num}\.(\d+)\.\s+([^\n]+)'
 
     # Find all infraction starts (excluding TOC entries)
     infraction_starts = []
@@ -260,20 +390,25 @@ def parse_infractions_in_section(section_text, section_num):
 
 def split_into_sections(text, section_titles):
     """
-    Split the cleaned text into individual sections.
+    Split the cleaned text into individual sections and appendices.
 
-    Returns dict mapping section numbers to their full text content.
+    Returns dict mapping section identifiers (int or str) to their full text content.
     """
     sections = {}
 
-    # Find each section header in the text
+    # Find each section/appendix header in the text
     # IMPORTANT: Skip TOC entries which have dots
     section_starts = []
 
-    for section_num, section_title in section_titles.items():
-        # Look for section header pattern
-        # Pattern: "N. Section Title" or "N.  Section Title"
-        pattern = rf'^{section_num}\.\s+{re.escape(section_title)}(.*)$'
+    for section_id, section_title in section_titles.items():
+        # Determine pattern based on whether it's a number or letter
+        # Allow for leading whitespace
+        if isinstance(section_id, int):
+            # Numbered section: "N. Section Title"
+            pattern = rf'^\s*{section_id}\.\s+{re.escape(section_title)}(.*)$'
+        else:
+            # Appendix: "Appendix A — Title" or "APPENDIX A — Title"
+            pattern = rf'^\s*Appendix\s+{section_id}\s*[—–-]\s*{re.escape(section_title)}(.*)$'
 
         for match in re.finditer(pattern, text, re.MULTILINE | re.IGNORECASE):
             rest_of_line = match.group(1)
@@ -283,7 +418,7 @@ def split_into_sections(text, section_titles):
                 continue
 
             section_starts.append({
-                'num': section_num,
+                'id': section_id,
                 'title': section_title,
                 'pos': match.start()
             })
@@ -303,7 +438,7 @@ def split_into_sections(text, section_titles):
             end_pos = len(text)
 
         section_text = text[start_pos:end_pos].strip()
-        sections[section_start['num']] = {
+        sections[section_start['id']] = {
             'title': section_start['title'],
             'text': section_text
         }
@@ -317,72 +452,107 @@ def main():
     data_dir = script_dir / 'data' / 'judge_docs'
     output_dir = script_dir.parent / 'assets' / 'judgedocs'
 
-    ipg_txt_path = data_dir / 'IPG.txt'
+    ipg_pdf_path = data_dir / 'IPG.pdf'
 
     print("=" * 80)
-    print("IPG Parser")
+    print("IPG Parser (pdfplumber)")
     print("=" * 80)
     print()
 
     # Check if input file exists
-    if not ipg_txt_path.exists():
-        print(f"ERROR: IPG.txt not found at {ipg_txt_path}")
+    if not ipg_pdf_path.exists():
+        print(f"ERROR: IPG.pdf not found at {ipg_pdf_path}")
         print("Run update_judge_docs.py first to download the file.")
         return 1
 
     # Ensure output directory exists
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Read raw text
-    print(f"Reading {ipg_txt_path}...")
-    with open(ipg_txt_path, 'r', encoding='utf-8') as f:
-        raw_text = f.read()
-
-    print(f"  Raw size: {len(raw_text)} characters")
-
-    # Clean text
-    print("Cleaning text...")
-    cleaned_text = clean_text(raw_text)
-    print(f"  Cleaned size: {len(cleaned_text)} characters")
+    # Extract text from PDF
+    print(f"Extracting text from {ipg_pdf_path}...")
+    text = extract_text_from_pdf(ipg_pdf_path)
+    print(f"  Extracted: {len(text)} characters")
 
     # Extract metadata
     print("Extracting metadata...")
-    metadata = extract_metadata(cleaned_text)
+    metadata = extract_metadata(text)
     print(f"  Effective date: {metadata.get('effective_date', 'Unknown')}")
 
     # Parse table of contents to identify sections
     print("Parsing table of contents...")
-    section_titles = parse_table_of_contents(cleaned_text)
+    section_titles = parse_table_of_contents(text)
     print(f"  Found {len(section_titles)} sections:")
-    for num, title in sorted(section_titles.items()):
-        print(f"    {num}. {title}")
+    # Sort: numbers first, then letters
+    sorted_items = sorted(section_titles.items(), key=lambda x: (isinstance(x[0], str), x[0]))
+    for section_id, title in sorted_items:
+        if isinstance(section_id, int):
+            print(f"    {section_id}. {title}")
+        else:
+            print(f"    Appendix {section_id}: {title}")
 
     # Split into sections
     print("\nSplitting into sections...")
-    sections = split_into_sections(cleaned_text, section_titles)
+    sections = split_into_sections(text, section_titles)
     print(f"  Extracted {len(sections)} section texts")
 
-    # Parse infractions in each section
-    print("\nParsing infractions...")
+    # Parse entries/infractions in each section
+    print("\nParsing entries/infractions...")
     parsed_sections = []
 
-    for section_num in sorted(sections.keys()):
-        section_data = sections[section_num]
+    # Sort: numbers first, then letters
+    sorted_keys = sorted(sections.keys(), key=lambda x: (isinstance(x, str), x))
+
+    for section_id in sorted_keys:
+        section_data = sections[section_id]
         section_title = section_data['title']
         section_text = section_data['text']
 
-        infractions = parse_infractions_in_section(section_text, section_num)
+        if isinstance(section_id, int):
+            # Numbered sections
+            if section_id == 1:
+                # Section 1 (General Philosophy) - simple entries, not infractions
+                entries = parse_general_philosophy_entries(section_text, section_id)
+                entry_type = "entries"
+            else:
+                # Sections 2-4 - actual infractions with structured content
+                entries = parse_infractions_in_section(section_text, section_id)
+                entry_type = "infractions"
 
-        print(f"  Section {section_num}: {section_title}")
-        print(f"    → {len(infractions)} infractions")
+            print(f"  Section {section_id}: {section_title}")
+            print(f"    → {len(entries)} {entry_type}")
 
-        parsed_sections.append({
-            'section_number': section_num,
-            'title': f"{section_num}. {section_title}",
-            'section_key': f"ipg_section_{section_num}",
-            'metadata': metadata,
-            'infractions': infractions
-        })
+            parsed_sections.append({
+                'section_number': section_id,
+                'title': f"{section_id}. {section_title}",
+                'section_key': f"ipg_section_{section_id}",
+                'metadata': metadata,
+                'infractions': entries  # Keep field name as 'infractions' for compatibility
+            })
+        else:
+            # Appendix - just store plain content as a single "infraction"
+            print(f"  Appendix {section_id}: {section_title}")
+            print(f"    → appendix content")
+
+            # Clean up PDF line break artifacts in appendix content
+            cleaned_content = clean_infraction_content(section_text)
+
+            # Store appendix as a section with one "infraction" containing all content
+            parsed_sections.append({
+                'section_number': section_id,  # Will be "A", "B", etc.
+                'title': f"Appendix {section_id}—{section_title}",
+                'section_key': f"ipg_appendix_{section_id.lower()}",
+                'metadata': metadata,
+                'infractions': [{
+                    'number': section_id,
+                    'title': section_title,
+                    'penalty': None,
+                    'definition': cleaned_content,
+                    'examples': [],
+                    'philosophy': None,
+                    'additional_remedy': None,
+                    'upgrade': None
+                }]
+            })
 
     # Write output files
     print("\nWriting JSON files...")

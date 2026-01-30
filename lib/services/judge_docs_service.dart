@@ -11,11 +11,11 @@ class JudgeDocsService {
 
   // MTR cache
   MtrIndex? _mtrIndex;
-  final Map<int, MtrSection> _mtrSectionCache = {};
+  final Map<String, MtrSection> _mtrSectionCache = {};
 
   // IPG cache
   IpgIndex? _ipgIndex;
-  final Map<int, IpgSection> _ipgSectionCache = {};
+  final Map<String, IpgSection> _ipgSectionCache = {};
 
   // MTR methods
 
@@ -29,19 +29,34 @@ class JudgeDocsService {
     return _mtrIndex!;
   }
 
-  /// Load a specific MTR section (1-8)
-  Future<MtrSection> loadMtrSection(int sectionNumber) async {
-    if (_mtrSectionCache.containsKey(sectionNumber)) {
-      return _mtrSectionCache[sectionNumber]!;
+  /// Load a specific MTR section by section key (e.g., "mtr_section_1" or "mtr_appendix_a")
+  Future<MtrSection> loadMtrSectionByKey(String sectionKey) async {
+    // Check cache using section key as string
+    if (_mtrSectionCache.containsKey(sectionKey)) {
+      return _mtrSectionCache[sectionKey]!;
     }
 
     final jsonString = await rootBundle.loadString(
-      'assets/judgedocs/mtr_section_$sectionNumber.json'
+      'assets/judgedocs/$sectionKey.json'
     );
     final jsonData = json.decode(jsonString) as Map<String, dynamic>;
     final sectionData = MtrSection.fromJson(jsonData);
-    _mtrSectionCache[sectionNumber] = sectionData;
+    _mtrSectionCache[sectionKey] = sectionData;
     return sectionData;
+  }
+
+  /// Load a specific MTR section by number (1-10) or appendix letter (A-F)
+  Future<MtrSection> loadMtrSection(dynamic sectionNumber) async {
+    String sectionKey;
+    if (sectionNumber is int) {
+      sectionKey = 'mtr_section_$sectionNumber';
+    } else if (sectionNumber is String) {
+      sectionKey = 'mtr_appendix_${sectionNumber.toLowerCase()}';
+    } else {
+      throw ArgumentError('Invalid section number: $sectionNumber');
+    }
+
+    return loadMtrSectionByKey(sectionKey);
   }
 
   /// Get all MTR sections
@@ -64,7 +79,7 @@ class JudgeDocsService {
     if (parts.isEmpty) return null;
 
     final sectionNumber = int.tryParse(parts[0]);
-    if (sectionNumber == null || sectionNumber < 1 || sectionNumber > 8) {
+    if (sectionNumber == null || sectionNumber < 1 || sectionNumber > 10) {
       return null;
     }
 
@@ -92,19 +107,34 @@ class JudgeDocsService {
     return _ipgIndex!;
   }
 
-  /// Load a specific IPG section (1-4)
-  Future<IpgSection> loadIpgSection(int sectionNumber) async {
-    if (_ipgSectionCache.containsKey(sectionNumber)) {
-      return _ipgSectionCache[sectionNumber]!;
+  /// Load a specific IPG section by section key (e.g., "ipg_section_1" or "ipg_appendix_a")
+  Future<IpgSection> loadIpgSectionByKey(String sectionKey) async {
+    // Check cache using section key as string
+    if (_ipgSectionCache.containsKey(sectionKey)) {
+      return _ipgSectionCache[sectionKey]!;
     }
 
     final jsonString = await rootBundle.loadString(
-      'assets/judgedocs/ipg_section_$sectionNumber.json'
+      'assets/judgedocs/$sectionKey.json'
     );
     final jsonData = json.decode(jsonString) as Map<String, dynamic>;
     final sectionData = IpgSection.fromJson(jsonData);
-    _ipgSectionCache[sectionNumber] = sectionData;
+    _ipgSectionCache[sectionKey] = sectionData;
     return sectionData;
+  }
+
+  /// Load a specific IPG section by number (1-4) or appendix letter (A-B)
+  Future<IpgSection> loadIpgSection(dynamic sectionNumber) async {
+    String sectionKey;
+    if (sectionNumber is int) {
+      sectionKey = 'ipg_section_$sectionNumber';
+    } else if (sectionNumber is String) {
+      sectionKey = 'ipg_appendix_${sectionNumber.toLowerCase()}';
+    } else {
+      throw ArgumentError('Invalid section number: $sectionNumber');
+    }
+
+    return loadIpgSectionByKey(sectionKey);
   }
 
   /// Get all IPG sections

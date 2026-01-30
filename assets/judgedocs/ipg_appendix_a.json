@@ -1,0 +1,20 @@
+{
+  "section_number": "A",
+  "title": "Appendix A—Penalty Quick Reference",
+  "section_key": "ipg_appendix_a",
+  "metadata": {
+    "effective_date": "September 23, 2024"
+  },
+  "infractions": [
+    {
+      "number": "A",
+      "title": "Penalty Quick Reference",
+      "penalty": null,
+      "definition": "APPENDIX A — PENALTY QUICK REFERENCE\n\nInfraction Penalty\n\nGame Play Errors Missed Trigger None\n\nLooking at Extra Cards Warning\n\nHidden Card Error Warning\n\nMulligan Procedure Error Warning Game Rule Violation Warning\n\nFailure to Maintain Game State Warning\n\nTournament Errors\n\nTardiness Game Loss\n\nOutside Assistance Match Loss Slow Play Warning\n\nDecklist Problem Game Loss\n\nDeck Problem Warning\n\nLimited Procedure Violation Warning Communication Policy Violation Warning\n\nMarked Cards Warning\n\nInsufficient Shuffling Warning\n\nUnsporting Conduct Unsporting Conduct — Minor Warning\n\nUnsporting Conduct — Major Match Loss\n\nImproperly Determining a Winner Match Loss\n\nBribery and Wagering Match Loss Aggressive Behavior Disqualification\n\nTheft of Tournament Material Disqualification\n\nStalling Disqualification\n\nCheating Disqualification",
+      "examples": [],
+      "philosophy": null,
+      "additional_remedy": null,
+      "upgrade": null
+    }
+  ]
+}

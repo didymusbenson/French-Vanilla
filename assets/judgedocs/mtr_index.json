@@ -52,6 +52,54 @@
       "title": "8. Team Tournament Rules",
       "section_key": "mtr_section_8",
       "rule_count": 6
+    },
+    {
+      "section_number": 9,
+      "title": "9. Two-Headed Giant Tournament Rules",
+      "section_key": "mtr_section_9",
+      "rule_count": 7
+    },
+    {
+      "section_number": 10,
+      "title": "10. Sanctioning Rules",
+      "section_key": "mtr_section_10",
+      "rule_count": 4
+    },
+    {
+      "section_number": "A",
+      "title": "Appendix A—Changes From Previous Versions",
+      "section_key": "mtr_appendix_a",
+      "rule_count": 1
+    },
+    {
+      "section_number": "B",
+      "title": "Appendix B—Time Limits",
+      "section_key": "mtr_appendix_b",
+      "rule_count": 1
+    },
+    {
+      "section_number": "C",
+      "title": "Appendix C—Tiebreaker Explanation",
+      "section_key": "mtr_appendix_c",
+      "rule_count": 1
+    },
+    {
+      "section_number": "D",
+      "title": "Appendix D—Recommended Play Booster Mix for Limited Tournaments",
+      "section_key": "mtr_appendix_d",
+      "rule_count": 1
+    },
+    {
+      "section_number": "E",
+      "title": "Appendix E—Recommended Number of Rounds in Swiss Tournaments",
+      "section_key": "mtr_appendix_e",
+      "rule_count": 1
+    },
+    {
+      "section_number": "F",
+      "title": "Appendix F—Rules Enforcement Levels of Programs",
+      "section_key": "mtr_appendix_f",
+      "rule_count": 1
     }
   ]
 }

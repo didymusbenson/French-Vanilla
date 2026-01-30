@@ -1,0 +1,20 @@
+{
+  "section_number": "B",
+  "title": "Appendix B—Changes from Previous Versions",
+  "section_key": "ipg_appendix_b",
+  "metadata": {
+    "effective_date": "September 23, 2024"
+  },
+  "infractions": [
+    {
+      "number": "B",
+      "title": "Changes from Previous Versions",
+      "penalty": null,
+      "definition": "APPENDIX B — CHANGES FROM PREVIOUS VERSIONS\n\nSeptember 23, 2024 1.2: Removed specific details of how penalties are collected and stored, as it varies depending on the\n\nsoftware being used. 2.1: Treat missed Saga turn actions as missed triggers. 2.1: Missed triggers still count as having triggered. 2.5: Object-in-wrong-zone changed to always be a partial fix, but only when the incorrect zone is the root GRV. 3.5: Wrong number of cards upgrade has been split into two paragraphs for clarity, as it has slightly different criteris for pre- and post-sideboard games.\n\nApril 15, 2024 2.3: Made it clearer that a morph returned to hand without reveal is not part of the upgrade path. 2.3: Added a clarification that the player needs to identify a morph problem before it is about to be discovered by the opponent. 3.4: Added wording to make presenting the wrong decklist to an opponent a Decklist Problem. 3.5: Clarity on the order of when things happen once a problem has been discovered. 3.5: Companion restriction fix now parallels the normal error fix. 3.5: Removed the requirement that multiple copies of the card have to be discovered after the game has begun (can now happen during pregame procedures).\n\nFebruary 2, 2024 2.3: Upgrade language changed to account for disguise ability.\n\nNovember 13, 2023 3.5: Rephrased first sentences in the remedy to make the order of actions clearer. 4.2: Added intentional misgendering as an example of USC-Major.\n\nSeptember 4, 2023 1.1: Added link to report disqualifications. Removed outdated link to additional DQ information. 2.1: Missed triggers can now do a simple backup in limited situations. 3.5: Opponent chooses the timing of when to return the cards to the deck.\n\nAll trademarks are property of Wizards of the Coast LLC in the U.S.A. and other countries. ©2024 Wizards.",
+      "examples": [],
+      "philosophy": null,
+      "additional_remedy": null,
+      "upgrade": null
+    }
+  ]
+}

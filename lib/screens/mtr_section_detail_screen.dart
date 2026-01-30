@@ -5,7 +5,7 @@ import 'mtr_rule_detail_screen.dart';
 
 /// Screen showing all rules in an MTR section.
 class MtrSectionDetailScreen extends StatefulWidget {
-  final int sectionNumber;
+  final dynamic sectionNumber; // Can be int (1-10) or String ("A"-"F")
   final String sectionTitle;
 
   const MtrSectionDetailScreen({

@@ -59,7 +59,7 @@ class IpgInfraction {
 
 /// Model for an IPG section containing multiple infractions.
 class IpgSection {
-  final int sectionNumber; // e.g., 2
+  final dynamic sectionNumber; // e.g., 2 (int) or "A" (String for appendices)
   final String title; // e.g., "2. Game Play Errors"
   final String sectionKey; // e.g., "ipg_section_2"
   final Map<String, dynamic> metadata;
@@ -77,7 +77,7 @@ class IpgSection {
     final infractionsList = json['infractions'] as List<dynamic>? ?? [];
 
     return IpgSection(
-      sectionNumber: json['section_number'] as int,
+      sectionNumber: json['section_number'], // Can be int or String
       title: json['title'] as String,
       sectionKey: json['section_key'] as String,
       metadata: json['metadata'] as Map<String, dynamic>? ?? {},
@@ -86,6 +86,12 @@ class IpgSection {
   }
 
   String get effectiveDate => metadata['effective_date'] as String? ?? 'Unknown';
+
+  /// Returns true if this is an appendix (A-B), false if numbered section (1-4)
+  bool get isAppendix => sectionNumber is String;
+
+  /// Returns a display-friendly section identifier
+  String get sectionLabel => isAppendix ? 'Appendix $sectionNumber' : '$sectionNumber';
 }
 
 /// Model for IPG index (table of contents).
@@ -118,7 +124,7 @@ class IpgIndex {
 
 /// Brief section info from the index.
 class IpgSectionInfo {
-  final int sectionNumber;
+  final dynamic sectionNumber; // Can be int (1-4) or String ("A"-"B")
   final String title;
   final String sectionKey;
   final int infractionCount;
@@ -132,10 +138,16 @@ class IpgSectionInfo {
 
   factory IpgSectionInfo.fromJson(Map<String, dynamic> json) {
     return IpgSectionInfo(
-      sectionNumber: json['section_number'] as int,
+      sectionNumber: json['section_number'], // Can be int or String
       title: json['title'] as String,
       sectionKey: json['section_key'] as String,
       infractionCount: json['infraction_count'] as int,
     );
   }
+
+  /// Returns true if this is an appendix (A-B), false if numbered section (1-4)
+  bool get isAppendix => sectionNumber is String;
+
+  /// Returns a display-friendly section identifier
+  String get sectionLabel => isAppendix ? 'Appendix $sectionNumber' : '$sectionNumber';
 }

@@ -29,7 +29,7 @@ class MtrRule {
 
 /// Model for an MTR section containing multiple rules.
 class MtrSection {
-  final int sectionNumber; // e.g., 1
+  final dynamic sectionNumber; // e.g., 1 (int) or "A" (String for appendices)
   final String title; // e.g., "1. Tournament Fundamentals"
   final String sectionKey; // e.g., "mtr_section_1"
   final Map<String, dynamic> metadata;
@@ -47,7 +47,7 @@ class MtrSection {
     final rulesList = json['rules'] as List<dynamic>? ?? [];
 
     return MtrSection(
-      sectionNumber: json['section_number'] as int,
+      sectionNumber: json['section_number'], // Can be int or String
       title: json['title'] as String,
       sectionKey: json['section_key'] as String,
       metadata: json['metadata'] as Map<String, dynamic>? ?? {},
@@ -56,6 +56,12 @@ class MtrSection {
   }
 
   String get effectiveDate => metadata['effective_date'] as String? ?? 'Unknown';
+
+  /// Returns true if this is an appendix (A-F), false if numbered section (1-10)
+  bool get isAppendix => sectionNumber is String;
+
+  /// Returns a display-friendly section identifier
+  String get sectionLabel => isAppendix ? 'Appendix $sectionNumber' : '$sectionNumber';
 }
 
 /// Model for MTR index (table of contents).
@@ -88,7 +94,7 @@ class MtrIndex {
 
 /// Brief section info from the index.
 class MtrSectionInfo {
-  final int sectionNumber;
+  final dynamic sectionNumber; // Can be int (1-10) or String ("A"-"F")
   final String title;
   final String sectionKey;
   final int ruleCount;
@@ -102,10 +108,16 @@ class MtrSectionInfo {
 
   factory MtrSectionInfo.fromJson(Map<String, dynamic> json) {
     return MtrSectionInfo(
-      sectionNumber: json['section_number'] as int,
+      sectionNumber: json['section_number'], // Can be int or String
       title: json['title'] as String,
       sectionKey: json['section_key'] as String,
       ruleCount: json['rule_count'] as int,
     );
   }
+
+  /// Returns true if this is an appendix (A-F), false if numbered section (1-10)
+  bool get isAppendix => sectionNumber is String;
+
+  /// Returns a display-friendly section identifier
+  String get sectionLabel => isAppendix ? 'Appendix $sectionNumber' : '$sectionNumber';
 }

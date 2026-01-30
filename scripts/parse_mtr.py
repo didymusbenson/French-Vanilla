@@ -1,47 +1,43 @@
 #!/usr/bin/env python3
 """
-Parse Magic Tournament Rules (MTR) text file into structured JSON.
+Parse Magic Tournament Rules (MTR) PDF into structured JSON.
 
-This script:
-1. Cleans extracted PDF text (removes page dividers, fixes broken words)
-2. Parses MTR structure (sections and rules)
-3. Outputs JSON files to assets/judgedocs/
+This script uses pdfplumber for clean text extraction with proper
+paragraph and list formatting.
+
+Outputs JSON files to assets/judgedocs/
 """
 
 import json
-import os
 import re
 from pathlib import Path
+import pdfplumber
 
 
-def clean_text(text):
+def extract_text_from_pdf(pdf_path):
     """
-    Clean extracted PDF text.
+    Extract text from PDF using pdfplumber.
 
-    Removes:
-    - Page dividers (==== PAGE X of Y ====)
-    - Fixes broken words across lines (F\nRAMEWORK -> FRAMEWORK)
-    - Normalizes whitespace
+    Returns clean text with proper paragraph breaks and list formatting.
     """
-    # Remove page dividers and page numbers
-    # Pattern: ====...====\nPAGE X of Y\n====...====\n\nN\n
-    text = re.sub(
-        r'={70,}\s*\nPAGE \d+ of \d+\s*\n={70,}\s*\n+\d+\s*\n+',
-        '\n\n',
-        text
-    )
+    text_parts = []
 
-    # Fix broken words across lines (capital letters split)
-    # Example: F\nRAMEWORK -> FRAMEWORK
-    text = re.sub(r'([A-Z])\n([A-Z]+)', r'\1\2', text)
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            # Extract text with layout preservation
+            page_text = page.extract_text(layout=True, x_tolerance=3, y_tolerance=3)
+            if page_text:
+                text_parts.append(page_text)
 
-    # Normalize multiple blank lines to double newline
-    text = re.sub(r'\n{3,}', '\n\n', text)
+    # Join pages with double newline
+    full_text = '\n\n'.join(text_parts)
 
-    # Clean up extra spaces
-    text = re.sub(r' {2,}', ' ', text)
+    # Clean up common PDF artifacts
+    # Remove excessive whitespace while preserving paragraph structure
+    full_text = re.sub(r' +', ' ', full_text)  # Multiple spaces to single
+    full_text = re.sub(r'\n{4,}', '\n\n', full_text)  # Excessive newlines to double
 
-    return text.strip()
+    return full_text.strip()
 
 
 def extract_metadata(text):
@@ -60,23 +56,67 @@ def parse_table_of_contents(text):
     """
     Parse the table of contents to identify section boundaries.
 
-    Returns dict mapping section numbers to their titles.
+    Returns dict mapping section identifiers to their titles.
+    For numbered sections: integer keys (1-10)
+    For appendices: string keys ("A"-"F")
     """
     sections = {}
 
-    # Look for lines like "1.  Tournament Fundamentals .....5"
-    # Section headers are numbered 1-8 and appear in the TOC
-    toc_pattern = r'^(\d+)\.\s+([A-Za-z\s/\-]+?)\.{2,}'
+    # Look for numbered sections like "       1. Tournament Fundamentals .....5"
+    # Allow for leading whitespace
+    toc_pattern = r'^\s*(\d+)\.\s+([A-Za-z\s/\-]+?)\s*\.{2,}'
 
     for match in re.finditer(toc_pattern, text, re.MULTILINE):
         section_num = int(match.group(1))
         section_title = match.group(2).strip()
 
-        # Only include main sections (1-8), not subsections
-        if section_num <= 8:
+        # Only include main sections (1-99)
+        if section_num >= 1 and section_num <= 99:
             sections[section_num] = section_title
 
+    # Look for appendices like "       Appendix A—Changes From Previous Versions  ....."
+    # Note: Some have space after em dash, some don't
+    # Allow for leading whitespace
+    appendix_pattern = r'^\s*Appendix\s+([A-F])\s*[—–-]\s*([^.]+?)\s*\.{2,}'
+
+    for match in re.finditer(appendix_pattern, text, re.MULTILINE):
+        appendix_letter = match.group(1)
+        appendix_title = match.group(2).strip()
+        sections[appendix_letter] = appendix_title
+
     return sections
+
+
+def clean_rule_content(content):
+    """
+    Clean up PDF line break artifacts in rule content.
+
+    Preserves paragraph breaks (double newlines) but removes
+    mid-sentence line breaks that are PDF layout artifacts.
+    Also strips page numbers.
+    """
+    # First, normalize paragraph breaks
+    # Replace any sequence of whitespace with newlines to double newline
+    content = re.sub(r'\n\s*\n', '\n\n', content)
+
+    # Split into paragraphs
+    paragraphs = content.split('\n\n')
+
+    cleaned_paragraphs = []
+    for para in paragraphs:
+        # Within each paragraph, replace single newlines with spaces
+        # This joins lines that were broken for PDF layout
+        para = re.sub(r'\n', ' ', para)
+        # Clean up multiple spaces
+        para = re.sub(r' +', ' ', para)
+        para = para.strip()
+
+        # Skip if this is just a page number (1-3 digits)
+        if para and not re.match(r'^\d{1,3}$', para):
+            cleaned_paragraphs.append(para)
+
+    # Join paragraphs with double newline
+    return '\n\n'.join(cleaned_paragraphs)
 
 
 def parse_rules_in_section(section_text, section_num):
@@ -88,14 +128,9 @@ def parse_rules_in_section(section_text, section_num):
     """
     rules = []
 
-    # Pattern: rule number (e.g., "1.1"), optional spaces, title on same or next line
-    # Content continues until next rule or end of section
-
-    # Split into rule chunks using rule number pattern
-    # Pattern: start of line, section.rule (e.g., "1.1"), space, title (rest of line)
-    # IMPORTANT: Exclude TOC entries which have dots (e.g., "1.1 Tournament Types .....5")
-    # Title should be just the text on the same line, not include following paragraphs
-    rule_pattern = rf'^{section_num}\.(\d+)\s+([^\n]+)'
+    # Pattern: rule number (e.g., "       1.1  Tournament Types"), with leading whitespace
+    # IMPORTANT: Exclude TOC entries which have dots (e.g., "         1.1 Tournament Types .....5")
+    rule_pattern = rf'^\s*{section_num}\.(\d+)\s+([^\n]+)'
 
     # Find all rule starts (excluding TOC entries)
     rule_starts = []
@@ -127,6 +162,9 @@ def parse_rules_in_section(section_text, section_num):
 
         content = section_text[content_start:content_end].strip()
 
+        # Clean up PDF line break artifacts
+        content = clean_rule_content(content)
+
         rules.append({
             'number': rule_start['number'],
             'title': rule_start['title'],
@@ -138,21 +176,26 @@ def parse_rules_in_section(section_text, section_num):
 
 def split_into_sections(text, section_titles):
     """
-    Split the cleaned text into individual sections.
+    Split the cleaned text into individual sections and appendices.
 
-    Returns dict mapping section numbers to their full text content.
+    Returns dict mapping section identifiers (int or str) to their full text content.
     """
     sections = {}
 
-    # Find each section header in the text
-    # Section headers appear as "N.  Section Title" (e.g., "1.  Tournament Fundamentals")
+    # Find each section/appendix header in the text
     # IMPORTANT: Skip TOC entries which have dots
     section_starts = []
 
-    for section_num, section_title in section_titles.items():
-        # Look for section header pattern
-        # Allow for some variation in spacing and formatting
-        pattern = rf'^{section_num}\.\s+{re.escape(section_title)}(.*)$'
+    for section_id, section_title in section_titles.items():
+        # Determine pattern based on whether it's a number or letter
+        # Allow for leading whitespace
+        if isinstance(section_id, int):
+            # Numbered section: "1. Tournament Fundamentals"
+            pattern = rf'^\s*{section_id}\.\s+{re.escape(section_title)}(.*)$'
+        else:
+            # Appendix: "Appendix A—Changes From Previous Versions"
+            # Note: Some have space after em dash, some don't
+            pattern = rf'^\s*Appendix\s+{section_id}\s*[—–-]\s*{re.escape(section_title)}(.*)$'
 
         for match in re.finditer(pattern, text, re.MULTILINE | re.IGNORECASE):
             rest_of_line = match.group(1)
@@ -162,7 +205,7 @@ def split_into_sections(text, section_titles):
                 continue
 
             section_starts.append({
-                'num': section_num,
+                'id': section_id,
                 'title': section_title,
                 'pos': match.start()
             })
@@ -182,7 +225,7 @@ def split_into_sections(text, section_titles):
             end_pos = len(text)
 
         section_text = text[start_pos:end_pos].strip()
-        sections[section_start['num']] = {
+        sections[section_start['id']] = {
             'title': section_start['title'],
             'text': section_text
         }
@@ -196,72 +239,94 @@ def main():
     data_dir = script_dir / 'data' / 'judge_docs'
     output_dir = script_dir.parent / 'assets' / 'judgedocs'
 
-    mtr_txt_path = data_dir / 'MTR.txt'
+    mtr_pdf_path = data_dir / 'MTR.pdf'
 
     print("=" * 80)
-    print("MTR Parser")
+    print("MTR Parser (pdfplumber)")
     print("=" * 80)
     print()
 
     # Check if input file exists
-    if not mtr_txt_path.exists():
-        print(f"ERROR: MTR.txt not found at {mtr_txt_path}")
+    if not mtr_pdf_path.exists():
+        print(f"ERROR: MTR.pdf not found at {mtr_pdf_path}")
         print("Run update_judge_docs.py first to download the file.")
         return 1
 
     # Ensure output directory exists
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Read raw text
-    print(f"Reading {mtr_txt_path}...")
-    with open(mtr_txt_path, 'r', encoding='utf-8') as f:
-        raw_text = f.read()
-
-    print(f"  Raw size: {len(raw_text)} characters")
-
-    # Clean text
-    print("Cleaning text...")
-    cleaned_text = clean_text(raw_text)
-    print(f"  Cleaned size: {len(cleaned_text)} characters")
+    # Extract text from PDF
+    print(f"Extracting text from {mtr_pdf_path}...")
+    text = extract_text_from_pdf(mtr_pdf_path)
+    print(f"  Extracted: {len(text)} characters")
 
     # Extract metadata
     print("Extracting metadata...")
-    metadata = extract_metadata(cleaned_text)
+    metadata = extract_metadata(text)
     print(f"  Effective date: {metadata.get('effective_date', 'Unknown')}")
 
     # Parse table of contents to identify sections
     print("Parsing table of contents...")
-    section_titles = parse_table_of_contents(cleaned_text)
+    section_titles = parse_table_of_contents(text)
     print(f"  Found {len(section_titles)} sections:")
-    for num, title in sorted(section_titles.items()):
-        print(f"    {num}. {title}")
+    # Sort: numbers first, then letters
+    sorted_items = sorted(section_titles.items(), key=lambda x: (isinstance(x[0], str), x[0]))
+    for section_id, title in sorted_items:
+        if isinstance(section_id, int):
+            print(f"    {section_id}. {title}")
+        else:
+            print(f"    Appendix {section_id}: {title}")
 
     # Split into sections
     print("\nSplitting into sections...")
-    sections = split_into_sections(cleaned_text, section_titles)
+    sections = split_into_sections(text, section_titles)
     print(f"  Extracted {len(sections)} section texts")
 
     # Parse rules in each section
-    print("\nParsing rules...")
+    print("\nParsing sections...")
     parsed_sections = []
 
-    for section_num in sorted(sections.keys()):
-        section_data = sections[section_num]
+    # Sort: numbers first, then letters
+    sorted_keys = sorted(sections.keys(), key=lambda x: (isinstance(x, str), x))
+
+    for section_id in sorted_keys:
+        section_data = sections[section_id]
         section_title = section_data['title']
         section_text = section_data['text']
 
-        rules = parse_rules_in_section(section_text, section_num)
+        if isinstance(section_id, int):
+            # Numbered section - parse rules
+            rules = parse_rules_in_section(section_text, section_id)
+            print(f"  Section {section_id}: {section_title}")
+            print(f"    → {len(rules)} rules")
 
-        print(f"  Section {section_num}: {section_title}")
-        print(f"    → {len(rules)} rules")
+            parsed_sections.append({
+                'section_number': section_id,
+                'title': f"{section_id}. {section_title}",
+                'section_key': f"mtr_section_{section_id}",
+                'metadata': metadata,
+                'rules': rules
+            })
+        else:
+            # Appendix - just store plain content as a single "rule"
+            print(f"  Appendix {section_id}: {section_title}")
+            print(f"    → appendix content")
 
-        parsed_sections.append({
-            'section_number': section_num,
-            'title': f"{section_num}. {section_title}",
-            'section_key': f"mtr_section_{section_num}",
-            'metadata': metadata,
-            'rules': rules
-        })
+            # Clean up PDF line break artifacts in appendix content
+            cleaned_content = clean_rule_content(section_text)
+
+            # Store appendix as a section with one "rule" containing all content
+            parsed_sections.append({
+                'section_number': section_id,  # Will be "A", "B", etc.
+                'title': f"Appendix {section_id}—{section_title}",
+                'section_key': f"mtr_appendix_{section_id.lower()}",
+                'metadata': metadata,
+                'rules': [{
+                    'number': section_id,
+                    'title': section_title,
+                    'content': cleaned_content
+                }]
+            })
 
     # Write output files
     print("\nWriting JSON files...")

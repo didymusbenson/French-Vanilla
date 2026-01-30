@@ -1,0 +1,45 @@
+{
+  "section_number": 9,
+  "title": "9. Two-Headed Giant Tournament Rules",
+  "section_key": "mtr_section_9",
+  "metadata": {
+    "effective_date": "November 10, 2025"
+  },
+  "rules": [
+    {
+      "number": "9.1",
+      "title": "Match Structure",
+      "content": "Two-Headed Giant matches consist of one game. All players from the two teams play in the same game.\n\nDrawn games (games without a winner) do not count toward the one game. As long as match time allows, the match continues until a team has won a game."
+    },
+    {
+      "number": "9.2",
+      "title": "Communication Rules",
+      "content": "Teammates may communicate with each other at any time."
+    },
+    {
+      "number": "9.3",
+      "title": "Play-Draw Rule",
+      "content": "A team determined at random chooses either to play first or to play second. The choice must be made before either player on that team looks at their hand. If either player on that team looks at their hand before their choice is made, that team plays first. The team who plays first skips the draw step of their first turn."
+    },
+    {
+      "number": "9.4",
+      "title": "Pregame Procedure",
+      "content": "1. Players decide which teammate will be the primary player and which teammate will be the secondary player. Players should be seated with the primary player to the right of their teammate. Players can choose a different primary and secondary player before each match. 2. Players shuffle their decks. 3. Players present their decks to their opponents for additional shuffling. 4. The appropriate team must decide whether to play first or second at this point, if they have not done so already (see section 9.3) 5. Each player draws seven cards. Optionally, these cards may be dealt face down on the table. 6. Each player, in turn order, decides whether to mulligan. (Rules on Two-Headed Giant mulligans can be found in the Magic Comprehensive Rules, rule 103.4c)\n\nOnce players have completed their mulligans, the game can begin."
+    },
+    {
+      "number": "9.5",
+      "title": "Two-Headed Giant Constructed Rules",
+      "content": "Two-Headed Giant Constructed tournaments use Unified Deck Construction rules (see section 8.4).\n\nIn addition to cards banned in particular formats, the following card is banned in ALL Two-Headed Giant Constructed tournaments (Vintage, Legacy, Modern, and Block Constructed):\n\n• Erayo, Soratami Ascendant\n\nSideboards are not allowed in constructed Two-Headed Giant tournaments."
+    },
+    {
+      "number": "9.6",
+      "title": "Two-Headed Giant Limited Rules",
+      "content": "All the rules for Limited Tournaments (Section 7) apply, except as described below.\n\nEight boosters per team are recommended for Two-Headed Giant Sealed Deck tournaments and six boosters per team for Two-Headed Giant Booster Draft tournaments. For the recommended product mix for the current block, refer to Appendix D.\n\nCards not used in a team’s starting decks are considered a shared sideboard by the two players that both players can access."
+    },
+    {
+      "number": "9.7",
+      "title": "Two-Headed Giant Booster Draft Tournaments",
+      "content": "Teams (not players) assemble into random drafting circles (called pods) of roughly equal size at the direction of the Head Judge. Teammates sit next to each other. Tournament officials then distribute identical boosters to each team in the pod.\n\nAfter opening and counting the cards in their first pack, the team chooses two cards from the booster pack then passes the remaining cards face down to the team on its left. Selected cards may be placed into one or two piles. The cards chosen are not assigned to a particular player; they become part of a pool out of which both players will construct their decks. The open packs are passed around the drafting pod—with each team taking two cards from each before passing—until all cards are drafted.\n\nFor the second pack, the direction of drafting is reversed as usual. Thus, the overall draft direction is left–right– left–right–left–right."
+    }
+  ]
+}

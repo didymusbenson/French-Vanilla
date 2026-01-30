@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/mtr_rule.dart';
 import '../services/favorites_service.dart';
+import '../mixins/rule_link_mixin.dart';
+import '../mixins/formatted_content_mixin.dart';
 
 /// Screen showing the full content of a single MTR rule.
 class MtrRuleDetailScreen extends StatefulWidget {
@@ -17,7 +19,8 @@ class MtrRuleDetailScreen extends StatefulWidget {
   State<MtrRuleDetailScreen> createState() => _MtrRuleDetailScreenState();
 }
 
-class _MtrRuleDetailScreenState extends State<MtrRuleDetailScreen> {
+class _MtrRuleDetailScreenState extends State<MtrRuleDetailScreen>
+    with RuleLinkMixin, FormattedContentMixin {
   final _favoritesService = FavoritesService();
   bool _isBookmarked = false;
 
@@ -93,70 +96,133 @@ class _MtrRuleDetailScreenState extends State<MtrRuleDetailScreen> {
         title: Text('MTR ${widget.rule.number}'),
         actions: [
           IconButton(
-            icon: Icon(
-              _isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-            ),
-            onPressed: _toggleBookmark,
-            tooltip: _isBookmarked ? 'Remove bookmark' : 'Bookmark',
-          ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'copy') {
-                _copyToClipboard();
-              } else if (value == 'share') {
-                _shareRule();
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'copy',
-                child: Row(
-                  children: [
-                    Icon(Icons.copy),
-                    SizedBox(width: 8),
-                    Text('Copy'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'share',
-                child: Row(
-                  children: [
-                    Icon(Icons.share),
-                    SizedBox(width: 8),
-                    Text('Share'),
-                  ],
-                ),
-              ),
-            ],
+            icon: const Icon(Icons.copy),
+            onPressed: _copyToClipboard,
+            tooltip: 'Copy rule',
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title
-                Text(
-                  widget.rule.title,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+        padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with rule number
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Text(
+                'MTR ${widget.rule.number}. ${widget.rule.title}',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(height: 16),
-
-                // Content
-                Text(
-                  widget.rule.content,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              ],
+              ),
             ),
-          ),
+
+            // Card with rule content
+            GestureDetector(
+              onLongPress: () {
+                HapticFeedback.mediumImpact();
+                _showContextMenu();
+              },
+              child: Card(
+                margin: EdgeInsets.zero,
+                elevation: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header with rule number and bookmark icon
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.rule.number,
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              _isBookmarked ? Icons.bookmark : Icons.bookmark_outline,
+                              size: 20,
+                            ),
+                            color: _isBookmarked
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.onSurfaceVariant,
+                            onPressed: _toggleBookmark,
+                            tooltip: _isBookmarked ? 'Remove bookmark' : 'Add bookmark',
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Content with formatted rendering
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: buildFormattedContent(widget.rule.content),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showContextMenu() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(
+                _isBookmarked ? Icons.bookmark_remove : Icons.bookmark_add,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: Text(_isBookmarked ? 'Remove Bookmark' : 'Add Bookmark'),
+              onTap: () {
+                Navigator.pop(context);
+                _toggleBookmark();
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.copy,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: const Text('Copy Rule'),
+              onTap: () {
+                Navigator.pop(context);
+                _copyToClipboard();
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.share,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: const Text('Share Rule'),
+              onTap: () {
+                Navigator.pop(context);
+                _shareRule();
+              },
+            ),
+          ],
         ),
       ),
     );

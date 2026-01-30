@@ -5,7 +5,7 @@ import 'ipg_infraction_detail_screen.dart';
 
 /// Screen showing all infractions in an IPG section.
 class IpgSectionDetailScreen extends StatefulWidget {
-  final int sectionNumber;
+  final dynamic sectionNumber; // Can be int (1-4) or String ("A"-"B")
   final String sectionTitle;
 
   const IpgSectionDetailScreen({

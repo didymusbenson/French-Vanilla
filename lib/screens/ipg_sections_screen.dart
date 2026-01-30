@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/judge_docs_service.dart';
 import '../models/ipg_infraction.dart';
 import 'ipg_section_detail_screen.dart';
+import 'ipg_infraction_detail_screen.dart';
 
 /// Screen showing all IPG sections (1-4).
 class IpgSectionsScreen extends StatefulWidget {
@@ -55,7 +56,11 @@ class _IpgSectionsScreenState extends State<IpgSectionsScreen> {
                       clipBehavior: Clip.antiAlias,
                       child: ListTile(
                         leading: CircleAvatar(
-                          child: Text('${section.sectionNumber}'),
+                          child: Text(
+                            section.isAppendix
+                              ? '${section.sectionNumber}'
+                              : '${section.sectionNumber}',
+                          ),
                         ),
                         title: Text(
                           section.title,
@@ -64,18 +69,41 @@ class _IpgSectionsScreenState extends State<IpgSectionsScreen> {
                             fontSize: 16,
                           ),
                         ),
-                        subtitle: Text('${section.infractionCount} infractions'),
+                        subtitle: Text(
+                          section.isAppendix
+                              ? 'Appendix'
+                              : section.infractionCount == 1
+                                  ? '1 infraction'
+                                  : '${section.infractionCount} infractions',
+                        ),
                         trailing: const Icon(Icons.chevron_right),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => IpgSectionDetailScreen(
-                                sectionNumber: section.sectionNumber,
-                                sectionTitle: section.title,
+                        onTap: () async {
+                          // For appendices (or any section with 1 infraction), navigate directly to content
+                          if (section.isAppendix || section.infractionCount == 1) {
+                            // Load the section to get the single infraction
+                            final sectionData = await _judgeDocsService.loadIpgSection(section.sectionNumber);
+                            if (sectionData.infractions.isNotEmpty && context.mounted) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => IpgInfractionDetailScreen(
+                                    infraction: sectionData.infractions.first,
+                                  ),
+                                ),
+                              );
+                            }
+                          } else {
+                            // Navigate to infractions list for multi-infraction sections
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => IpgSectionDetailScreen(
+                                  sectionNumber: section.sectionNumber,
+                                  sectionTitle: section.title,
+                                ),
                               ),
-                            ),
-                          );
+                            );
+                          }
                         },
                       ),
                     );

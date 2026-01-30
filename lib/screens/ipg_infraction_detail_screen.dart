@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/ipg_infraction.dart';
 import '../services/favorites_service.dart';
+import '../mixins/rule_link_mixin.dart';
+import '../mixins/formatted_content_mixin.dart';
 
 /// Screen showing the full structured content of a single IPG infraction.
 class IpgInfractionDetailScreen extends StatefulWidget {
@@ -17,7 +19,8 @@ class IpgInfractionDetailScreen extends StatefulWidget {
   State<IpgInfractionDetailScreen> createState() => _IpgInfractionDetailScreenState();
 }
 
-class _IpgInfractionDetailScreenState extends State<IpgInfractionDetailScreen> {
+class _IpgInfractionDetailScreenState extends State<IpgInfractionDetailScreen>
+    with RuleLinkMixin, FormattedContentMixin {
   final _favoritesService = FavoritesService();
   bool _isBookmarked = false;
 
@@ -38,8 +41,6 @@ class _IpgInfractionDetailScreenState extends State<IpgInfractionDetailScreen> {
   }
 
   Future<void> _toggleBookmark() async {
-    final allContent = _buildContentText();
-
     if (_isBookmarked) {
       await _favoritesService.removeBookmark(
         widget.infraction.number,
@@ -48,7 +49,7 @@ class _IpgInfractionDetailScreenState extends State<IpgInfractionDetailScreen> {
     } else {
       await _favoritesService.addBookmark(
         widget.infraction.number,
-        allContent,
+        _buildContentText(),
         BookmarkType.ipg,
       );
     }
@@ -70,6 +71,7 @@ class _IpgInfractionDetailScreenState extends State<IpgInfractionDetailScreen> {
       );
     }
   }
+
 
   String _buildContentText() {
     final buffer = StringBuffer();
@@ -200,139 +202,148 @@ class _IpgInfractionDetailScreenState extends State<IpgInfractionDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title and Penalty Card
+            // Title header (outside card, like CR)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.infraction.cleanTitle,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  if (widget.infraction.penalty != null) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getPenaltyColor(widget.infraction.penalty),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        widget.infraction.penalty!,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            // Single card containing all subsections
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      widget.infraction.cleanTitle,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    if (widget.infraction.penalty != null) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getPenaltyColor(widget.infraction.penalty),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          widget.infraction.penalty!,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                    // Definition
+                    if (widget.infraction.definition != null &&
+                        widget.infraction.definition!.isNotEmpty)
+                      _buildSection(
+                        'Definition',
+                        widget.infraction.definition!,
                       ),
-                    ],
+
+                    // Examples
+                    if (widget.infraction.examples.isNotEmpty)
+                      _buildExamplesSection('Examples', widget.infraction.examples),
+
+                    // Philosophy
+                    if (widget.infraction.philosophy != null &&
+                        widget.infraction.philosophy!.isNotEmpty)
+                      _buildSection(
+                        'Philosophy',
+                        widget.infraction.philosophy!,
+                      ),
+
+                    // Additional Remedy
+                    if (widget.infraction.additionalRemedy != null &&
+                        widget.infraction.additionalRemedy!.isNotEmpty)
+                      _buildSection(
+                        'Additional Remedy',
+                        widget.infraction.additionalRemedy!,
+                      ),
+
+                    // Upgrade
+                    if (widget.infraction.upgrade != null &&
+                        widget.infraction.upgrade!.isNotEmpty)
+                      _buildSection(
+                        'Upgrade',
+                        widget.infraction.upgrade!,
+                        isLast: true,
+                      ),
                   ],
                 ),
               ),
             ),
-
-            const SizedBox(height: 8),
-
-            // Definition
-            if (widget.infraction.definition != null &&
-                widget.infraction.definition!.isNotEmpty)
-              _buildSection(
-                'Definition',
-                widget.infraction.definition!,
-              ),
-
-            // Examples
-            if (widget.infraction.examples.isNotEmpty)
-              _buildExamplesSection('Examples', widget.infraction.examples),
-
-            // Philosophy
-            if (widget.infraction.philosophy != null &&
-                widget.infraction.philosophy!.isNotEmpty)
-              _buildSection(
-                'Philosophy',
-                widget.infraction.philosophy!,
-              ),
-
-            // Additional Remedy
-            if (widget.infraction.additionalRemedy != null &&
-                widget.infraction.additionalRemedy!.isNotEmpty)
-              _buildSection(
-                'Additional Remedy',
-                widget.infraction.additionalRemedy!,
-              ),
-
-            // Upgrade
-            if (widget.infraction.upgrade != null &&
-                widget.infraction.upgrade!.isNotEmpty)
-              _buildSection(
-                'Upgrade',
-                widget.infraction.upgrade!,
-              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSection(String title, String content) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
+  Widget _buildSection(String title, String content, {bool isLast = false}) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Styled header
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Text(
               title,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).colorScheme.primary,
                   ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              content,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-          ],
-        ),
+          ),
+          // Content with formatted rendering (links, example callouts, etc.)
+          buildFormattedContent(content),
+        ],
       ),
     );
   }
 
   Widget _buildExamplesSection(String title, List<String> examples) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Styled header
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Text(
               title,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).colorScheme.primary,
                   ),
             ),
-            const SizedBox(height: 8),
-            ...examples.map(
+          ),
+          // Content - each example with formatted rendering
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: examples.map(
               (example) => Padding(
                 padding: const EdgeInsets.only(bottom: 12.0),
-                child: Text(
-                  example,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
+                child: buildFormattedContent(example),
               ),
-            ),
-          ],
-        ),
+            ).toList(),
+          ),
+        ],
       ),
     );
   }
