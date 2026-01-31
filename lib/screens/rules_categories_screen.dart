@@ -1,3 +1,4 @@
+import 'dart:math' show pi;
 import 'package:flutter/material.dart';
 import 'sections_screen.dart';
 import 'rulings_screen.dart';
@@ -12,12 +13,11 @@ class RulesCategoriesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(8.0),
       children: [
         // Comprehensive Rules & Glossary
         _CategoryCard(
           title: 'Comprehensive Rules & Glossary',
-          subtitle: 'Official Magic: The Gathering rules',
           icon: Icons.book,
           color: Colors.deepPurple,
           onTap: () {
@@ -30,13 +30,13 @@ class RulesCategoriesScreen extends StatelessWidget {
           },
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
 
         // Individual Card Rulings
         _CategoryCard(
           title: 'Individual Card Rulings',
-          subtitle: 'Official rulings for specific cards',
           icon: Icons.style,
+          iconRotation: pi,
           color: Colors.indigo,
           onTap: () {
             Navigator.push(
@@ -48,12 +48,11 @@ class RulesCategoriesScreen extends StatelessWidget {
           },
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
 
         // Magic Tournament Rules
         _CategoryCard(
           title: 'Magic Tournament Rules',
-          subtitle: 'MTR - Tournament policy and procedures',
           icon: Icons.gavel,
           color: Colors.blue,
           onTap: () {
@@ -66,12 +65,11 @@ class RulesCategoriesScreen extends StatelessWidget {
           },
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
 
         // Infraction Procedure Guide
         _CategoryCard(
           title: 'Infraction Procedure Guide',
-          subtitle: 'IPG - Tournament infractions and penalties',
           icon: Icons.warning_amber_rounded,
           color: Colors.orange,
           onTap: () {
@@ -90,15 +88,15 @@ class RulesCategoriesScreen extends StatelessWidget {
 
 class _CategoryCard extends StatelessWidget {
   final String title;
-  final String subtitle;
   final IconData icon;
+  final double iconRotation;
   final Color color;
   final VoidCallback onTap;
 
   const _CategoryCard({
     required this.title,
-    required this.subtitle,
     required this.icon,
+    this.iconRotation = 0,
     required this.color,
     required this.onTap,
   });
@@ -111,40 +109,31 @@ class _CategoryCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(10.0),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  size: 32,
-                  color: color,
+                child: Transform.rotate(
+                  angle: iconRotation,
+                  child: Icon(
+                    icon,
+                    size: 32,
+                    color: color,
+                  ),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                    ),
-                  ],
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
               ),
               Icon(

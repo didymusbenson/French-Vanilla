@@ -20,53 +20,58 @@ class SectionsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: sections.length,
-      itemBuilder: (context, index) {
-        final section = sections[index];
-        return Card(
-          clipBehavior: Clip.antiAlias,
-          child: ListTile(
-            leading: CircleAvatar(
-              child: Icon(section['icon'] as IconData),
-            ),
-            title: Text(
-              section['number'] != null
-                  ? '${section['number']}. ${section['title']}'
-                  : section['title'] as String,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Comprehensive Rules'),
+      ),
+      body: ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: sections.length,
+        itemBuilder: (context, index) {
+          final section = sections[index];
+          return Card(
+            clipBehavior: Clip.antiAlias,
+            child: ListTile(
+              leading: CircleAvatar(
+                child: Icon(section['icon'] as IconData),
               ),
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // Navigate to Glossary or Section Detail
-              if (section['number'] == null) {
-                // Glossary
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const GlossaryDetailScreen(),
-                  ),
-                );
-              } else {
-                // Regular section
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SectionDetailScreen(
-                      sectionNumber: section['number'] as int,
-                      sectionTitle: section['title'] as String,
+              title: Text(
+                section['number'] != null
+                    ? '${section['number']}. ${section['title']}'
+                    : section['title'] as String,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                // Navigate to Glossary or Section Detail
+                if (section['number'] == null) {
+                  // Glossary
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const GlossaryDetailScreen(),
                     ),
-                  ),
-                );
-              }
-            },
-          ),
-        );
-      },
+                  );
+                } else {
+                  // Regular section
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SectionDetailScreen(
+                        sectionNumber: section['number'] as int,
+                        sectionTitle: section['title'] as String,
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 }
