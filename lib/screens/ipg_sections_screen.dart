@@ -55,13 +55,6 @@ class _IpgSectionsScreenState extends State<IpgSectionsScreen> {
                     return Card(
                       clipBehavior: Clip.antiAlias,
                       child: ListTile(
-                        leading: CircleAvatar(
-                          child: Text(
-                            section.isAppendix
-                              ? '${section.sectionNumber}'
-                              : '${section.sectionNumber}',
-                          ),
-                        ),
                         title: Text(
                           section.title,
                           style: const TextStyle(
@@ -69,13 +62,15 @@ class _IpgSectionsScreenState extends State<IpgSectionsScreen> {
                             fontSize: 16,
                           ),
                         ),
-                        subtitle: Text(
-                          section.isAppendix
-                              ? 'Appendix'
-                              : section.infractionCount == 1
-                                  ? '1 infraction'
-                                  : '${section.infractionCount} infractions',
-                        ),
+                        subtitle: section.sectionNumber == 1
+                            ? null // Section 1 has no infractions, just general info
+                            : Text(
+                                section.isAppendix
+                                    ? 'Appendix'
+                                    : section.infractionCount == 1
+                                        ? '1 infraction'
+                                        : '${section.infractionCount} infractions',
+                              ),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () async {
                           // For appendices (or any section with 1 infraction), navigate directly to content

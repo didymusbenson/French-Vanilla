@@ -55,13 +55,6 @@ class _MtrSectionsScreenState extends State<MtrSectionsScreen> {
                     return Card(
                       clipBehavior: Clip.antiAlias,
                       child: ListTile(
-                        leading: CircleAvatar(
-                          child: Text(
-                            section.isAppendix
-                              ? '${section.sectionNumber}'
-                              : '${section.sectionNumber}',
-                          ),
-                        ),
                         title: Text(
                           section.title,
                           style: const TextStyle(
