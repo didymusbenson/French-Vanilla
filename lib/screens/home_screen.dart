@@ -1,8 +1,5 @@
-import 'dart:math' show pi;
 import 'package:flutter/material.dart';
-import 'sections_screen.dart';
-import 'rulings_screen.dart';
-import 'mtr_ipg_screen.dart';
+import 'rules_categories_screen.dart';
 import 'credits_screen.dart';
 import 'search_screen.dart';
 import 'bookmarks_screen.dart';
@@ -19,17 +16,15 @@ class _HomeScreenState extends State<HomeScreen> {
   final _bookmarksKey = GlobalKey<BookmarksScreenState>();
 
   List<Widget> get _screens => [
-    const SectionsScreen(),
-    const RulingsScreen(),
-    const MtrIpgScreen(),
+    const RulesCategoriesScreen(),
+    const SearchScreen(),
     BookmarksScreen(key: _bookmarksKey),
     const CreditsScreen(),
   ];
 
   static const List<String> _titles = [
     'Rules',
-    'Rulings',
-    'MTR/IPG',
+    'Search',
     'Bookmarks',
     'Credits',
   ];
@@ -41,25 +36,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Widget> _getAppBarActions() {
-    // Rules (0) has search
-    if (_selectedIndex == 0) {
-      return [
-        IconButton(
-          icon: const Icon(Icons.search),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const SearchScreen(),
-              ),
-            );
-          },
-          tooltip: 'Search',
-        ),
-      ];
-    }
-    // Bookmarks (3) has edit button
-    if (_selectedIndex == 3) {
+    // Bookmarks (2) has edit button
+    if (_selectedIndex == 2) {
       return [
         IconButton(
           icon: const Icon(Icons.edit),
@@ -91,21 +69,10 @@ class _HomeScreenState extends State<HomeScreen> {
             selectedIcon: Icon(Icons.book),
             label: 'Rules',
           ),
-          NavigationDestination(
-            icon: Transform.rotate(
-              angle: pi,
-              child: const Icon(Icons.style_outlined),
-            ),
-            selectedIcon: Transform.rotate(
-              angle: pi,
-              child: const Icon(Icons.style),
-            ),
-            label: 'Rulings',
-          ),
           const NavigationDestination(
-            icon: Icon(Icons.gavel_outlined),
-            selectedIcon: Icon(Icons.gavel),
-            label: 'MTR/IPG',
+            icon: Icon(Icons.search_outlined),
+            selectedIcon: Icon(Icons.search),
+            label: 'Search',
           ),
           const NavigationDestination(
             icon: Icon(Icons.bookmark_outline),
