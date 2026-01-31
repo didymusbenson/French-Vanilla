@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'screens/home_screen.dart';
 import 'screens/heart_customization_screen.dart';
 import 'services/iap_service.dart';
+import 'services/data_preloader.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +24,9 @@ void main() async {
 
   // Initialize IAP service
   await IAPService().initialize();
+
+  // Start preloading data in the background (non-blocking)
+  DataPreloader().preloadAll();
 
   runApp(const FrenchVanillaApp());
 }
