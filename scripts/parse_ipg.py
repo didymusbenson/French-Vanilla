@@ -26,13 +26,29 @@ def extract_text_from_pdf(pdf_path):
     Extract text from PDF using pdfplumber.
 
     Returns clean text with proper paragraph breaks and list formatting.
+    Filters out page numbers by excluding text in header/footer regions.
     """
     text_parts = []
 
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
-            # Extract text with layout preservation
-            page_text = page.extract_text(layout=True, x_tolerance=3, y_tolerance=3)
+            # Get page dimensions to calculate header/footer regions
+            page_height = page.height
+
+            # Define header/footer margins (top 50 points, bottom 50 points)
+            # Page numbers typically appear in these regions
+            header_threshold = 50
+            footer_threshold = page_height - 50
+
+            # Filter characters to exclude header/footer regions
+            def not_in_header_footer(obj):
+                # obj is a char dict with 'top' and 'bottom' keys
+                return obj['top'] > header_threshold and obj['bottom'] < footer_threshold
+
+            # Crop page to exclude header/footer, then extract text
+            cropped_page = page.filter(not_in_header_footer)
+            page_text = cropped_page.extract_text(layout=True, x_tolerance=3, y_tolerance=3)
+
             if page_text:
                 text_parts.append(page_text)
 
