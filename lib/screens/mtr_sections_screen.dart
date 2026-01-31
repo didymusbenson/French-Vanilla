@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../services/judge_docs_service.dart';
 import '../models/mtr_rule.dart';
 import 'mtr_section_detail_screen.dart';
-import 'mtr_rule_detail_screen.dart';
 
 /// Screen showing all MTR sections (1-8).
 class MtrSectionsScreen extends StatefulWidget {
@@ -70,33 +69,17 @@ class _MtrSectionsScreenState extends State<MtrSectionsScreen> {
                                   : '${section.ruleCount} rules',
                         ),
                         trailing: const Icon(Icons.chevron_right),
-                        onTap: () async {
-                          // For appendices (or any section with 1 rule), navigate directly to content
-                          if (section.isAppendix || section.ruleCount == 1) {
-                            // Load the section to get the single rule
-                            final sectionData = await _judgeDocsService.loadMtrSection(section.sectionNumber);
-                            if (sectionData.rules.isNotEmpty && context.mounted) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => MtrRuleDetailScreen(
-                                    rule: sectionData.rules.first,
-                                  ),
-                                ),
-                              );
-                            }
-                          } else {
-                            // Navigate to rules list for multi-rule sections
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => MtrSectionDetailScreen(
-                                  sectionNumber: section.sectionNumber,
-                                  sectionTitle: section.title,
-                                ),
+                        onTap: () {
+                          // Navigate to section detail screen (shows all rules as subrules)
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => MtrSectionDetailScreen(
+                                sectionNumber: section.sectionNumber,
+                                sectionTitle: section.title,
                               ),
-                            );
-                          }
+                            ),
+                          );
                         },
                       ),
                     );

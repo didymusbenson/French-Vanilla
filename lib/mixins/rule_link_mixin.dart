@@ -1,7 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../screens/rule_detail_screen.dart';
-import '../screens/mtr_rule_detail_screen.dart';
+import '../screens/mtr_section_detail_screen.dart';
 import '../services/rules_data_service.dart';
 import '../services/judge_docs_service.dart';
 
@@ -194,7 +194,21 @@ mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
   }
 
   /// Navigate to an MTR rule
+  /// Rule number format: "4.3" (section 4, rule 3)
   Future<void> navigateToMtrRule(String ruleNumber) async {
+    // Parse the rule number to extract section
+    // Format: "4.3" -> section 4, highlight rule "4.3"
+    final ruleMatch = RegExp(r'^(\d+)\.(\d+)$').firstMatch(ruleNumber);
+
+    if (ruleMatch == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to parse MTR rule reference')),
+      );
+      return;
+    }
+
+    final sectionNumber = int.parse(ruleMatch.group(1)!);
+
     // Show loading indicator
     showDialog(
       context: context,
@@ -203,23 +217,22 @@ mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
     );
 
     try {
-      final rule = await _judgeDocsService.findMtrRule(ruleNumber);
-
-      if (rule == null) {
-        throw Exception('MTR rule not found');
-      }
+      // Load the section to get the title
+      final section = await _judgeDocsService.loadMtrSection(sectionNumber);
 
       if (!mounted) return;
 
       // Close loading indicator
       Navigator.pop(context);
 
-      // Navigate to the MTR rule detail screen
+      // Navigate to the MTR section detail screen with highlighting
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => MtrRuleDetailScreen(
-            rule: rule,
+          builder: (context) => MtrSectionDetailScreen(
+            sectionNumber: sectionNumber,
+            sectionTitle: section.title,
+            highlightRuleNumber: ruleNumber,
           ),
         ),
       );

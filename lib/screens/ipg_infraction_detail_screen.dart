@@ -6,7 +6,8 @@ import '../services/favorites_service.dart';
 import '../mixins/rule_link_mixin.dart';
 import '../mixins/formatted_content_mixin.dart';
 
-/// Screen showing the full structured content of a single IPG infraction.
+/// Screen showing the full content of a single IPG infraction.
+/// Displays all sections: Definition, Examples, Philosophy, Additional Remedy, Upgrade.
 class IpgInfractionDetailScreen extends StatefulWidget {
   final IpgInfraction infraction;
 
@@ -41,6 +42,17 @@ class _IpgInfractionDetailScreenState extends State<IpgInfractionDetailScreen>
   }
 
   Future<void> _toggleBookmark() async {
+    // Build bookmark content from all infraction parts
+    final buffer = StringBuffer();
+    buffer.writeln(widget.infraction.cleanTitle);
+    if (widget.infraction.penalty != null) {
+      buffer.writeln('Penalty: ${widget.infraction.penalty}');
+    }
+    buffer.writeln();
+    if (widget.infraction.definition != null) {
+      buffer.writeln(widget.infraction.definition);
+    }
+
     if (_isBookmarked) {
       await _favoritesService.removeBookmark(
         widget.infraction.number,
@@ -49,7 +61,7 @@ class _IpgInfractionDetailScreenState extends State<IpgInfractionDetailScreen>
     } else {
       await _favoritesService.addBookmark(
         widget.infraction.number,
-        _buildContentText(),
+        buffer.toString(),
         BookmarkType.ipg,
       );
     }
@@ -72,10 +84,9 @@ class _IpgInfractionDetailScreenState extends State<IpgInfractionDetailScreen>
     }
   }
 
-
-  String _buildContentText() {
+  void _copyToClipboard() {
     final buffer = StringBuffer();
-    buffer.writeln('${widget.infraction.number}: ${widget.infraction.cleanTitle}');
+    buffer.writeln('IPG ${widget.infraction.number}: ${widget.infraction.cleanTitle}');
     if (widget.infraction.penalty != null) {
       buffer.writeln('Penalty: ${widget.infraction.penalty}');
     }
@@ -91,8 +102,8 @@ class _IpgInfractionDetailScreenState extends State<IpgInfractionDetailScreen>
       buffer.writeln('Examples:');
       for (final example in widget.infraction.examples) {
         buffer.writeln(example);
+        buffer.writeln();
       }
-      buffer.writeln();
     }
 
     if (widget.infraction.philosophy != null) {
@@ -112,12 +123,7 @@ class _IpgInfractionDetailScreenState extends State<IpgInfractionDetailScreen>
       buffer.writeln(widget.infraction.upgrade);
     }
 
-    return buffer.toString();
-  }
-
-  void _copyToClipboard() {
-    final text = 'IPG ${_buildContentText()}';
-    Clipboard.setData(ClipboardData(text: text));
+    Clipboard.setData(ClipboardData(text: buffer.toString().trim()));
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -128,8 +134,17 @@ class _IpgInfractionDetailScreenState extends State<IpgInfractionDetailScreen>
   }
 
   void _shareInfraction() {
-    final text = 'IPG ${_buildContentText()}';
-    Share.share(text);
+    final buffer = StringBuffer();
+    buffer.writeln('IPG ${widget.infraction.number}: ${widget.infraction.cleanTitle}');
+    if (widget.infraction.penalty != null) {
+      buffer.writeln('Penalty: ${widget.infraction.penalty}');
+    }
+    buffer.writeln();
+    if (widget.infraction.definition != null) {
+      buffer.writeln(widget.infraction.definition);
+    }
+
+    Share.share(buffer.toString().trim());
   }
 
   Color _getPenaltyColor(String? penalty) {
@@ -159,191 +174,144 @@ class _IpgInfractionDetailScreenState extends State<IpgInfractionDetailScreen>
         actions: [
           IconButton(
             icon: Icon(
-              _isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+              _isBookmarked ? Icons.bookmark : Icons.bookmark_outline,
             ),
             onPressed: _toggleBookmark,
-            tooltip: _isBookmarked ? 'Remove bookmark' : 'Bookmark',
+            tooltip: _isBookmarked ? 'Remove bookmark' : 'Add bookmark',
           ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'copy') {
-                _copyToClipboard();
-              } else if (value == 'share') {
-                _shareInfraction();
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'copy',
-                child: Row(
-                  children: [
-                    Icon(Icons.copy),
-                    SizedBox(width: 8),
-                    Text('Copy'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'share',
-                child: Row(
-                  children: [
-                    Icon(Icons.share),
-                    SizedBox(width: 8),
-                    Text('Share'),
-                  ],
-                ),
-              ),
-            ],
+          IconButton(
+            icon: const Icon(Icons.copy),
+            onPressed: _copyToClipboard,
+            tooltip: 'Copy infraction',
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title header (outside card, like CR)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.infraction.cleanTitle,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  if (widget.infraction.penalty != null) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _getPenaltyColor(widget.infraction.penalty),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        widget.infraction.penalty!,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
+            // Header with infraction number and title
+            Text(
+              'IPG ${widget.infraction.number}. ${widget.infraction.cleanTitle}',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
             ),
 
-            // Single card containing all subsections
+            // Penalty badge
+            if (widget.infraction.penalty != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: _getPenaltyColor(widget.infraction.penalty),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  widget.infraction.penalty!,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 24),
+
+            // Card with all content sections
             Card(
+              margin: EdgeInsets.zero,
+              elevation: 2,
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Definition
-                    if (widget.infraction.definition != null &&
-                        widget.infraction.definition!.isNotEmpty)
-                      _buildSection(
+                    if (widget.infraction.definition != null) ...[
+                      Text(
                         'Definition',
-                        widget.infraction.definition!,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
+                      const SizedBox(height: 12),
+                      buildFormattedContent(widget.infraction.definition!),
+                      const SizedBox(height: 24),
+                    ],
 
                     // Examples
-                    if (widget.infraction.examples.isNotEmpty)
-                      _buildExamplesSection('Examples', widget.infraction.examples),
+                    if (widget.infraction.examples.isNotEmpty) ...[
+                      Text(
+                        'Examples',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...widget.infraction.examples.asMap().entries.map((entry) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              buildFormattedContent(entry.value),
+                            ],
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 12),
+                    ],
 
                     // Philosophy
-                    if (widget.infraction.philosophy != null &&
-                        widget.infraction.philosophy!.isNotEmpty)
-                      _buildSection(
+                    if (widget.infraction.philosophy != null) ...[
+                      Text(
                         'Philosophy',
-                        widget.infraction.philosophy!,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
+                      const SizedBox(height: 12),
+                      buildFormattedContent(widget.infraction.philosophy!),
+                      const SizedBox(height: 24),
+                    ],
 
                     // Additional Remedy
-                    if (widget.infraction.additionalRemedy != null &&
-                        widget.infraction.additionalRemedy!.isNotEmpty)
-                      _buildSection(
+                    if (widget.infraction.additionalRemedy != null) ...[
+                      Text(
                         'Additional Remedy',
-                        widget.infraction.additionalRemedy!,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
+                      const SizedBox(height: 12),
+                      buildFormattedContent(widget.infraction.additionalRemedy!),
+                      const SizedBox(height: 24),
+                    ],
 
                     // Upgrade
-                    if (widget.infraction.upgrade != null &&
-                        widget.infraction.upgrade!.isNotEmpty)
-                      _buildSection(
+                    if (widget.infraction.upgrade != null) ...[
+                      Text(
                         'Upgrade',
-                        widget.infraction.upgrade!,
-                        isLast: true,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
+                      const SizedBox(height: 12),
+                      buildFormattedContent(widget.infraction.upgrade!),
+                    ],
                   ],
                 ),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildSection(String title, String content, {bool isLast = false}) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: isLast ? 0 : 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Styled header
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-            ),
-          ),
-          // Content with formatted rendering (links, example callouts, etc.)
-          buildFormattedContent(content),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExamplesSection(String title, List<String> examples) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Styled header
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-            ),
-          ),
-          // Content - each example with formatted rendering
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: examples.map(
-              (example) => Padding(
-                padding: const EdgeInsets.only(bottom: 12.0),
-                child: buildFormattedContent(example),
-              ),
-            ).toList(),
-          ),
-        ],
       ),
     );
   }

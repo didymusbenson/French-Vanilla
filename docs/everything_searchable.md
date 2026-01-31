@@ -62,20 +62,29 @@ Add to `lib/services/judge_docs_service.dart`:
 Future<List<MtrSearchResult>> searchMtr(String query) async {
   // Search through all 10 sections + 6 appendices
   // Match on: rule number, title, content
-  // Return: MtrSearchResult with rule, section context, snippet
+  // Return: MtrSearchResult with rule, section number, section title, snippet
+  // IMPORTANT: Include sectionNumber and sectionTitle for navigation
 }
 
 /// Search all IPG infractions and appendices
 Future<List<IpgSearchResult>> searchIpg(String query) async {
   // Search through all 4 sections + 2 appendices
   // Match on: infraction number, title, definition, philosophy, examples
-  // Return: IpgSearchResult with infraction, section context, snippet
+  // Return: IpgSearchResult with infraction object and snippet
+  // NOTE: Section context NOT required - navigation goes directly to detail screen
 }
 ```
 
 **Search Fields:**
 - **MTR**: `number`, `title`, `content`
 - **IPG**: `number`, `title`, `definition`, `philosophy`, `examples`, `additionalRemedy`
+
+**Navigation Context:**
+- **CRITICAL for MTR**: Search results must include section information (section number and title)
+- This is required because MTR navigation uses section-level screens with highlighting
+- Example: Searching for "6.7" should return the rule AND its section context (Section 6: Constructed Tournament Rules)
+- The section context is used to navigate to `MtrSectionDetailScreen` with `highlightRuleNumber="6.7"`
+- **NOT required for IPG**: IPG search results only need the infraction object since navigation goes directly to `IpgInfractionDetailScreen`
 
 **Snippet Strategy:**
 - Extract ~150 characters around the match
@@ -139,8 +148,21 @@ class SearchResult {
   final IpgInfraction? ipgInfraction;
   final MagicCard? card;
   final Ruling? cardRuling; // Specific ruling that matched
+
+  // NEW: Section context for MTR navigation
+  final String? sectionTitle; // e.g., "6. Constructed Tournament Rules"
+  // Note: sectionNumber already exists above and is used for CR and MTR (not needed for IPG)
 }
 ```
+
+**Section Context Usage:**
+- **Comprehensive Rules**: `sectionNumber` is used to identify the CR section (1-9)
+- **MTR**: Both `sectionNumber` AND `sectionTitle` are required for navigation
+  - `sectionNumber`: Used to load the correct section
+  - `sectionTitle`: Displayed in the section screen title bar
+  - Together with rule number, enables highlighting navigation to `MtrSectionDetailScreen`
+- **IPG**: Section context NOT required - navigation goes directly to `IpgInfractionDetailScreen`
+  - Only the `ipgInfraction` object is needed for navigation
 
 ### 3. UI Layer: Search Screen Enhancements
 
@@ -214,15 +236,24 @@ Add to `PreviewBottomSheetMixin`:
 ```dart
 void showMtrBottomSheet({
   required MtrRule rule,
+  required int sectionNumber,
+  required String sectionTitle,
   required String snippet,
 }) {
   // Show modal bottom sheet with:
   // - Title: "MTR {number}. {title}"
-  // - Subtitle: "Magic Tournament Rules"
+  // - Subtitle: "Magic Tournament Rules — Section {sectionNumber}"
   // - Content: rule.content with FormattedContentMixin
-  // - Action: "Go to MTR {number}" → navigate to MtrRuleDetailScreen
+  // - Action: "Go to MTR {number}" → navigate to MtrSectionDetailScreen
+  //   with highlightRuleNumber parameter to scroll to and highlight the rule
 }
 ```
+
+**Navigation Pattern:**
+- Navigate to `MtrSectionDetailScreen` (not a dedicated rule detail screen)
+- Pass `highlightRuleNumber` parameter to scroll to and highlight the specific rule
+- This matches the Comprehensive Rules pattern where subrules are shown in context
+- The section screen displays all rules as cards with titles in headers
 
 **Consistent with existing patterns:**
 - Same layout structure as `showRuleBottomSheet()`
@@ -240,10 +271,18 @@ void showIpgBottomSheet({
   // Show modal bottom sheet with:
   // - Title: "IPG {number}. {title}"
   // - Subtitle: "Penalty: {penalty}"
-  // - Content sections: Definition, Philosophy, Examples
+  // - Content preview: snippet from definition or first example
   // - Action: "Go to IPG {number}" → navigate to IpgInfractionDetailScreen
+  //   passing the full infraction object
 }
 ```
+
+**Navigation Pattern:**
+- Navigate to `IpgInfractionDetailScreen` (dedicated detail screen per infraction)
+- Pass the complete `IpgInfraction` object
+- This differs from MTR because infractions contain significantly more content (Definition, Examples, Philosophy, Additional Remedy, Upgrade)
+- The detail screen shows all 5 sections in one scrollable view with section headers
+- Section context (section number/title) is NOT required for IPG search results since navigation goes directly to detail screen
 
 **Special considerations:**
 - Display penalty prominently (Warning, Game Loss, etc.)

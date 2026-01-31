@@ -121,8 +121,8 @@ def clean_infraction_content(content):
     """
     Clean up PDF line break artifacts in infraction content.
 
-    Preserves paragraph breaks (double newlines) but removes
-    mid-sentence line breaks that are PDF layout artifacts.
+    Preserves paragraph breaks (double newlines) and list formatting,
+    but removes mid-sentence line breaks that are PDF layout artifacts.
     Also strips page numbers.
     """
     # First, normalize paragraph breaks
@@ -134,9 +134,90 @@ def clean_infraction_content(content):
 
     cleaned_paragraphs = []
     for para in paragraphs:
-        # Within each paragraph, replace single newlines with spaces
-        # This joins lines that were broken for PDF layout
-        para = re.sub(r'\n', ' ', para)
+        # Check if this paragraph contains list items
+        lines = para.split('\n')
+
+        # List item patterns:
+        # - Bullets: •, -, *, ◦, ▪
+        # - Numbered: 1., 2., a., b., (1), (a), etc.
+        list_item_pattern = r'^\s*(?:[•\-*◦▪]|\d+\.|\w+\.|\(\d+\)|\([a-z]\))\s+'
+
+        # Check if any line starts with a list marker
+        has_list_items = any(re.match(list_item_pattern, line) for line in lines)
+
+        if has_list_items:
+            # This is a list paragraph - preserve list structure
+            cleaned_lines = []
+            current_item = []
+
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+
+                # Check if line contains multiple list items (two-column layout)
+                # After PDF processing, columns are separated by just " • " (single space + bullet + space)
+                # Look for bullet markers in the middle of the line
+                multi_item_split = re.split(r'\s+([•\-*◦▪])\s+', line)
+                # Filter out empty parts and recombine with bullets
+                multi_item_parts = []
+                for i in range(0, len(multi_item_split), 2):
+                    if i == 0 and multi_item_split[i].strip():
+                        # First part (already has bullet if it's a list item)
+                        multi_item_parts.append(multi_item_split[i].strip())
+                    elif i > 0 and i < len(multi_item_split):
+                        # Later parts - need to add back the bullet
+                        content = multi_item_split[i].strip()
+                        if content and i - 1 < len(multi_item_split):
+                            bullet = multi_item_split[i - 1]
+                            multi_item_parts.append(f"{bullet} {content}")
+
+                if len(multi_item_parts) > 1:
+                    # This line has multiple items (two-column layout)
+                    # Process each part as a separate list item
+                    for part in multi_item_parts:
+                        # Skip if empty or just a bullet
+                        if not part or part in '•-*◦▪':
+                            continue
+
+                        # Save previous item if exists
+                        if current_item:
+                            cleaned_lines.append(' '.join(current_item))
+                            current_item = []
+
+                        # Check if part already has a bullet, if not add one
+                        if re.match(list_item_pattern, part):
+                            current_item = [part]
+                        else:
+                            # Add bullet to part
+                            current_item = [f"• {part}"]
+                else:
+                    # Single item per line (normal case)
+                    # Check if this line starts a new list item
+                    if re.match(list_item_pattern, line):
+                        # Save previous item if exists
+                        if current_item:
+                            cleaned_lines.append(' '.join(current_item))
+                        # Start new item
+                        current_item = [line]
+                    else:
+                        # Continuation of current item
+                        if current_item:
+                            current_item.append(line)
+                        else:
+                            # Not in a list item yet, treat as regular line
+                            cleaned_lines.append(line)
+
+            # Don't forget the last item
+            if current_item:
+                cleaned_lines.append(' '.join(current_item))
+
+            # Join list items with single newlines
+            para = '\n'.join(cleaned_lines)
+        else:
+            # Regular paragraph - join all lines with spaces
+            para = re.sub(r'\n', ' ', para)
+
         # Clean up multiple spaces
         para = re.sub(r' +', ' ', para)
         para = para.strip()
