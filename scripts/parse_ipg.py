@@ -13,6 +13,15 @@ IPG has structured content:
 - Upgrade (optional)
 
 Outputs JSON files to assets/judgedocs/
+
+# FUTURE: Layout-aware paragraph detection
+# parse_mtr.py now detects paragraph breaks from vertical spacing between lines
+# (gaps > 19pts = paragraph break) instead of guessing from punctuation. The IPG
+# PDF has a messier spacing profile (~14pts within-block, but also ~16pts and
+# ~28pts for sub-headings vs paragraphs) so the single-threshold approach doesn't
+# cleanly apply here. The structured subsection parsing (Definition, Examples,
+# Philosophy, etc.) currently handles IPG's paragraph boundaries well enough.
+# Revisit if list-to-paragraph joining issues surface in IPG content.
 """
 
 import json
@@ -133,6 +142,60 @@ def parse_table_of_contents(text):
     return sections
 
 
+def join_prose_lines(lines):
+    """
+    Intelligently join a list of prose lines, removing mid-sentence PDF
+    line breaks while preserving paragraph boundaries.
+
+    Returns a list of joined paragraph strings.
+    """
+    result_lines = []
+    i = 0
+
+    while i < len(lines):
+        current_line = lines[i]
+
+        # Skip page numbers (standalone 1-3 digit numbers)
+        if re.match(r'^\d{1,3}$', current_line):
+            i += 1
+            continue
+
+        # Look ahead to see if we should join with next line
+        while i + 1 < len(lines):
+            next_line = lines[i + 1]
+
+            # Skip page numbers
+            if re.match(r'^\d{1,3}$', next_line):
+                i += 1
+                continue
+
+            should_join = False
+
+            # Check if current line is a list item (starts with bullet/number)
+            is_list_item = re.match(r'^\s*(?:[•\-*◦▪]|\d+\.)\s', current_line)
+
+            # If it's a list item ending with period, don't join the next line
+            if is_list_item and re.search(r'[.!?]$', current_line):
+                should_join = False
+            # Check if current line ends mid-sentence (no punctuation or ends with comma)
+            elif not re.search(r'[.!?:]$', current_line) or current_line.endswith(','):
+                should_join = True
+            # Check if next line is clearly a continuation (starts with lowercase)
+            elif next_line and next_line[0].islower():
+                should_join = True
+
+            if should_join:
+                current_line = current_line + ' ' + next_line
+                i += 1
+            else:
+                break
+
+        result_lines.append(current_line)
+        i += 1
+
+    return result_lines
+
+
 def clean_infraction_content(content):
     """
     Clean up PDF line break artifacts in infraction content.
@@ -156,6 +219,14 @@ def clean_infraction_content(content):
         # This is a list paragraph - preserve list structure
         cleaned_lines = []
         current_item = []
+        pending_prose = []  # Buffer for non-list lines after a list
+
+        def flush_prose():
+            """Join buffered prose lines and append to cleaned_lines."""
+            if pending_prose:
+                joined = join_prose_lines(pending_prose)
+                cleaned_lines.extend(joined)
+                pending_prose.clear()
 
         for line in lines:
             # Check if line contains multiple list items (two-column layout)
@@ -172,6 +243,7 @@ def clean_infraction_content(content):
 
             if len(multi_item_parts) > 1:
                 # This line has multiple items (two-column layout)
+                flush_prose()
                 for part in multi_item_parts:
                     if not part or part in '•-*◦▪':
                         continue
@@ -185,6 +257,8 @@ def clean_infraction_content(content):
             else:
                 # Single item per line
                 if re.match(list_item_pattern, line):
+                    # New list item: flush any pending prose first
+                    flush_prose()
                     if current_item:
                         cleaned_lines.append(' '.join(current_item))
                     current_item = [line]
@@ -197,69 +271,25 @@ def clean_infraction_content(content):
                         if re.search(r'[.!?]$', current_text):
                             cleaned_lines.append(current_text)
                             current_item = []
-                            cleaned_lines.append(line)
+                            # Buffer this prose line for intelligent joining
+                            pending_prose.append(line)
                         else:
                             # Continuation of current list item
                             current_item.append(line)
                     else:
-                        cleaned_lines.append(line)
+                        # No active list item - buffer for joining
+                        pending_prose.append(line)
 
+        # Flush any remaining state
         if current_item:
             cleaned_lines.append(' '.join(current_item))
+        flush_prose()
 
         return '\n'.join(cleaned_lines)
 
     else:
         # Regular prose - intelligently join lines
-        result_lines = []
-        i = 0
-
-        while i < len(lines):
-            current_line = lines[i]
-
-            # Skip page numbers (standalone 1-3 digit numbers)
-            if re.match(r'^\d{1,3}$', current_line):
-                i += 1
-                continue
-
-            # Look ahead to see if we should join with next line
-            while i + 1 < len(lines):
-                next_line = lines[i + 1]
-
-                # Skip page numbers
-                if re.match(r'^\d{1,3}$', next_line):
-                    i += 1
-                    continue
-
-                # Should we join current_line with next_line?
-                # Join if clearly mid-sentence:
-                # 1. Current line doesn't end with sentence-ending punctuation
-                # 2. OR next line starts with lowercase (continuation)
-                # BUT: Don't join if current line is a complete list item
-                should_join = False
-
-                # Check if current line is a list item (starts with bullet/number)
-                list_item_pattern = r'^\s*(?:[•\-*◦▪]|\d+\.)\s'
-                is_list_item = re.match(list_item_pattern, current_line)
-
-                # If it's a list item ending with period, don't join the next line
-                if is_list_item and re.search(r'[.!?]$', current_line):
-                    should_join = False
-                # Check if current line ends mid-sentence (no punctuation or ends with comma)
-                elif not re.search(r'[.!?:]$', current_line) or current_line.endswith(','):
-                    should_join = True
-                # Check if next line is clearly a continuation (starts with lowercase)
-                elif next_line and next_line[0].islower():
-                    should_join = True
-
-                if should_join:
-                    current_line = current_line + ' ' + next_line
-                    i += 1
-                else:
-                    break
-
-            result_lines.append(current_line)
-            i += 1
+        result_lines = join_prose_lines(lines)
 
         # Join with double newlines for paragraph breaks
         return '\n\n'.join(result_lines)

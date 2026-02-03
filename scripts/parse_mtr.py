@@ -14,44 +14,81 @@ from pathlib import Path
 import pdfplumber
 
 
+# Vertical gap threshold (in points) for paragraph break detection.
+# MTR uses ~13pts for same-paragraph line spacing and ~22pts for paragraph breaks.
+# 19pts sits cleanly in the dead zone between the two clusters (only 9 hits in
+# the 15-21 range across the entire document).
+PARAGRAPH_GAP_THRESHOLD = 19
+
+
 def extract_text_from_pdf(pdf_path):
     """
-    Extract text from PDF using pdfplumber.
+    Extract text from PDF with layout-aware paragraph detection.
 
-    Returns clean text with proper paragraph breaks and list formatting.
-    Filters out page numbers by excluding text in header/footer regions.
+    Groups words into lines by y-position, then uses vertical gaps between
+    lines to detect paragraph breaks: gaps > PARAGRAPH_GAP_THRESHOLD become
+    \\n\\n, smaller gaps become \\n. This gives clean, reliable paragraph
+    boundaries from the PDF layout itself rather than guessing from punctuation.
+
+    Header/footer regions (top/bottom 50 points) are excluded to filter out
+    page numbers.
     """
-    text_parts = []
+    page_texts = []
 
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
-            # Get page dimensions to calculate header/footer regions
             page_height = page.height
 
-            # Define header/footer margins (top 50 points, bottom 50 points)
-            # Page numbers typically appear in these regions
-            header_threshold = 50
-            footer_threshold = page_height - 50
+            # Extract words with bounding boxes
+            words = page.extract_words(x_tolerance=3, y_tolerance=3)
 
-            # Filter characters to exclude header/footer regions
-            def not_in_header_footer(obj):
-                # obj is a char dict with 'top' and 'bottom' keys
-                return obj['top'] > header_threshold and obj['bottom'] < footer_threshold
+            # Filter out header/footer regions
+            words = [w for w in words if w['top'] > 50 and w['bottom'] < page_height - 50]
 
-            # Crop page to exclude header/footer, then extract text
-            cropped_page = page.filter(not_in_header_footer)
-            page_text = cropped_page.extract_text(layout=True, x_tolerance=3, y_tolerance=3)
+            if not words:
+                continue
 
-            if page_text:
-                text_parts.append(page_text)
+            # Sort by vertical position, then horizontal
+            words.sort(key=lambda w: (w['top'], w['x0']))
 
-    # Join pages with double newline
-    full_text = '\n\n'.join(text_parts)
+            # Group words into lines by y-position (3pt tolerance)
+            lines = []  # list of (avg_top, line_text)
+            current_line = [words[0]]
 
-    # Clean up common PDF artifacts
-    # Remove excessive whitespace while preserving paragraph structure
-    full_text = re.sub(r' +', ' ', full_text)  # Multiple spaces to single
-    full_text = re.sub(r'\n{4,}', '\n\n', full_text)  # Excessive newlines to double
+            for word in words[1:]:
+                if abs(word['top'] - current_line[0]['top']) <= 3:
+                    current_line.append(word)
+                else:
+                    # Flush current line
+                    avg_top = sum(w['top'] for w in current_line) / len(current_line)
+                    line_text = ' '.join(w['text'] for w in sorted(current_line, key=lambda w: w['x0']))
+                    lines.append((avg_top, line_text))
+                    current_line = [word]
+
+            # Flush final line
+            if current_line:
+                avg_top = sum(w['top'] for w in current_line) / len(current_line)
+                line_text = ' '.join(w['text'] for w in sorted(current_line, key=lambda w: w['x0']))
+                lines.append((avg_top, line_text))
+
+            # Build page text with gap-detected paragraph breaks
+            text_parts = []
+            prev_top = None
+            for top, text in lines:
+                if prev_top is not None:
+                    gap = top - prev_top
+                    text_parts.append('\n\n' if gap > PARAGRAPH_GAP_THRESHOLD else '\n')
+                text_parts.append(text)
+                prev_top = top
+
+            page_texts.append(''.join(text_parts))
+
+    # Join pages with paragraph break
+    full_text = '\n\n'.join(page_texts)
+
+    # Normalize whitespace
+    full_text = re.sub(r' +', ' ', full_text)
+    full_text = re.sub(r'\n{3,}', '\n\n', full_text)
 
     return full_text.strip()
 
@@ -105,134 +142,67 @@ def parse_table_of_contents(text):
 
 def clean_rule_content(content):
     """
-    Clean up PDF line break artifacts in rule content.
+    Clean rule content using layout-detected paragraph breaks.
 
-    Preserves paragraph breaks and list formatting,
-    but removes mid-sentence line breaks that are PDF layout artifacts.
-    Also strips page numbers.
+    Paragraph breaks (\\n\\n) are reliable — they come from vertical spacing
+    detection in extract_text_from_pdf(), not punctuation guessing. This lets
+    us process each paragraph independently:
+    - List paragraphs: continuation lines (wrapping) join to their list item
+    - Prose paragraphs: all lines join into a single string
+
+    Content that contains any list items uses \\n between paragraphs (no dash
+    dividers in UI). Pure prose uses \\n\\n (dash dividers between paragraphs).
     """
-    # Split into lines for intelligent rejoining
-    lines = [line.strip() for line in content.split('\n') if line.strip()]
+    list_item_pattern = r'^(?:[•\-*◦▪]|\d+\.|\w+\.|\(\d+\)|\([a-z]\))\s+'
 
-    # List item patterns:
-    # - Bullets: •, -, *, ◦, ▪
-    # - Numbered: 1., 2., a., b., (1), (a), etc.
-    list_item_pattern = r'^\s*(?:[•\-*◦▪]|\d+\.|\w+\.|\(\d+\)|\([a-z]\))\s+'
+    # Split on layout-detected paragraph breaks
+    paragraphs = [p.strip() for p in content.split('\n\n') if p.strip()]
 
-    # Check if this content contains list items
-    has_list_items = any(re.match(list_item_pattern, line) for line in lines)
+    # Determine overall separator: content with lists uses \n (current behavior),
+    # pure prose uses \n\n (enables dash dividers in UI)
+    all_lines = [l.strip() for p in paragraphs for l in p.split('\n') if l.strip()]
+    content_has_lists = any(re.match(list_item_pattern, line) for line in all_lines)
 
-    if has_list_items:
-        # This is a list paragraph - preserve list structure
-        cleaned_lines = []
-        current_item = []
+    cleaned = []
+    for para in paragraphs:
+        lines = [l.strip() for l in para.split('\n') if l.strip()]
 
-        for line in lines:
-            # Check if line contains multiple list items (two-column layout)
-            multi_item_split = re.split(r'\s+([•\-*◦▪])\s+', line)
-            multi_item_parts = []
-            for i in range(0, len(multi_item_split), 2):
-                if i == 0 and multi_item_split[i].strip():
-                    multi_item_parts.append(multi_item_split[i].strip())
-                elif i > 0 and i < len(multi_item_split):
-                    content_part = multi_item_split[i].strip()
-                    if content_part and i - 1 < len(multi_item_split):
-                        bullet = multi_item_split[i - 1]
-                        multi_item_parts.append(f"{bullet} {content_part}")
+        # Filter standalone page numbers
+        lines = [l for l in lines if not re.match(r'^\d{1,3}$', l)]
+        if not lines:
+            continue
 
-            if len(multi_item_parts) > 1:
-                # This line has multiple items (two-column layout)
-                for part in multi_item_parts:
-                    if not part or part in '•-*◦▪':
-                        continue
-                    if current_item:
-                        cleaned_lines.append(' '.join(current_item))
-                        current_item = []
-                    if re.match(list_item_pattern, part):
-                        current_item = [part]
-                    else:
-                        current_item = [f"• {part}"]
-            else:
-                # Single item per line
+        has_list = any(re.match(list_item_pattern, line) for line in lines)
+
+        if has_list:
+            # List paragraph: join continuation lines to their list items.
+            # Any non-list line before the first bullet is intro text (kept as-is).
+            # Any non-list line after a bullet is a wrapped continuation of that bullet.
+            items = []
+            current_item = None
+
+            for line in lines:
                 if re.match(list_item_pattern, line):
-                    if current_item:
-                        cleaned_lines.append(' '.join(current_item))
-                    current_item = [line]
+                    if current_item is not None:
+                        items.append(current_item)
+                    current_item = line
                 else:
-                    # Non-list line - check if current item is complete
-                    if current_item:
-                        current_text = ' '.join(current_item)
-                        # If current item ends with sentence-ending punctuation,
-                        # this is likely a new paragraph, not a continuation
-                        if re.search(r'[.!?]$', current_text):
-                            cleaned_lines.append(current_text)
-                            current_item = []
-                            cleaned_lines.append(line)
-                        else:
-                            # Continuation of current list item
-                            current_item.append(line)
+                    if current_item is not None:
+                        current_item += ' ' + line
                     else:
-                        cleaned_lines.append(line)
+                        # Intro text before first list item
+                        items.append(line)
 
-        if current_item:
-            cleaned_lines.append(' '.join(current_item))
+            if current_item is not None:
+                items.append(current_item)
 
-        return '\n'.join(cleaned_lines)
+            cleaned.append('\n'.join(items))
+        else:
+            # Prose paragraph: join all lines into one string
+            cleaned.append(' '.join(lines))
 
-    else:
-        # Regular prose - intelligently join lines
-        result_lines = []
-        i = 0
-
-        while i < len(lines):
-            current_line = lines[i]
-
-            # Skip page numbers (standalone 1-3 digit numbers)
-            if re.match(r'^\d{1,3}$', current_line):
-                i += 1
-                continue
-
-            # Look ahead to see if we should join with next line
-            while i + 1 < len(lines):
-                next_line = lines[i + 1]
-
-                # Skip page numbers
-                if re.match(r'^\d{1,3}$', next_line):
-                    i += 1
-                    continue
-
-                # Should we join current_line with next_line?
-                # Join if clearly mid-sentence:
-                # 1. Current line doesn't end with sentence-ending punctuation
-                # 2. OR next line starts with lowercase (continuation)
-                # BUT: Don't join if current line is a complete list item
-                should_join = False
-
-                # Check if current line is a list item (starts with bullet/number)
-                list_item_pattern = r'^\s*(?:[•\-*◦▪]|\d+\.)\s'
-                is_list_item = re.match(list_item_pattern, current_line)
-
-                # If it's a list item ending with period, don't join the next line
-                if is_list_item and re.search(r'[.!?]$', current_line):
-                    should_join = False
-                # Check if current line ends mid-sentence (no punctuation or ends with comma)
-                elif not re.search(r'[.!?:]$', current_line) or current_line.endswith(','):
-                    should_join = True
-                # Check if next line is clearly a continuation (starts with lowercase)
-                elif next_line and next_line[0].islower():
-                    should_join = True
-
-                if should_join:
-                    current_line = current_line + ' ' + next_line
-                    i += 1
-                else:
-                    break
-
-            result_lines.append(current_line)
-            i += 1
-
-        # Join with double newlines for paragraph breaks
-        return '\n\n'.join(result_lines)
+    separator = '\n' if content_has_lists else '\n\n'
+    return separator.join(cleaned)
 
 
 def parse_rules_in_section(section_text, section_num):
