@@ -27,7 +27,7 @@
       "number": "4.2",
       "title": "Unsporting Conduct — Major Match Loss",
       "penalty": "Match Loss",
-      "definition": "A player takes action towards one or more individuals that could reasonably be expected to create a feeling of being harassed, threatened, bullied, or stalked. This may include insults based on race, color, religion, national origin, age, gender, disability, or sexual orientation. Threats of physical violence should be treated as Unsporting Conduct – Aggressive Behavior. It is possible for an offender to commit this infraction without intending malice or harm to the subject of the harassment.",
+      "definition": "A player takes action towards one or more individuals that could reasonably be expected to create a feeling of being harassed, threatened, bullied, or stalked. This may include insults based on race, color, religion, national origin, age, gender, disability, or sexual orientation. Threats of physical violence should be treated as Unsporting Conduct – Aggressive Behavior.\n\nIt is possible for an offender to commit this infraction without intending malice or harm to the subject of the harassment.",
       "examples": [
         "A. A player uses a racial slur against their opponent.",
         "B. A player intentionally misgenders their opponent.",
@@ -36,15 +36,15 @@
         "E. A player purposefully obstructs another player with the intent of inducing physical contact.",
         "F. A spectator uses social media to bully another player."
       ],
-      "philosophy": "A safe environment is a basic expectation of any tournament attendee. Harassment undermines\nthe safety and integrity of a tournament. Players who purposefully create harmful or\nunwelcoming situations in a tournament are expected to immediately correct the behavior and\ndemonstrate remorse or be removed.\nBecause of the confrontational nature of this infraction, judges need to end any match in progress\nand separate the players. Care should be taken not to escalate the situation if at all possible. The\noffender will be removed from the area to receive the penalty, and education about why the\nbehavior is unacceptable regardless of excuse. They may need a few moments to cool down\nafterwards. Apologizing is encouraged, but the desire of the other individuals to not interact with their harasser must be respected. Officials must investigate these matters as soon as they are brought to their attention. If they determine that the infraction does not meet the criteria for Unsporting Conduct – Major, it is still recommended that the players be talked to to avoid future misunderstandings.",
-      "additional_remedy": "The player must correct the behavior immediately. If the offense occurs at the end of a match, it is acceptable for the judge to apply the penalty to the next match instead. Upgrade: If the offense was committed with malicious intent, the player displays no remorse, or the offense is repeated at a later time, the penalty is Disqualification and removal from the venue.",
+      "philosophy": "A safe environment is a basic expectation of any tournament attendee. Harassment undermines\nthe safety and integrity of a tournament. Players who purposefully create harmful or\nunwelcoming situations in a tournament are expected to immediately correct the behavior and\ndemonstrate remorse or be removed.\nBecause of the confrontational nature of this infraction, judges need to end any match in progress\nand separate the players. Care should be taken not to escalate the situation if at all possible. The\noffender will be removed from the area to receive the penalty, and education about why the\nbehavior is unacceptable regardless of excuse. They may need a few moments to cool down\nafterwards. Apologizing is encouraged, but the desire of the other individuals to not interact with their harasser must be respected.\nOfficials must investigate these matters as soon as they are brought to their attention. If they\ndetermine that the infraction does not meet the criteria for Unsporting Conduct – Major, it is still\nrecommended that the players be talked to to avoid future misunderstandings.",
+      "additional_remedy": "The player must correct the behavior immediately. If the offense occurs at the end of a match, it is acceptable for the judge to apply the penalty to the next match instead.\n\nUpgrade: If the offense was committed with malicious intent, the player displays no remorse, or the offense is repeated at a later time, the penalty is Disqualification and removal from the venue.",
       "upgrade": null
     },
     {
       "number": "4.3",
       "title": "Unsporting Conduct — Improperly Determining a Winner Match Loss",
       "penalty": "Match Loss",
-      "definition": "A player uses or offers to use a method that is not part of the current game (including actions not legal in the current game) to determine the outcome of a game or match, or uses language designed to trick someone who may not know it’s against the rules to make such an offer. If the player was aware that what they were doing was against the rules, the infraction is Unsporting Conduct — Cheating.",
+      "definition": "A player uses or offers to use a method that is not part of the current game (including actions not legal in the current game) to determine the outcome of a game or match, or uses language designed to trick someone who may not know it’s against the rules to make such an offer.\n\nIf the player was aware that what they were doing was against the rules, the infraction is Unsporting Conduct — Cheating.",
       "examples": [
         "A. As time is called, two players about to draw roll a die to determine the winner.",
         "B. A player offers to flip a coin to determine the winner of a match.",
@@ -54,7 +54,7 @@
         "F. Two players reveal cards from the top of their libraries to see “who would win” after extra turns.",
         "G. A player says “Oh no, we’re going to draw, that’s terrible for us. If only there were something we could do about it.”"
       ],
-      "philosophy": "Using an outside-the-game method to determine a winner compromises the integrity of the tournament. Matches that result in a draw due to time are expected to be reported as such and are not excluded from this penalty if the players use an illegal method to determine the outcome.",
+      "philosophy": "Using an outside-the-game method to determine a winner compromises the integrity of the tournament.\n\nMatches that result in a draw due to time are expected to be reported as such and are not excluded from this penalty if the players use an illegal method to determine the outcome.",
       "additional_remedy": null,
       "upgrade": null
     },
@@ -62,7 +62,7 @@
       "number": "4.4",
       "title": "Unsporting Conduct — Bribery and Wagering Match Loss",
       "penalty": "Match Loss",
-      "definition": "A player offers an incentive to entice an opponent into conceding, drawing, or changing the results of a match, encourages such an offer, or accepts such an offer. Refer to section 5.2 of the Magic Tournament Rules for a more detailed description of what constitutes bribery. Wagering occurs when a player or spectator at a tournament places or offers to place a bet on the outcome of a tournament, match or any portion of a tournament or match. The wager does not need to be monetary, nor is it relevant if a player is not betting on their own match. If the player was aware that what they were doing was against the rules, the infraction is Unsporting Conduct — Cheating.",
+      "definition": "A player offers an incentive to entice an opponent into conceding, drawing, or changing the results of a match, encourages such an offer, or accepts such an offer. Refer to section 5.2 of the Magic Tournament Rules for a more detailed description of what constitutes bribery.\n\nWagering occurs when a player or spectator at a tournament places or offers to place a bet on the outcome of a tournament, match or any portion of a tournament or match. The wager does not need to be monetary, nor is it relevant if a player is not betting on their own match.\n\nIf the player was aware that what they were doing was against the rules, the infraction is Unsporting Conduct — Cheating.",
       "examples": [
         "A. A player in a Swiss round offers their opponent $100 to concede the match.",
         "B. A player offers their opponent a card in exchange for a draw.",
@@ -124,7 +124,7 @@
       "number": "4.8",
       "title": "Unsporting Conduct — Cheating Disqualification",
       "penalty": "Disqualification",
-      "definition": "A person breaks a rule defined by the tournament documents, lies to a tournament official, or\nnotices an offense committed in their (or a teammate's) match and does not call attention to it.\nAdditionally, the offense must meet the following criteria for it to be considered Cheating:\n• The player must be attempting to gain advantage from their action.\n• The player must be aware that they are doing something illegal. If all criteria are not met, the offense is not Cheating and is handled by a different infraction. Cheating will often appear on the surface as a Game Play Error or Tournament Error, and must be investigated by the judge to make a determination of intent and awareness.",
+      "definition": "A person breaks a rule defined by the tournament documents, lies to a tournament official, or\nnotices an offense committed in their (or a teammate's) match and does not call attention to it.\nAdditionally, the offense must meet the following criteria for it to be considered Cheating:\n• The player must be attempting to gain advantage from their action.\n• The player must be aware that they are doing something illegal.\nIf all criteria are not met, the offense is not Cheating and is handled by a different infraction.\nCheating will often appear on the surface as a Game Play Error or Tournament Error, and must\nbe investigated by the judge to make a determination of intent and awareness.",
       "examples": [
         "A. A player alters the results on a match slip without their opponent’s knowledge.",
         "B. A player lies to a tournament official about what happened in a game to make their case stronger.",

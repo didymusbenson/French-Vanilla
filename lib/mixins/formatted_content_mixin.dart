@@ -91,6 +91,12 @@ mixin FormattedContentMixin<T extends StatefulWidget> on State<T>, RuleLinkMixin
     for (final line in lines) {
       final trimmedLine = line.trim();
 
+      // Empty line indicates paragraph break - save current block and start new one
+      if (trimmedLine.isEmpty) {
+        saveCurrentBlock();
+        continue;
+      }
+
       // Check if this is the start of an example
       if (trimmedLine.startsWith('Example:')) {
         saveCurrentBlock();
@@ -110,10 +116,8 @@ mixin FormattedContentMixin<T extends StatefulWidget> on State<T>, RuleLinkMixin
         continue;
       }
 
-      // Add to current block if not empty
-      if (trimmedLine.isNotEmpty) {
-        currentBlock.writeln(line);
-      }
+      // Add to current block
+      currentBlock.writeln(line);
     }
 
     // Don't forget the last block
@@ -136,14 +140,81 @@ mixin FormattedContentMixin<T extends StatefulWidget> on State<T>, RuleLinkMixin
         // Render as example callout
         widgets.add(buildExampleCallout(block.content, isHighlighted));
       } else {
-        // Render as regular content
-        widgets.add(
-          RichText(
-            text: TextSpan(
-              children: parseTextWithLinks(block.content, baseStyle),
+        // Check if this block contains any list items
+        final listItemPattern = RegExp(r'^\s*(?:[•\-*◦▪]|\d+\.)\s');
+        final lines = block.content.split('\n');
+        final hasListItems = lines.any((line) => listItemPattern.hasMatch(line));
+
+        if (hasListItems) {
+          // Render line by line with selective indentation
+          final lineWidgets = <Widget>[];
+          for (final line in lines) {
+            if (line.trim().isEmpty) continue;
+
+            final isListItem = listItemPattern.hasMatch(line);
+
+            if (isListItem) {
+              // Extract bullet/number and content
+              final match = listItemPattern.firstMatch(line);
+              if (match != null) {
+                final bullet = match.group(0)!.trim();
+                final content = line.substring(match.end);
+
+                lineWidgets.add(
+                  Padding(
+                    padding: const EdgeInsets.only(left: 10.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Fixed-width bullet column
+                        SizedBox(
+                          width: 24,
+                          child: Text(
+                            bullet,
+                            style: baseStyle,
+                          ),
+                        ),
+                        // Expanded text column (wraps without going under bullet)
+                        Expanded(
+                          child: RichText(
+                            text: TextSpan(
+                              children: parseTextWithLinks(content, baseStyle),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+            } else {
+              // Regular line - no indentation
+              lineWidgets.add(
+                RichText(
+                  text: TextSpan(
+                    children: parseTextWithLinks(line, baseStyle),
+                  ),
+                ),
+              );
+            }
+          }
+
+          widgets.add(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: lineWidgets,
             ),
-          ),
-        );
+          );
+        } else {
+          // No list items - render as single block
+          widgets.add(
+            RichText(
+              text: TextSpan(
+                children: parseTextWithLinks(block.content, baseStyle),
+              ),
+            ),
+          );
+        }
       }
 
       // Add separator between blocks (but not after examples or at the end)

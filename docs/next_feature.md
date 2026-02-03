@@ -1,4 +1,114 @@
-# Next Steps: IAP Platform Configuration & Testing
+# Current Development: MTR/IPG PDF Parsing Improvements
+
+> **Status**: 🚧 In Progress - Investigating parsing edge cases
+>
+> **Last Updated**: 2026-02-02
+
+---
+
+## What We're Working On
+
+Improving how MTR (Magic Tournament Rules) and IPG (Infraction Procedure Guide) content is parsed from PDF source material to fix formatting issues.
+
+### Issues Being Addressed
+
+1. **Mid-sentence line breaks** - PDF layout artifacts causing text to break mid-sentence
+2. **List formatting** - Bulleted and numbered lists need proper indentation and hanging indent
+3. **List-to-paragraph transitions** - Text following lists gets incorrectly joined to list items
+4. **Paragraph spacing** - Adding visual separation between paragraphs in rendered content
+
+### What's Been Completed ✅
+
+1. **Page number filtering** - Header/footer regions filtered out before text extraction (50px top/bottom margins)
+2. **Smart line joining** - Intelligently joins mid-sentence breaks while preserving paragraph boundaries
+3. **List detection** - Identifies bullets (`•`, `-`, `*`, `◦`, `▪`) and numbered lists (`1.`, `2.`, etc.)
+4. **UI formatting improvements**:
+   - Paragraph dividers (dash separators like Comprehensive Rules)
+   - List item indentation (10px left padding)
+   - Hanging indent for lists (bullet in 24px column, text wraps properly)
+
+### Current Problem 🔍
+
+**List-to-paragraph transitions**: When content has:
+```
+• List item one
+• List item two that ends with a period.
+Regular paragraph text that follows the list...
+more text on the next line...
+```
+
+The parser correctly:
+- Separates the list from the paragraph ✅
+- Formats list items with indentation ✅
+
+But fails to:
+- Join the prose lines AFTER the list ❌
+
+**Example (MTR 3.4 Proxy Cards)**:
+```
+• The card is a foil card for which no non-foil printing exists.
+Players may not create their own proxies; they may only be created by the H...
+to whether the creation of a proxy is appropriate. When a judge creates a p...
+```
+
+Should be:
+```
+• The card is a foil card for which no non-foil printing exists.
+Players may not create their own proxies; they may only be created by the Head Judge who has sole discretion as to whether the creation of a proxy is appropriate. When a judge creates a proxy...
+```
+
+### Technical Details
+
+**Files involved**:
+- `scripts/parse_mtr.py` - MTR parser with `clean_rule_content()` function
+- `scripts/parse_ipg.py` - IPG parser with `clean_infraction_content()` function
+- `lib/mixins/formatted_content_mixin.dart` - UI rendering with `buildFormattedContent()`
+
+**Current parsing logic** (`clean_rule_content()` around line 125-180):
+1. Detects if content has list items
+2. If yes, processes line-by-line:
+   - List items (start with bullet/number): Keep as-is
+   - Non-list lines after complete list item (ends with `.`): Separate as new paragraph
+   - Non-list lines mid-list-item: Join to current list item
+3. If no lists, applies intelligent line joining based on punctuation/capitalization
+
+**The gap**: Step 2 correctly separates prose from lists but doesn't apply intelligent joining to those separated prose lines.
+
+### Possible Solutions
+
+**Option A**: After list processing, detect consecutive non-list lines and apply intelligent joining to them
+- Pros: Comprehensive fix
+- Cons: More complex, risk of regression
+
+**Option B**: Two-pass approach - separate lists/prose first, then join prose separately
+- Pros: Cleaner separation of concerns
+- Cons: Performance impact (minimal)
+
+**Option C**: Accept current state, rely on UI wrapping
+- Pros: No code changes
+- Cons: Sub-optimal display
+
+### Next Steps When Resuming
+
+1. Review MTR 3.4 and other rules with lists followed by prose
+2. Implement two-pass approach or refactor list handling
+3. Test edge cases:
+   - Lists at start/middle/end of content
+   - Mixed bullets and numbered lists
+   - Multi-paragraph content with multiple lists
+4. Regenerate JSON files and verify in app
+5. Check IPG for similar patterns
+
+### Test Cases to Verify
+
+- **MTR 3.1** (Tiebreakers) - Numbered list + prose
+- **MTR 3.2** (Format Categories) - Simple bullet list
+- **MTR 3.4** (Proxy Cards) - Bullets + long prose paragraph
+- **IPG 2.1** (Missed Trigger) - Complex definition with inline lists
+
+---
+
+# IAP Platform Configuration & Testing
 
 > **Implementation Status**: ✅ Code 100% complete. Platform configuration required.
 >

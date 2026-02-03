@@ -107,113 +107,132 @@ def clean_rule_content(content):
     """
     Clean up PDF line break artifacts in rule content.
 
-    Preserves paragraph breaks (double newlines) and list formatting,
+    Preserves paragraph breaks and list formatting,
     but removes mid-sentence line breaks that are PDF layout artifacts.
     Also strips page numbers.
     """
-    # First, normalize paragraph breaks
-    # Replace any sequence of whitespace with newlines to double newline
-    content = re.sub(r'\n\s*\n', '\n\n', content)
+    # Split into lines for intelligent rejoining
+    lines = [line.strip() for line in content.split('\n') if line.strip()]
 
-    # Split into paragraphs
-    paragraphs = content.split('\n\n')
+    # List item patterns:
+    # - Bullets: •, -, *, ◦, ▪
+    # - Numbered: 1., 2., a., b., (1), (a), etc.
+    list_item_pattern = r'^\s*(?:[•\-*◦▪]|\d+\.|\w+\.|\(\d+\)|\([a-z]\))\s+'
 
-    cleaned_paragraphs = []
-    for para in paragraphs:
-        # Check if this paragraph contains list items
-        lines = para.split('\n')
+    # Check if this content contains list items
+    has_list_items = any(re.match(list_item_pattern, line) for line in lines)
 
-        # List item patterns:
-        # - Bullets: •, -, *, ◦, ▪
-        # - Numbered: 1., 2., a., b., (1), (a), etc.
-        list_item_pattern = r'^\s*(?:[•\-*◦▪]|\d+\.|\w+\.|\(\d+\)|\([a-z]\))\s+'
+    if has_list_items:
+        # This is a list paragraph - preserve list structure
+        cleaned_lines = []
+        current_item = []
 
-        # Check if any line starts with a list marker
-        has_list_items = any(re.match(list_item_pattern, line) for line in lines)
+        for line in lines:
+            # Check if line contains multiple list items (two-column layout)
+            multi_item_split = re.split(r'\s+([•\-*◦▪])\s+', line)
+            multi_item_parts = []
+            for i in range(0, len(multi_item_split), 2):
+                if i == 0 and multi_item_split[i].strip():
+                    multi_item_parts.append(multi_item_split[i].strip())
+                elif i > 0 and i < len(multi_item_split):
+                    content_part = multi_item_split[i].strip()
+                    if content_part and i - 1 < len(multi_item_split):
+                        bullet = multi_item_split[i - 1]
+                        multi_item_parts.append(f"{bullet} {content_part}")
 
-        if has_list_items:
-            # This is a list paragraph - preserve list structure
-            cleaned_lines = []
-            current_item = []
+            if len(multi_item_parts) > 1:
+                # This line has multiple items (two-column layout)
+                for part in multi_item_parts:
+                    if not part or part in '•-*◦▪':
+                        continue
+                    if current_item:
+                        cleaned_lines.append(' '.join(current_item))
+                        current_item = []
+                    if re.match(list_item_pattern, part):
+                        current_item = [part]
+                    else:
+                        current_item = [f"• {part}"]
+            else:
+                # Single item per line
+                if re.match(list_item_pattern, line):
+                    if current_item:
+                        cleaned_lines.append(' '.join(current_item))
+                    current_item = [line]
+                else:
+                    # Non-list line - check if current item is complete
+                    if current_item:
+                        current_text = ' '.join(current_item)
+                        # If current item ends with sentence-ending punctuation,
+                        # this is likely a new paragraph, not a continuation
+                        if re.search(r'[.!?]$', current_text):
+                            cleaned_lines.append(current_text)
+                            current_item = []
+                            cleaned_lines.append(line)
+                        else:
+                            # Continuation of current list item
+                            current_item.append(line)
+                    else:
+                        cleaned_lines.append(line)
 
-            for line in lines:
-                line = line.strip()
-                if not line:
+        if current_item:
+            cleaned_lines.append(' '.join(current_item))
+
+        return '\n'.join(cleaned_lines)
+
+    else:
+        # Regular prose - intelligently join lines
+        result_lines = []
+        i = 0
+
+        while i < len(lines):
+            current_line = lines[i]
+
+            # Skip page numbers (standalone 1-3 digit numbers)
+            if re.match(r'^\d{1,3}$', current_line):
+                i += 1
+                continue
+
+            # Look ahead to see if we should join with next line
+            while i + 1 < len(lines):
+                next_line = lines[i + 1]
+
+                # Skip page numbers
+                if re.match(r'^\d{1,3}$', next_line):
+                    i += 1
                     continue
 
-                # Check if line contains multiple list items (two-column layout)
-                # After PDF processing, columns are separated by just " • " (single space + bullet + space)
-                # Look for bullet markers in the middle of the line
-                multi_item_split = re.split(r'\s+([•\-*◦▪])\s+', line)
-                # Filter out empty parts and recombine with bullets
-                multi_item_parts = []
-                for i in range(0, len(multi_item_split), 2):
-                    if i == 0 and multi_item_split[i].strip():
-                        # First part (already has bullet if it's a list item)
-                        multi_item_parts.append(multi_item_split[i].strip())
-                    elif i > 0 and i < len(multi_item_split):
-                        # Later parts - need to add back the bullet
-                        content = multi_item_split[i].strip()
-                        if content and i - 1 < len(multi_item_split):
-                            bullet = multi_item_split[i - 1]
-                            multi_item_parts.append(f"{bullet} {content}")
+                # Should we join current_line with next_line?
+                # Join if clearly mid-sentence:
+                # 1. Current line doesn't end with sentence-ending punctuation
+                # 2. OR next line starts with lowercase (continuation)
+                # BUT: Don't join if current line is a complete list item
+                should_join = False
 
-                if len(multi_item_parts) > 1:
-                    # This line has multiple items (two-column layout)
-                    # Process each part as a separate list item
-                    for part in multi_item_parts:
-                        # Skip if empty or just a bullet
-                        if not part or part in '•-*◦▪':
-                            continue
+                # Check if current line is a list item (starts with bullet/number)
+                list_item_pattern = r'^\s*(?:[•\-*◦▪]|\d+\.)\s'
+                is_list_item = re.match(list_item_pattern, current_line)
 
-                        # Save previous item if exists
-                        if current_item:
-                            cleaned_lines.append(' '.join(current_item))
-                            current_item = []
+                # If it's a list item ending with period, don't join the next line
+                if is_list_item and re.search(r'[.!?]$', current_line):
+                    should_join = False
+                # Check if current line ends mid-sentence (no punctuation or ends with comma)
+                elif not re.search(r'[.!?:]$', current_line) or current_line.endswith(','):
+                    should_join = True
+                # Check if next line is clearly a continuation (starts with lowercase)
+                elif next_line and next_line[0].islower():
+                    should_join = True
 
-                        # Check if part already has a bullet, if not add one
-                        if re.match(list_item_pattern, part):
-                            current_item = [part]
-                        else:
-                            # Add bullet to part
-                            current_item = [f"• {part}"]
+                if should_join:
+                    current_line = current_line + ' ' + next_line
+                    i += 1
                 else:
-                    # Single item per line (normal case)
-                    # Check if this line starts a new list item
-                    if re.match(list_item_pattern, line):
-                        # Save previous item if exists
-                        if current_item:
-                            cleaned_lines.append(' '.join(current_item))
-                        # Start new item
-                        current_item = [line]
-                    else:
-                        # Continuation of current item
-                        if current_item:
-                            current_item.append(line)
-                        else:
-                            # Not in a list item yet, treat as regular line
-                            cleaned_lines.append(line)
+                    break
 
-            # Don't forget the last item
-            if current_item:
-                cleaned_lines.append(' '.join(current_item))
+            result_lines.append(current_line)
+            i += 1
 
-            # Join list items with single newlines
-            para = '\n'.join(cleaned_lines)
-        else:
-            # Regular paragraph - join all lines with spaces
-            para = re.sub(r'\n', ' ', para)
-
-        # Clean up multiple spaces
-        para = re.sub(r' +', ' ', para)
-        para = para.strip()
-
-        # Skip if this is just a page number (1-3 digits)
-        if para and not re.match(r'^\d{1,3}$', para):
-            cleaned_paragraphs.append(para)
-
-    # Join paragraphs with double newline
-    return '\n\n'.join(cleaned_paragraphs)
+        # Join with double newlines for paragraph breaks
+        return '\n\n'.join(result_lines)
 
 
 def parse_rules_in_section(section_text, section_num):
