@@ -4,6 +4,9 @@ import '../models/section_data.dart';
 import '../models/rule.dart';
 import '../models/glossary_term.dart';
 import 'rules_parser.dart';
+import '../models/mtr_rule.dart';
+import '../models/ipg_infraction.dart';
+import 'judge_docs_service.dart';
 
 class RulesDataService {
   static final RulesDataService _instance = RulesDataService._internal();
@@ -17,6 +20,7 @@ class RulesDataService {
   SectionData? _glossaryData;
   List<GlossaryTerm>? _glossaryTerms;
   SectionData? _creditsData;
+  final _judgeDocsService = JudgeDocsService();
 
   /// Load the index/table of contents
   Future<SectionData> loadIndex() async {
@@ -138,6 +142,66 @@ class RulesDataService {
       }
     }
 
+    // Search MTR
+    final mtrSections = await _judgeDocsService.getAllMtrSections();
+    for (final section in mtrSections) {
+      for (final rule in section.rules) {
+        final titleMatches = rule.title.toLowerCase().contains(lowerQuery);
+        final contentMatches = rule.content.toLowerCase().contains(lowerQuery);
+        if (titleMatches || contentMatches) {
+          results.add(SearchResult(
+            type: SearchResultType.mtr,
+            title: '${rule.number} ${rule.title}',
+            snippet: contentMatches
+                ? _extractSnippet(rule.content, lowerQuery)
+                : rule.title,
+            mtrRule: rule,
+            mtrSectionNumber: section.sectionNumber,
+            mtrSectionTitle: section.title,
+          ));
+        }
+      }
+    }
+
+    // Search IPG
+    final ipgSections = await _judgeDocsService.getAllIpgSections();
+    for (final section in ipgSections) {
+      for (final infraction in section.infractions) {
+        // Title match takes priority
+        if (infraction.title.toLowerCase().contains(lowerQuery)) {
+          results.add(SearchResult(
+            type: SearchResultType.ipg,
+            title: '${infraction.number} ${infraction.cleanTitle}',
+            snippet: infraction.definition != null
+                ? _extractSnippet(infraction.definition!, lowerQuery)
+                : infraction.title,
+            ipgInfraction: infraction,
+          ));
+          continue;
+        }
+
+        // Search through definition, examples, philosophy, and upgrade
+        final searchableFields = [
+          infraction.definition,
+          ...infraction.examples,
+          infraction.philosophy,
+          infraction.upgrade,
+        ];
+
+        for (final field in searchableFields) {
+          if (field != null && field.toLowerCase().contains(lowerQuery)) {
+            results.add(SearchResult(
+              type: SearchResultType.ipg,
+              title: '${infraction.number} ${infraction.cleanTitle}',
+              snippet: _extractSnippet(field, lowerQuery),
+              ipgInfraction: infraction,
+            ));
+            break; // Only add one result per infraction
+          }
+        }
+      }
+    }
+
     return results;
   }
 
@@ -165,6 +229,8 @@ class RulesDataService {
 enum SearchResultType {
   rule,
   glossary,
+  mtr,
+  ipg,
 }
 
 class SearchResult {
@@ -175,6 +241,10 @@ class SearchResult {
   final Rule? rule;
   final SubruleGroup? subruleGroup;
   final GlossaryTerm? glossaryTerm;
+  final MtrRule? mtrRule;
+  final Object? mtrSectionNumber; // dynamic: int or String for appendices
+  final String? mtrSectionTitle;
+  final IpgInfraction? ipgInfraction;
 
   SearchResult({
     required this.type,
@@ -184,5 +254,9 @@ class SearchResult {
     this.rule,
     this.subruleGroup,
     this.glossaryTerm,
+    this.mtrRule,
+    this.mtrSectionNumber,
+    this.mtrSectionTitle,
+    this.ipgInfraction,
   });
 }

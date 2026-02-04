@@ -167,7 +167,7 @@ class _SearchScreenState extends State<SearchScreen> with RuleLinkMixin, Formatt
               ),
               const SizedBox(height: 16),
               Text(
-                'Search the comprehensive rules',
+                'Search rules and judge docs',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -245,9 +245,12 @@ class _SearchScreenState extends State<SearchScreen> with RuleLinkMixin, Formatt
           clipBehavior: Clip.antiAlias,
           child: ListTile(
             leading: Icon(
-              result.type == SearchResultType.rule
-                  ? Icons.rule
-                  : Icons.list_alt,
+              switch (result.type) {
+                SearchResultType.rule => Icons.rule,
+                SearchResultType.glossary => Icons.list_alt,
+                SearchResultType.mtr => Icons.gavel,
+                SearchResultType.ipg => Icons.warning_amber,
+              },
               color: Theme.of(context).colorScheme.primary,
             ),
             title: Text(
@@ -265,6 +268,10 @@ class _SearchScreenState extends State<SearchScreen> with RuleLinkMixin, Formatt
                 _showRulePreview(result);
               } else if (result.type == SearchResultType.glossary) {
                 _showGlossaryPreview(result);
+              } else if (result.type == SearchResultType.mtr && result.mtrRule != null) {
+                _showMtrPreview(result);
+              } else if (result.type == SearchResultType.ipg && result.ipgInfraction != null) {
+                _showIpgPreview(result);
               }
             },
           ),
@@ -299,6 +306,20 @@ class _SearchScreenState extends State<SearchScreen> with RuleLinkMixin, Formatt
     showGlossaryBottomSheet(
       term: result.glossaryTerm!.term,
       definition: result.glossaryTerm!.definition,
+    );
+  }
+
+  void _showMtrPreview(SearchResult result) {
+    showMtrBottomSheet(
+      rule: result.mtrRule!,
+      sectionNumber: result.mtrSectionNumber!,
+      sectionTitle: result.mtrSectionTitle!,
+    );
+  }
+
+  void _showIpgPreview(SearchResult result) {
+    showIpgBottomSheet(
+      infraction: result.ipgInfraction!,
     );
   }
 }
