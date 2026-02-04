@@ -1,41 +1,3 @@
-# MTR/IPG PDF Parsing
-
-> **Status**: ✅ Core parsing complete. Minor edge cases remain.
->
-> **Last Updated**: 2026-02-03
-
----
-
-## Completed ✅
-
-1. **Page number filtering** - Header/footer regions filtered out before text extraction (50px top/bottom margins)
-2. **Smart line joining** - `join_prose_lines()` helper intelligently joins mid-sentence PDF breaks while preserving paragraph boundaries. Used by both the list path and prose path.
-3. **List detection** - Identifies bullets (`•`, `-`, `*`, `◦`, `▪`) and numbered lists (`1.`, `2.`, etc.)
-4. **List-to-paragraph transitions** - `pending_prose` buffer collects non-list lines after a list ends, then flushes them through `join_prose_lines()` before the next list item or end of content. MTR 3.4 verified correct.
-5. **UI formatting improvements**:
-   - Paragraph dividers (dash separators like Comprehensive Rules)
-   - List item indentation (10px left padding)
-   - Hanging indent for lists (bullet in 24px column, text wraps properly)
-
-## Architecture
-
-Both parsers share the same two-path structure:
-
-- **LIST path**: Content containing any list items. Processes line-by-line: list items get joined with their continuations, completed list items trigger a flush, and non-list lines after a completed item are buffered in `pending_prose` and joined via `join_prose_lines()` when the next list item arrives or input ends.
-- **PROSE path**: Content with no list items. All lines fed directly to `join_prose_lines()`, result joined with `\n\n` for paragraph breaks.
-
-**Files**:
-- `scripts/parse_mtr.py` — `join_prose_lines()` (line 106), `clean_rule_content()` (line 160)
-- `scripts/parse_ipg.py` — `join_prose_lines()` (line 136), `clean_infraction_content()` (line 190)
-- `lib/mixins/formatted_content_mixin.dart` — UI rendering with `buildFormattedContent()`
-
-## Known Minor Edge Cases
-
-- **MTR 3.1**: Last numbered item ("4. Opponents' game-win percentage") merges with following prose because the item has no trailing punctuation. Numbered list items that are bare phrases (no period) can't be reliably distinguished from mid-sentence continuations without semantic understanding.
-- **Some prose paragraphs have one residual line break** (e.g. MTR 3.6 paragraph 2) likely caused by a page boundary in the PDF. The `join_prose_lines` logic correctly joins these when given the lines directly — the break appears to come from the section splitter preserving a page-boundary newline. Low priority.
-
----
-
 # IAP Platform Configuration & Testing
 
 > **Implementation Status**: ✅ Code 100% complete. Platform configuration required.
@@ -213,4 +175,4 @@ static const String collectorId = 'com.loosetie.frenchvanilla.collector';
 
 ---
 
-**Last Updated**: 2026-01-28
+**Last Updated**: 2026-02-03

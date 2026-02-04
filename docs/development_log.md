@@ -4,6 +4,47 @@ This document tracks completed features and historical development decisions.
 
 ---
 
+## v1.1.0 Release (2026-02-03)
+
+### MTR/IPG Search Integration - COMPLETE ✅
+
+MTR and IPG content is now searchable alongside comprehensive rules and glossary, with the same bottom sheet preview → detail screen navigation pattern.
+
+**What changed:**
+- `SearchResultType` enum: added `mtr` and `ipg`
+- `SearchResult` class: added `mtrRule`, `mtrSectionNumber`, `mtrSectionTitle`, `ipgInfraction` fields
+- MTR search: matches on rule title or content, extracts contextual snippet
+- IPG search: title match takes priority (avoids duplicates); otherwise searches definition → examples → philosophy → upgrade, one result per infraction
+- Bottom sheet previews: `showMtrBottomSheet` navigates to `MtrSectionDetailScreen` with `highlightRuleNumber`; `showIpgBottomSheet` navigates to `IpgInfractionDetailScreen`
+- Icons: `Icons.gavel` for MTR, `Icons.warning_amber` for IPG
+
+**Files Modified:**
+- `lib/services/rules_data_service.dart` — search loops + model fields
+- `lib/mixins/preview_bottom_sheet_mixin.dart` — `showMtrBottomSheet()`, `showIpgBottomSheet()`
+- `lib/screens/search_screen.dart` — icon switch, tap handlers, preview methods
+
+### MTR PDF Parser Rewrite - COMPLETE ✅
+
+Replaced punctuation-based paragraph detection with layout-aware detection using PDF vertical spacing. MTR has a clean two-cluster spacing profile (~13pt within-block, ~22pt between paragraphs) with a 19pt threshold cleanly separating them.
+
+**What changed:**
+- `extract_text_from_pdf()` now uses `extract_words()` with y-position grouping; gaps > 19pt become `\n\n`, otherwise `\n`
+- `clean_rule_content()` simplified: split on reliable `\n\n`, process each paragraph independently — list paragraphs join continuations to bullets, prose paragraphs join all lines
+- `join_prose_lines()` removed entirely
+- `pending_prose` buffer, `flush_prose()` closure, punctuation heuristics — all removed
+- Net: -72 lines in `scripts/parse_mtr.py`
+- `scripts/parse_ipg.py` unchanged; comment added noting layout-aware detection as future work (IPG spacing profile is messier)
+
+**Bugs fixed by this change:**
+- MTR 3.1: numbered item 4 no longer merges with following "Definitions..." paragraph
+- MTR 3.2: sub-headings no longer merge into preceding bullet items
+- MTR 3.7: same list-to-prose merge pattern as 3.1
+
+**Remaining (low priority):**
+- A few paragraphs spanning PDF page boundaries still have one residual mid-paragraph line break (e.g. MTR 3.6 paragraph 2). Different problem from what was fixed — pages are joined with `\n\n` but the last/first lines across the boundary don't get re-joined within their paragraph.
+
+---
+
 ## Recent Work (2026-01-26)
 
 ### Pre-Release Cleanup - COMPLETE ✅
