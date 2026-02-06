@@ -3,10 +3,10 @@
 Smart update script for MTGJSON card data.
 
 This script:
-1. Checks MTGJSON API for the latest AllPrintings.json version
+1. Checks MTGJSON API for the latest AtomicCards.json version
 2. Compares it to the existing local version
 3. Only downloads if there's a new version available
-4. Extracts relevant card properties and deduplicates by name
+4. Extracts relevant card properties (already deduplicated by MTGJSON)
 5. Generates two output files ready for app use
 """
 
@@ -14,7 +14,6 @@ import json
 import subprocess
 import sys
 from pathlib import Path
-from collections import defaultdict
 
 
 def get_local_version(version_file_path):
@@ -53,15 +52,15 @@ def fetch_mtgjson_metadata():
 
 
 def download_and_decompress(data_dir):
-    """Download the compressed AllPrintings file and decompress it."""
-    compressed_file = data_dir / 'AllPrintings.json.xz'
-    output_file = data_dir / 'AllPrintings.json'
+    """Download the compressed AtomicCards file and decompress it."""
+    compressed_file = data_dir / 'AtomicCards.json.xz'
+    output_file = data_dir / 'AtomicCards.json'
 
-    print("\nDownloading AllPrintings.json.xz (~71 MB)...")
+    print("\nDownloading AtomicCards.json.xz (~25 MB)...")
     print("This will take a moment...")
 
     result = subprocess.run(
-        ['curl', '-o', str(compressed_file), 'https://mtgjson.com/api/v5/AllPrintings.json.xz'],
+        ['curl', '-o', str(compressed_file), 'https://mtgjson.com/api/v5/AtomicCards.json.xz'],
         capture_output=False
     )
 
@@ -116,113 +115,62 @@ def extract_card_subset(card):
     return subset
 
 
-def deduplicate_cards(cards):
+def process_atomiccards(json_file_path):
     """
-    Deduplicate cards by name, merging rulings from all printings.
+    Process AtomicCards.json and extract card data.
 
-    Args:
-        cards: List of card objects
-
-    Returns:
-        List of deduplicated card objects
-    """
-    # Group cards by name
-    cards_by_name = defaultdict(list)
-    for card in cards:
-        cards_by_name[card['name']].append(card)
-
-    deduplicated = []
-
-    for name, printings in cards_by_name.items():
-        # Take the first printing as the base
-        base_card = printings[0].copy()
-
-        # Merge all rulings from all printings
-        all_rulings = []
-        for printing in printings:
-            if 'rulings' in printing and printing['rulings']:
-                all_rulings.extend(printing['rulings'])
-
-        # Deduplicate rulings by (date, text) tuple
-        if all_rulings:
-            unique_rulings = []
-            seen_rulings = set()
-
-            for ruling in all_rulings:
-                ruling_key = (ruling.get('date'), ruling.get('text'))
-                if ruling_key not in seen_rulings:
-                    seen_rulings.add(ruling_key)
-                    unique_rulings.append(ruling)
-
-            # Sort rulings by date
-            unique_rulings.sort(key=lambda r: r.get('date', ''))
-
-            base_card['rulings'] = unique_rulings
-        elif 'rulings' in base_card:
-            # No rulings found, remove the key
-            del base_card['rulings']
-
-        deduplicated.append(base_card)
-
-    return deduplicated
-
-
-def process_allprintings(json_file_path):
-    """
-    Process AllPrintings.json and extract deduplicated card data.
+    AtomicCards is already deduplicated by MTGJSON, so we just need to
+    extract the properties we care about and filter Alchemy cards.
 
     Returns:
         Tuple of (all_cards, cards_with_rulings)
     """
     print(f"\nLoading {json_file_path.name}...")
-    print("This may take a minute...")
+    print("This may take a moment...")
 
     with open(json_file_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
-    print(f"File loaded. Found {len(data.get('data', {}))} sets.")
+    print(f"File loaded. Found {len(data.get('data', {})):,} unique cards.")
 
     all_cards = []
-    total_processed = 0
+    skipped_alchemy = 0
 
-    all_sets = data.get('data', {})
+    # AtomicCards structure: {"data": {"CardName": [cardObj], ...}}
+    cards_dict = data.get('data', {})
 
-    for set_code, set_data in all_sets.items():
-        cards = set_data.get('cards', [])
+    for card_name, card_variations in cards_dict.items():
+        # Skip Alchemy cards (Arena-only, names start with "A-")
+        if card_name.startswith('A-'):
+            skipped_alchemy += 1
+            continue
 
-        for card in cards:
-            total_processed += 1
+        # Take the first variation (usually only one in AtomicCards)
+        card = card_variations[0] if card_variations else None
+        if not card:
+            continue
 
-            # Skip Alchemy cards (Arena-only, names start with "A-")
-            card_name = card.get('name', '')
-            if card_name.startswith('A-'):
-                continue
+        # Extract the subset of properties
+        card_subset = extract_card_subset(card)
+        all_cards.append(card_subset)
 
-            # Extract the subset of properties
-            card_subset = extract_card_subset(card)
-            all_cards.append(card_subset)
+        # Progress indicator
+        if len(all_cards) % 5000 == 0:
+            print(f"  Processed {len(all_cards):,} cards...")
 
-            # Progress indicator
-            if total_processed % 10000 == 0:
-                print(f"  Processed {total_processed:,} cards...")
-
-    print(f"\n✓ Extraction complete! Processed {len(all_cards):,} card printings")
-
-    # Deduplicate
-    print("\nDeduplicating cards by name...")
-    deduplicated_cards = deduplicate_cards(all_cards)
+    print(f"\n✓ Extraction complete! Processed {len(all_cards):,} unique cards")
+    if skipped_alchemy > 0:
+        print(f"  Skipped {skipped_alchemy:,} Alchemy cards")
 
     # Sort by name for easier browsing
-    deduplicated_cards.sort(key=lambda c: c['name'])
-
-    print(f"✓ Deduplicated to {len(deduplicated_cards):,} unique cards")
+    all_cards.sort(key=lambda c: c['name'])
 
     # Split into all cards and cards with rulings
-    cards_with_rulings = [card for card in deduplicated_cards if 'rulings' in card and card['rulings']]
+    cards_with_rulings = [card for card in all_cards if 'rulings' in card and card['rulings']]
 
     print(f"✓ Found {len(cards_with_rulings):,} cards with rulings")
 
-    return deduplicated_cards, cards_with_rulings
+    return all_cards, cards_with_rulings
 
 
 def save_json_file(data, output_path, description):
@@ -254,10 +202,10 @@ def main():
     data_dir.mkdir(exist_ok=True)
 
     version_file = data_dir / 'version.json'
-    allprintings_file = data_dir / 'AllPrintings.json'
+    atomiccards_file = data_dir / 'AtomicCards.json'
 
     print("=" * 80)
-    print("MTGJSON Card Data Update Script")
+    print("MTGJSON Card Data Update Script (AtomicCards)")
     print("=" * 80)
     print()
 
@@ -278,7 +226,7 @@ def main():
     print()
 
     # Step 3: Compare versions
-    if local_version and local_version == remote_version and allprintings_file.exists():
+    if local_version and local_version == remote_version and atomiccards_file.exists():
         print("✓ Card data is already up to date!")
         print(f"  Both versions are from {local_version}")
         print("  No download needed.")
@@ -295,7 +243,7 @@ def main():
         return 1
 
     # Step 5: Process the file
-    all_cards, cards_with_rulings = process_allprintings(allprintings_file)
+    all_cards, cards_with_rulings = process_atomiccards(atomiccards_file)
 
     # Step 6: Save output files
     all_cards_output = data_dir / 'all_cards_deduplicated.json'

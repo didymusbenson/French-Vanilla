@@ -15,6 +15,7 @@ Re-running the script will overwrite existing files.
 import json
 import os
 import re
+import shutil
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -238,6 +239,33 @@ def parse_rules_file(input_path: str, output_dir: str):
     print(f"Output files written to {output_dir}")
 
 
+def sync_to_assets(output_dir: str):
+    """
+    Copy JSON files from docs/rulesdocs to assets/rulesdocs.
+
+    This ensures the Flutter app (which loads from assets) has the latest rules.
+    """
+    project_root = Path(output_dir).parent.parent
+    assets_dir = project_root / 'assets' / 'rulesdocs'
+
+    # Create assets directory if it doesn't exist
+    os.makedirs(assets_dir, exist_ok=True)
+
+    print(f"\nSyncing JSON files to {assets_dir}...")
+
+    # Copy all JSON files
+    json_files = Path(output_dir).glob('*.json')
+    copied_count = 0
+
+    for json_file in json_files:
+        dest = assets_dir / json_file.name
+        shutil.copy2(json_file, dest)
+        print(f"  Copied {json_file.name}")
+        copied_count += 1
+
+    print(f"✓ Synced {copied_count} files to assets")
+
+
 def main():
     """Main entry point for the script."""
     # Determine paths relative to script location
@@ -252,6 +280,10 @@ def main():
         return 1
 
     parse_rules_file(str(input_file), str(output_dir))
+
+    # Sync parsed JSON files to assets directory for Flutter app
+    sync_to_assets(str(output_dir))
+
     return 0
 
 
