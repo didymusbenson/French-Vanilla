@@ -4,6 +4,71 @@ This document tracks completed features and historical development decisions.
 
 ---
 
+## Recent Work (2026-02-05)
+
+### Card Data Source Migration - COMPLETE ✅
+
+Switched from AllPrintings.json to AtomicCards.json as the source for MTGJSON card data, significantly improving download size and processing speed.
+
+**Problem:**
+- AllPrintings.json contained every printing of every card (100,000+ card printings)
+- Required complex deduplication logic to merge cards by name
+- Large download (71 MB compressed, 529 MB uncompressed)
+- Slow processing (2-3 minutes to deduplicate and merge rulings)
+
+**Solution:**
+- AtomicCards.json is pre-deduplicated by MTGJSON (one entry per unique card)
+- Contains only "atomic" properties that persist across printings (oracle text, rulings, etc.)
+- Much smaller download (25 MB compressed, 143 MB uncompressed)
+- Much faster processing (~10 seconds, no deduplication needed)
+
+**What changed:**
+- `scripts/process_cards.py`:
+  - Changed download URL from AllPrintings to AtomicCards
+  - Removed `deduplicate_cards()` function (119 lines of code eliminated)
+  - Simplified `process_atomiccards()` to handle different JSON structure (organized by card name, not by set)
+  - Updated all references and documentation strings
+- Documentation updated in `.claude/commands/getCards.md` (user-local, not committed)
+- Output remains identical: same 7-8 fields, same ~39 MB bundle size, backward compatible
+
+**Results:**
+- Download: 65% smaller (25 MB vs 71 MB compressed)
+- Processing: ~12x faster (~10 seconds vs 2-3 minutes)
+- Output: 33,212 cards, 19,184 with rulings (identical structure to before)
+- Code: Simpler, easier to maintain
+
+**Files Modified:**
+- `scripts/process_cards.py` — migrated to AtomicCards API, removed deduplication logic
+
+### Rules Sync Automation - COMPLETE ✅
+
+Fixed missing glossary terms in the app by adding automatic sync from `docs/rulesdocs/` to `assets/rulesdocs/`.
+
+**Problem:**
+- Rules parser (`scripts/parse_rules.py`) wrote JSON files to `docs/rulesdocs/`
+- Flutter app loaded JSON files from `assets/rulesdocs/`
+- No automatic sync between the two directories
+- Result: New glossary terms (like "Blight") appeared in `docs/` but not in the app bundle
+
+**Solution:**
+- Added `sync_to_assets()` function to `scripts/parse_rules.py`
+- Automatically copies all parsed JSON files from docs to assets after parsing
+- Runs whether rules were newly parsed or already up-to-date
+
+**What changed:**
+- `scripts/parse_rules.py`:
+  - Added `import shutil`
+  - Added `sync_to_assets()` function (27 lines)
+  - Calls `sync_to_assets()` at end of `main()` after parsing
+- All 12 rules JSON files synced to assets directory
+- Glossary now includes "Blight" and other recently added terms
+
+**Files Modified:**
+- `scripts/parse_rules.py` — added sync_to_assets() function
+- `assets/rulesdocs/*.json` — synced from docs (12 files updated)
+
+---
+
 ## v1.1.0 Release (2026-02-03)
 
 ### MTR/IPG Search Integration - COMPLETE ✅
