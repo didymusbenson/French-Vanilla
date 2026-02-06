@@ -14,22 +14,15 @@
 
 ---
 
+## Verification Steps for Wrapper Scripts
 
+Quick tests to verify the new `getcards` and `getrules` wrapper scripts work correctly:
 
-## Tooling Improvements
-
-### Data Update Commands
-- [x] Create `getcards` wrapper script (matching `getjudgerules` pattern)
-  - Should call `python3 scripts/process_cards.py`
-  - Provides consistent interface with other data update commands
-- [x] Create `getrules` wrapper script (matching `getjudgerules` pattern)
-  - Should call `python3 scripts/update_rules.py "<url>"`
-  - Provides consistent interface with other data update commands
-
-**Current status:**
-- ✅ `getjudgerules` - Complete with wrapper script + Claude command
-- ✅ `getcards` - Complete with wrapper script + Claude command
-- ✅ `getrules` - Complete with wrapper script + Claude command
+- [ ] Run `./getcards` from project root - should execute without errors
+- [ ] Verify it calls `scripts/process_cards.py` and checks MTGJSON for updates
+- [ ] Run `./getrules` without parameters - should show usage error message
+- [ ] Run `./getrules "<url>"` with a valid rules URL - should execute update_rules.py
+- [ ] Verify all three commands (`./getjudgerules`, `./getcards`, `./getrules`) follow the same pattern
 
 ---
 

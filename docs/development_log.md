@@ -6,6 +6,32 @@ This document tracks completed features and historical development decisions.
 
 ## Recent Work (2026-02-05)
 
+### Data Update Wrapper Scripts - COMPLETE ✅
+
+Created consistent command-line interface for all data update operations with bash wrapper scripts.
+
+**What changed:**
+- Created `getcards` wrapper script for `scripts/process_cards.py`
+- Created `getrules` wrapper script for `scripts/update_rules.py` (accepts URL parameter)
+- Both follow the `getjudgerules` pattern established earlier
+- All three commands now have matching interfaces: wrapper script + Claude slash command
+
+**Files Created:**
+- `getcards` — Wrapper for MTGJSON card data updates (no parameters)
+- `getrules` — Wrapper for comprehensive rules updates (requires URL parameter)
+
+**Usage:**
+```bash
+./getcards                                              # Update card data
+./getrules "https://media.wizards.com/.../Rules.txt"  # Update comprehensive rules
+./getjudgerules                                        # Update MTR/IPG
+```
+
+**Consistent tooling interface:**
+- ✅ `getjudgerules` - Updates MTR and IPG documents
+- ✅ `getcards` - Updates MTGJSON card data
+- ✅ `getrules` - Updates comprehensive rules
+
 ### Card Data Source Migration - COMPLETE ✅
 
 Switched from AllPrintings.json to AtomicCards.json as the source for MTGJSON card data, significantly improving download size and processing speed.
