@@ -56,6 +56,44 @@
 
 ---
 
+## Copy/Share Enhancements
+
+**Status**: Design complete, ready for implementation
+**Complexity**: Low (3/10, ~5-6 hours)
+
+### Problem
+Long-press context menu currently copies/shares entire subrule groups (e.g., 101.1 with all lettered parts). Users want to copy specific lettered subrules (e.g., just 101.1a).
+
+### Solution
+Change "Copy Rule" → "Copy..." and "Share Rule" → "Share..." in context menu. These open scrollable bottom sheets with options:
+- Copy/Share entire rule (default, visually distinct)
+- Copy/Share individual lettered subrules (704.5a, 704.5b, etc.)
+
+### Implementation Tasks
+- [ ] Update `_showContextMenu()` in `lib/screens/rule_detail_screen.dart` (line 104)
+- [ ] Add `_showCopyOptions()` method with scrollable bottom sheet
+- [ ] Add `_showShareOptions()` method with scrollable bottom sheet
+- [ ] Implement `_parseSubruleOptions()` to extract lettered subrules from content
+  - Leverage existing `FormattedContentMixin` parsing
+  - Pattern: `^\d{3}\.\d+[a-z]\s`
+  - Include associated examples with each lettered subrule
+- [ ] Add `_copySpecificSubrule()` and `_shareSpecificSubrule()` methods
+- [ ] Handle edge cases:
+  - Rules with no lettered parts (show only "entire rule")
+  - Rules with 24 lettered parts (704.5 a-x) - ensure scrolling works
+  - Examples between lettered subrules (include with preceding subrule)
+
+### Key Test Cases
+- Rule 704.5 (24 lettered subrules) - worst case for scrolling
+- Rule with 2-3 lettered subrules - typical case
+- Rule with no lettered subrules - shows only "entire rule" option
+- Copy specific subrule with example - example is included
+- Share specific subrule - share dialog works correctly
+
+**Reference:** See `docs/copy_share_enhancements_feature.md` (archived) for full design details.
+
+---
+
 ## Verification Steps for Wrapper Scripts
 
 Quick tests to verify the new `getcards` and `getrules` wrapper scripts work correctly:
