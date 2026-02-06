@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+# getrules - Fetch and update MTG Comprehensive Rules
+#
+# Usage: ./getrules "<url>"
+#
+# Example:
+#   ./getrules "https://media.wizards.com/2026/downloads/MagicCompRules%2020260116.txt"
+#
+
+cd "$(dirname "$0")" || exit 1
+
+if [ -z "$1" ]; then
+    echo "Error: URL required"
+    echo "Usage: ./getrules \"<url>\""
+    echo ""
+    echo "Find the latest rules URL at: https://magic.wizards.com/en/rules"
+    exit 1
+fi
+
+python3 scripts/update_rules.py "$1"

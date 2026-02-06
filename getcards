@@ -1,0 +1,10 @@
+#!/bin/bash
+#
+# getcards - Fetch and update MTGJSON card data
+#
+# Usage: ./getcards
+#
+
+cd "$(dirname "$0")" || exit 1
+
+python3 scripts/process_cards.py
