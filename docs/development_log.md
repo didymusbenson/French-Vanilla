@@ -4,6 +4,85 @@ This document tracks completed features and historical development decisions.
 
 ---
 
+## Recent Work (2026-02-07)
+
+### Universal Search Completion - COMPLETE ✅
+
+Completed the universal search feature with card rulings search, filtering UI, and enhanced relevance scoring.
+
+**What changed:**
+
+#### Card Rulings Search
+- Added `searchCardRulings()` method to `CardDataService` (lines 63-72)
+- **Design Decision**: Only search card names, not oracle text or ruling text
+  - **Reason**: Prevents result flooding when searching for common keywords like "Deathtouch" or "Flying"
+  - Card rulings screen already provides comprehensive filtering/search within results
+- Parallel search execution using `Future.wait()` for performance
+- Cards with rulings returned with relevance scoring
+
+#### Search Filtering UI
+- **Initial approach**: Inline filter chips above results (conditional visibility)
+- **User feedback**: Filter must be discoverable BEFORE searching, not just after results appear
+- **Final design**: Filter icon in app bar (always visible)
+  - Opens bottom sheet with checkbox selection
+  - Badge shows active filter count
+  - Multi-select support (e.g., Rules + Glossary together)
+  - "All" option deselects specific filters; any specific filter deselects "All"
+- Filter options: All, Rules, Glossary, MTR, IPG, Cards
+
+#### Relevance Scoring with Word Boundary Detection
+- Implemented tiered scoring system to ensure exact matches rank higher than substring matches
+- **Problem**: Search for "layers" was showing "players" results first
+- **Solution**: Word boundary detection using RegExp (`\b` anchors)
+- **Scoring hierarchy** (highest to lowest):
+  - 100: Exact title match (e.g., "layers" = "Layers")
+  - 90: Word boundary in title (e.g., "layers" matches "Layers" but not "Players")
+  - 75: Title starts with query
+  - 60: Word boundary in content (e.g., "layers" as complete word in rule text)
+  - 50: Substring in title (e.g., "layers" in "Players")
+  - 10: Substring in content
+- Applied to all search types: Rules, Glossary, MTR, IPG, Cards
+- Word boundary matches ALWAYS rank higher than substring matches, even when substring is in title
+
+#### Bookmark Improvements
+- Added type-specific icons to bookmarks screen
+  - Rules: `Icons.rule`
+  - Glossary: `Icons.list_alt`
+  - MTR: `Icons.gavel`
+  - IPG: `Icons.warning_amber`
+  - Cards: `Icons.style` (rotated 180°)
+- Fixed MTR/IPG bookmark navigation by searching all sections to find the rule/infraction
+- Now shows appropriate bottom sheet preview for each type
+
+#### Self-Referencing Subrule Links Fix
+- **Problem**: When viewing rule 201.2, references to its own subrules (201.2a, 201.2b) were clickable links
+- **Solution**: Added `currentRuleNumber` parameter to link parsing logic
+- Self-reference detection: If `ruleNumber == currentRuleNumber` OR `ruleNumber.startsWith('$currentRuleNumber.')`, render as plain text
+- Cross-references to other rules still work normally
+
+#### Icons.style Convention
+- Documented permanent convention in `CLAUDE.md`: Icons.style (playing card) must ALWAYS be rotated 180° using `Transform.rotate(angle: pi)`
+- Applied to all instances: search results, filter sheet, bookmarks
+
+**Files Modified:**
+- `lib/services/card_data_service.dart` — card name-only search
+- `lib/services/rules_data_service.dart` — relevance scoring with word boundaries
+- `lib/screens/search_screen.dart` — filter icon, card search integration
+- `lib/mixins/preview_bottom_sheet_mixin.dart` — card preview bottom sheet
+- `lib/screens/bookmarks_screen.dart` — type-specific icons, MTR/IPG navigation
+- `lib/mixins/rule_link_mixin.dart` — self-reference detection
+- `lib/mixins/formatted_content_mixin.dart` — pass currentRuleNumber parameter
+- `lib/screens/rule_detail_screen.dart` — provide currentRuleNumber to formatting
+- `CLAUDE.md` — documented Icons.style rotation requirement
+
+**Design Decisions:**
+- Card search limited to names only to prevent flooding
+- Filter always visible in app bar for discoverability
+- Word boundary matching ensures semantic relevance over simple substring matching
+- Self-reference detection keeps users on current page for better UX
+
+---
+
 ## Recent Work (2026-02-05)
 
 ### Data Update Wrapper Scripts - COMPLETE ✅

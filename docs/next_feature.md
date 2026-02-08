@@ -14,40 +14,40 @@
 
 ---
 
-## Universal Search - Remaining Work
+## Universal Search - COMPLETE ✅
 
-**Status**: MTR/IPG search shipped in v1.1.0. Card rulings search + filter UI remaining.
+**Status**: Shipped in v1.2.0. Card search, filtering UI, and relevance scoring all implemented.
 
-### Still To Do:
+### Completed Features:
 
-#### 1. Card Rulings Search
+#### 1. Card Rulings Search ✅
 **Data Layer:**
-- [ ] Add `searchCardRulings()` method to `CardDataService`
-  - Search card name (primary), ruling text (secondary), oracle text (tertiary)
-  - Only include cards with rulings (`card.rulings.isNotEmpty`)
-  - Return `CardSearchResult` with card + matched ruling + snippet
+- ✅ Added `searchCardRulings()` method to `CardDataService`
+  - Searches card name only (not oracle/ruling text to prevent result flooding)
+  - Only includes cards with rulings (`card.rulings.isNotEmpty`)
 
 **Model Updates:**
-- [ ] Add `card` to `SearchResultType` enum
-- [ ] Add `MagicCard? card` and `Ruling? cardRuling` fields to `SearchResult` class
+- ✅ Added `card` to `SearchResultType` enum
+- ✅ Added `MagicCard? card` and `Ruling? cardRuling` fields to `SearchResult` class
 
 **UI Integration:**
-- [ ] Integrate card search into `_performSearch()` (run in parallel with other searches)
-- [ ] Add card result icon (`Icons.style`) and tap handler
-- [ ] Implement `showCardRulingBottomSheet()` preview method
-  - Show card name, type, oracle text, highlighted ruling
-  - Action: "View All Rulings" → navigate to CardDetailScreen
+- ✅ Integrated card search into `_performSearch()` (runs in parallel with other searches)
+- ✅ Added card result icon (`Icons.style` with pi rotation) and tap handler
+- ✅ Implemented `showCardBottomSheet()` preview method
+  - Shows card name, type, oracle text, first ruling
+  - Action: "View All Rulings" → navigates to CardDetailScreen
 
-#### 2. Search Filtering UI
-- [ ] Add filter chip row above search results (FilterChip widgets, horizontal scroll)
-- [ ] Implement filter state management (`Set<SearchResultType>`)
-- [ ] Filter options: All, Rules, Glossary, MTR, IPG, Cards
-- [ ] Show result count badges on each filter
-- [ ] Multi-select support (e.g., Rules + Glossary together)
-- [ ] "All" deselects specific filters; any specific filter deselects "All"
+#### 2. Search Filtering UI ✅
+- ✅ Filter icon in app bar (always visible, even before searching)
+- ✅ Opens bottom sheet with checkbox selection
+- ✅ Implemented filter state management (`Set<SearchResultType>`)
+- ✅ Filter options: All, Rules, Glossary, MTR, IPG, Cards
+- ✅ Badge shows count when filters are active
+- ✅ Multi-select support (e.g., Rules + Glossary together)
+- ✅ "All" deselects specific filters; any specific filter deselects "All"
 
-#### 3. Polish
-- [x] Add relevance scoring (title match > title contains > content match)
+#### 3. Relevance Scoring ✅
+- ✅ Implemented tiered scoring system with word boundary detection
   - **Scoring System** (highest to lowest):
     - 100: Exact title match (e.g., "layers" = "Layers")
     - 90: Word boundary in title (e.g., "layers" matches "Layers" but not "Players")
@@ -58,11 +58,17 @@
   - Applied to all search types: Rules, Glossary, MTR, IPG, Cards
   - Results automatically sorted by relevance score
   - Word boundary matches ALWAYS rank higher than substring matches (even if substring is in title)
-- [ ] **DEFERRED**: Performance testing with large result sets (document performance issues if found)
 
 **DESCOPED:**
 - ~~Update `SearchHistoryService` to track applied filters~~
 - ~~Display filters in search history (e.g., "devotion → 45 results (Rules, Glossary)")~~
+- ~~Performance testing with large result sets~~ (deferred until user reports issues)
+
+#### 4. Self-Referencing Subrule Links ✅
+- ✅ Fixed issue where lettered subrules would link to themselves on their own page
+- ✅ Modified `RuleLinkMixin` to accept `currentRuleNumber` parameter
+- ✅ When viewing rule 201.2, references to 201.2a/201.2b/etc. are now plain text instead of links
+- ✅ Cross-references to other rules still work normally
 
 **Reference:** See `docs/everything_searchable.md` (archived) for full implementation details.
 

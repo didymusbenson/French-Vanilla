@@ -304,7 +304,11 @@ class _RuleDetailScreenState extends State<RuleDetailScreen>
                         // Content
                         Padding(
                           padding: const EdgeInsets.all(16.0),
-                          child: buildFormattedContent(group.content, isHighlighted: isHighlighted),
+                          child: buildFormattedContent(
+                            group.content,
+                            isHighlighted: isHighlighted,
+                            currentRuleNumber: widget.rule.number,
+                          ),
                         ),
                       ],
                     ),

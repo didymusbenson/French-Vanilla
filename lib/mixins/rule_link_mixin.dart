@@ -11,7 +11,10 @@ mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
   final _judgeDocsService = JudgeDocsService();
 
   /// Parses text and creates TextSpan with tappable rule references
-  List<TextSpan> parseTextWithLinks(String text, TextStyle? baseStyle) {
+  ///
+  /// [currentRuleNumber] - Optional current rule number (e.g., "201.2")
+  /// If provided, subrules of this rule won't be linked (e.g., "201.2a" won't link when viewing rule 201.2)
+  List<TextSpan> parseTextWithLinks(String text, TextStyle? baseStyle, {String? currentRuleNumber}) {
     final spans = <TextSpan>[];
 
     // Pattern matches:
@@ -84,17 +87,42 @@ mixin RuleLinkMixin<T extends StatefulWidget> on State<T> {
           fullMatch = match.group(0)!;
         }
 
-        // Add the tappable link for CR rule
-        spans.add(TextSpan(
-          text: fullMatch,
-          style: baseStyle?.copyWith(
-            color: Theme.of(context).colorScheme.primary,
-            decoration: TextDecoration.underline,
-            fontWeight: FontWeight.w500,
-          ),
-          recognizer: TapGestureRecognizer()
-            ..onTap = () => navigateToRule(ruleNumber),
-        ));
+        // Check if this is a self-reference (subrule of current rule)
+        bool isSelfReference = false;
+        if (currentRuleNumber != null) {
+          // If the referenced rule starts with the current rule number + "."
+          // OR if the referenced rule equals the current rule
+          // then it's a self-reference and shouldn't be a link
+          //
+          // Examples:
+          // - Current: "201", Reference: "201.2" -> self-reference (subrule)
+          // - Current: "201", Reference: "201.2a" -> self-reference (subrule)
+          // - Current: "201.2", Reference: "201.2a" -> self-reference (lettered subrule)
+          // - Current: "201.2", Reference: "201.3" -> NOT self-reference (different subrule group)
+          if (ruleNumber == currentRuleNumber || ruleNumber.startsWith('$currentRuleNumber.')) {
+            isSelfReference = true;
+          }
+        }
+
+        if (isSelfReference) {
+          // Render as plain text (no link)
+          spans.add(TextSpan(
+            text: fullMatch,
+            style: baseStyle,
+          ));
+        } else {
+          // Add the tappable link for CR rule
+          spans.add(TextSpan(
+            text: fullMatch,
+            style: baseStyle?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+              decoration: TextDecoration.underline,
+              fontWeight: FontWeight.w500,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () => navigateToRule(ruleNumber),
+          ));
+        }
       } else if (matchData.type == 'mtr') {
         // Handle MTR section reference: "MTR section 4.3" or "section 4.3"
         final sectionNumber = match.group(1)!;

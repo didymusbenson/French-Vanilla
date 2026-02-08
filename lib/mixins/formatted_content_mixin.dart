@@ -16,7 +16,7 @@ class ContentBlock {
 /// Requires RuleLinkMixin for clickable rule references
 mixin FormattedContentMixin<T extends StatefulWidget> on State<T>, RuleLinkMixin<T> {
   /// Builds an example callout with styled left border and subtle background
-  Widget buildExampleCallout(String exampleText, bool isHighlighted) {
+  Widget buildExampleCallout(String exampleText, bool isHighlighted, {String? currentRuleNumber}) {
     final borderColor = isHighlighted
         ? Theme.of(context).colorScheme.onPrimaryContainer
         : Theme.of(context).colorScheme.primary;
@@ -51,7 +51,7 @@ mixin FormattedContentMixin<T extends StatefulWidget> on State<T>, RuleLinkMixin
                 fontWeight: FontWeight.bold,
               ),
             ),
-            ...parseTextWithLinks(exampleText, textStyle),
+            ...parseTextWithLinks(exampleText, textStyle, currentRuleNumber: currentRuleNumber),
           ],
         ),
       ),
@@ -59,7 +59,7 @@ mixin FormattedContentMixin<T extends StatefulWidget> on State<T>, RuleLinkMixin
   }
 
   /// Builds formatted subrule content with spacing between subsections and inline examples
-  Widget buildFormattedContent(String content, {bool isHighlighted = false}) {
+  Widget buildFormattedContent(String content, {bool isHighlighted = false, String? currentRuleNumber}) {
     // Strip the leading subrule number from the first line since it's shown in the header
     // Matches "201.1. " or "702.90a " (period OR letter after minor number)
     final leadingNumberPattern = RegExp(r'^\d{3}\.\d+([a-z]|\.)\s+');
@@ -138,7 +138,7 @@ mixin FormattedContentMixin<T extends StatefulWidget> on State<T>, RuleLinkMixin
 
       if (block.isExample) {
         // Render as example callout
-        widgets.add(buildExampleCallout(block.content, isHighlighted));
+        widgets.add(buildExampleCallout(block.content, isHighlighted, currentRuleNumber: currentRuleNumber));
       } else {
         // Check if this block contains any list items
         final listItemPattern = RegExp(r'^\s*(?:[•\-*◦▪]|\d+\.)\s');
@@ -178,7 +178,7 @@ mixin FormattedContentMixin<T extends StatefulWidget> on State<T>, RuleLinkMixin
                         Expanded(
                           child: RichText(
                             text: TextSpan(
-                              children: parseTextWithLinks(content, baseStyle),
+                              children: parseTextWithLinks(content, baseStyle, currentRuleNumber: currentRuleNumber),
                             ),
                           ),
                         ),
@@ -192,7 +192,7 @@ mixin FormattedContentMixin<T extends StatefulWidget> on State<T>, RuleLinkMixin
               lineWidgets.add(
                 RichText(
                   text: TextSpan(
-                    children: parseTextWithLinks(line, baseStyle),
+                    children: parseTextWithLinks(line, baseStyle, currentRuleNumber: currentRuleNumber),
                   ),
                 ),
               );
@@ -210,7 +210,7 @@ mixin FormattedContentMixin<T extends StatefulWidget> on State<T>, RuleLinkMixin
           widgets.add(
             RichText(
               text: TextSpan(
-                children: parseTextWithLinks(block.content, baseStyle),
+                children: parseTextWithLinks(block.content, baseStyle, currentRuleNumber: currentRuleNumber),
               ),
             ),
           );
