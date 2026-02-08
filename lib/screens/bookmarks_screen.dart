@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/favorites_service.dart';
 import '../services/rules_data_service.dart';
 import '../services/card_data_service.dart';
+import '../services/judge_docs_service.dart';
 import '../mixins/rule_link_mixin.dart';
 import '../mixins/formatted_content_mixin.dart';
 import '../mixins/preview_bottom_sheet_mixin.dart';
@@ -19,6 +20,7 @@ class BookmarksScreenState extends State<BookmarksScreen> with RuleLinkMixin, Fo
   final _favoritesService = FavoritesService();
   final _dataService = RulesDataService();
   final _cardService = CardDataService();
+  final _judgeDocsService = JudgeDocsService();
   List<BookmarkedItem> _bookmarks = [];
   bool _isLoading = true;
   bool _isEditMode = false;
@@ -187,9 +189,22 @@ class BookmarksScreenState extends State<BookmarksScreen> with RuleLinkMixin, Fo
               final isSelected = _selectedBookmarks.contains(bookmark.identifier);
 
               // Display title differently based on type
-              final displayTitle = bookmark.type == BookmarkType.rule
-                  ? 'Rule ${bookmark.identifier}'
-                  : bookmark.identifier;
+              String displayTitle;
+              switch (bookmark.type) {
+                case BookmarkType.rule:
+                  displayTitle = 'Rule ${bookmark.identifier}';
+                  break;
+                case BookmarkType.mtr:
+                  displayTitle = bookmark.identifier;
+                  break;
+                case BookmarkType.ipg:
+                  displayTitle = bookmark.identifier;
+                  break;
+                case BookmarkType.glossary:
+                case BookmarkType.card:
+                  displayTitle = bookmark.identifier;
+                  break;
+              }
 
               // Wrap in Dismissible only when NOT in edit mode
               Widget tile = Card(
@@ -200,20 +215,7 @@ class BookmarksScreenState extends State<BookmarksScreen> with RuleLinkMixin, Fo
                           value: isSelected,
                           onChanged: (_) => _toggleSelection(bookmark.identifier),
                         )
-                      : bookmark.type == BookmarkType.card
-                          ? Transform.rotate(
-                              angle: pi,
-                              child: Icon(
-                                Icons.style,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            )
-                          : Icon(
-                              bookmark.type == BookmarkType.rule
-                                  ? Icons.bookmark
-                                  : Icons.bookmark,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
+                      : _getBookmarkIcon(bookmark.type),
                   title: Text(
                     displayTitle,
                     style: const TextStyle(fontWeight: FontWeight.bold),
@@ -262,6 +264,39 @@ class BookmarksScreenState extends State<BookmarksScreen> with RuleLinkMixin, Fo
             ),
           ),
       ],
+    );
+  }
+
+  Widget _getBookmarkIcon(BookmarkType type) {
+    IconData iconData;
+
+    switch (type) {
+      case BookmarkType.rule:
+        iconData = Icons.rule;
+        break;
+      case BookmarkType.glossary:
+        iconData = Icons.list_alt;
+        break;
+      case BookmarkType.mtr:
+        iconData = Icons.gavel;
+        break;
+      case BookmarkType.ipg:
+        iconData = Icons.warning_amber;
+        break;
+      case BookmarkType.card:
+        // Card icon needs to be rotated
+        return Transform.rotate(
+          angle: pi,
+          child: Icon(
+            Icons.style,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        );
+    }
+
+    return Icon(
+      iconData,
+      color: Theme.of(context).colorScheme.primary,
     );
   }
 
@@ -315,7 +350,75 @@ class BookmarksScreenState extends State<BookmarksScreen> with RuleLinkMixin, Fo
       return;
     }
 
-    // Handle rule bookmarks
+    if (bookmark.type == BookmarkType.mtr) {
+      // Handle MTR bookmarks
+      try {
+        final allSections = await _judgeDocsService.getAllMtrSections();
+
+        // Find the rule in all sections
+        for (final section in allSections) {
+          final rule = section.rules.where((r) => r.number == bookmark.identifier).firstOrNull;
+          if (rule != null) {
+            if (!mounted) return;
+            showMtrBottomSheet(
+              rule: rule,
+              sectionNumber: section.sectionNumber,
+              sectionTitle: section.title,
+            );
+            return;
+          }
+        }
+
+        // Rule not found
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('MTR rule not found')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to load MTR rule: $e')),
+          );
+        }
+      }
+      return;
+    }
+
+    if (bookmark.type == BookmarkType.ipg) {
+      // Handle IPG bookmarks
+      try {
+        final allSections = await _judgeDocsService.getAllIpgSections();
+
+        // Find the infraction in all sections
+        for (final section in allSections) {
+          final infraction = section.infractions.where((i) => i.number == bookmark.identifier).firstOrNull;
+          if (infraction != null) {
+            if (!mounted) return;
+            showIpgBottomSheet(
+              infraction: infraction,
+            );
+            return;
+          }
+        }
+
+        // Infraction not found
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('IPG infraction not found')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to load IPG infraction: $e')),
+          );
+        }
+      }
+      return;
+    }
+
+    // Handle rule bookmarks (comprehensive rules)
     // Parse the rule number to extract section and rule info
     // Format: "702.9a" -> section 7, rule "702", subrule "702.9"
     final ruleNumberMatch = RegExp(r'^(\d)(\d{2})\.(\d+)([a-z])?$').firstMatch(bookmark.identifier);

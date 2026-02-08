@@ -7,6 +7,7 @@ import 'rules_parser.dart';
 import '../models/mtr_rule.dart';
 import '../models/ipg_infraction.dart';
 import 'judge_docs_service.dart';
+import '../models/card.dart';
 
 class RulesDataService {
   static final RulesDataService _instance = RulesDataService._internal();
@@ -108,6 +109,11 @@ class RulesDataService {
             title: '${rule.number}. ${rule.title}',
             snippet: rule.title,
             rule: rule,
+            relevanceScore: _calculateRelevanceScore(
+              query: lowerQuery,
+              title: rule.title,
+              titleMatch: true,
+            ),
           ));
           continue; // Don't also search subrules if title matches
         }
@@ -122,6 +128,11 @@ class RulesDataService {
               snippet: _extractSnippet(subruleGroup.content, lowerQuery),
               rule: rule,
               subruleGroup: subruleGroup,
+              relevanceScore: _calculateRelevanceScore(
+                query: lowerQuery,
+                content: subruleGroup.content,
+                contentMatch: true,
+              ),
             ));
           }
         }
@@ -131,13 +142,22 @@ class RulesDataService {
     // Search glossary
     final glossaryTerms = await getGlossaryTerms();
     for (final term in glossaryTerms) {
-      if (term.term.toLowerCase().contains(lowerQuery) ||
-          term.definition.toLowerCase().contains(lowerQuery)) {
+      final termMatches = term.term.toLowerCase().contains(lowerQuery);
+      final definitionMatches = term.definition.toLowerCase().contains(lowerQuery);
+
+      if (termMatches || definitionMatches) {
         results.add(SearchResult(
           type: SearchResultType.glossary,
           title: term.term,
           snippet: _extractSnippet(term.definition, lowerQuery),
           glossaryTerm: term,
+          relevanceScore: _calculateRelevanceScore(
+            query: lowerQuery,
+            title: term.term,
+            content: term.definition,
+            titleMatch: termMatches,
+            contentMatch: definitionMatches && !termMatches,
+          ),
         ));
       }
     }
@@ -158,6 +178,13 @@ class RulesDataService {
             mtrRule: rule,
             mtrSectionNumber: section.sectionNumber,
             mtrSectionTitle: section.title,
+            relevanceScore: _calculateRelevanceScore(
+              query: lowerQuery,
+              title: rule.title,
+              content: rule.content,
+              titleMatch: titleMatches,
+              contentMatch: contentMatches && !titleMatches,
+            ),
           ));
         }
       }
@@ -176,6 +203,11 @@ class RulesDataService {
                 ? _extractSnippet(infraction.definition!, lowerQuery)
                 : infraction.title,
             ipgInfraction: infraction,
+            relevanceScore: _calculateRelevanceScore(
+              query: lowerQuery,
+              title: infraction.cleanTitle,
+              titleMatch: true,
+            ),
           ));
           continue;
         }
@@ -195,12 +227,20 @@ class RulesDataService {
               title: '${infraction.number} ${infraction.cleanTitle}',
               snippet: _extractSnippet(field, lowerQuery),
               ipgInfraction: infraction,
+              relevanceScore: _calculateRelevanceScore(
+                query: lowerQuery,
+                content: field,
+                contentMatch: true,
+              ),
             ));
             break; // Only add one result per infraction
           }
         }
       }
     }
+
+    // Sort by relevance score (highest first)
+    results.sort((a, b) => b.relevanceScore.compareTo(a.relevanceScore));
 
     return results;
   }
@@ -224,6 +264,60 @@ class RulesDataService {
 
     return snippet;
   }
+
+  /// Calculate relevance score for search results
+  /// Higher scores = better matches
+  int _calculateRelevanceScore({
+    required String query,
+    String? title,
+    String? content,
+    bool titleMatch = false,
+    bool contentMatch = false,
+  }) {
+    final lowerQuery = query.toLowerCase();
+    final wordBoundaryRegex = RegExp(r'\b' + RegExp.escape(lowerQuery) + r'\b');
+
+    if (title != null && titleMatch) {
+      final lowerTitle = title.toLowerCase();
+
+      // Exact match (after normalizing)
+      if (lowerTitle == lowerQuery) {
+        return 100;
+      }
+
+      // Word boundary match (exact word in title)
+      // e.g., "layers" matches "Layers" but not "Players"
+      if (wordBoundaryRegex.hasMatch(lowerTitle)) {
+        return 90;
+      }
+
+      // Title starts with query
+      if (lowerTitle.startsWith(lowerQuery)) {
+        return 75;
+      }
+
+      // Title contains query (substring match)
+      if (lowerTitle.contains(lowerQuery)) {
+        return 50;
+      }
+    }
+
+    // Content match - check for word boundaries first
+    if (contentMatch && content != null) {
+      final lowerContent = content.toLowerCase();
+
+      // Word boundary in content (exact word match)
+      // Ranks higher than substring in title to prioritize exact terms
+      if (wordBoundaryRegex.hasMatch(lowerContent)) {
+        return 60;
+      }
+
+      // Substring in content
+      return 10;
+    }
+
+    return 0;
+  }
 }
 
 enum SearchResultType {
@@ -231,6 +325,7 @@ enum SearchResultType {
   glossary,
   mtr,
   ipg,
+  card,
 }
 
 class SearchResult {
@@ -245,6 +340,9 @@ class SearchResult {
   final Object? mtrSectionNumber; // dynamic: int or String for appendices
   final String? mtrSectionTitle;
   final IpgInfraction? ipgInfraction;
+  final MagicCard? card;
+  final Ruling? cardRuling;
+  final int relevanceScore;
 
   SearchResult({
     required this.type,
@@ -258,5 +356,8 @@ class SearchResult {
     this.mtrSectionNumber,
     this.mtrSectionTitle,
     this.ipgInfraction,
+    this.card,
+    this.cardRuling,
+    this.relevanceScore = 0,
   });
 }

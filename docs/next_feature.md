@@ -47,10 +47,22 @@
 - [ ] "All" deselects specific filters; any specific filter deselects "All"
 
 #### 3. Polish
-- [ ] Add relevance scoring (title match > title contains > content match)
-- [ ] Update `SearchHistoryService` to track applied filters
-- [ ] Display filters in search history (e.g., "devotion → 45 results (Rules, Glossary)")
-- [ ] Performance testing with large result sets
+- [x] Add relevance scoring (title match > title contains > content match)
+  - **Scoring System** (highest to lowest):
+    - 100: Exact title match (e.g., "layers" = "Layers")
+    - 90: Word boundary in title (e.g., "layers" matches "Layers" but not "Players")
+    - 75: Title starts with query
+    - 60: Word boundary in content (e.g., "layers" as complete word in rule text)
+    - 50: Substring in title (e.g., "layers" in "Players")
+    - 10: Substring in content
+  - Applied to all search types: Rules, Glossary, MTR, IPG, Cards
+  - Results automatically sorted by relevance score
+  - Word boundary matches ALWAYS rank higher than substring matches (even if substring is in title)
+- [ ] **DEFERRED**: Performance testing with large result sets (document performance issues if found)
+
+**DESCOPED:**
+- ~~Update `SearchHistoryService` to track applied filters~~
+- ~~Display filters in search history (e.g., "devotion → 45 results (Rules, Glossary)")~~
 
 **Reference:** See `docs/everything_searchable.md` (archived) for full implementation details.
 

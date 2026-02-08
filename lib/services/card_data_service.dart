@@ -58,4 +58,16 @@ class CardDataService {
       return null;
     }
   }
+
+  /// Search cards with rulings by name (for universal search)
+  Future<List<MagicCard>> searchCardRulings(String query) async {
+    if (query.trim().isEmpty) return [];
+
+    final cardsWithRulings = await getCardsWithRulings();
+    final lowerQuery = query.toLowerCase();
+
+    return cardsWithRulings
+        .where((card) => card.name.toLowerCase().contains(lowerQuery))
+        .toList();
+  }
 }

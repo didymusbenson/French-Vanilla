@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import '../models/rule.dart';
 import '../models/mtr_rule.dart';
 import '../models/ipg_infraction.dart';
+import '../models/card.dart';
 import '../screens/glossary_detail_screen.dart';
 import '../screens/rule_detail_screen.dart';
 import '../screens/mtr_section_detail_screen.dart';
 import '../screens/ipg_infraction_detail_screen.dart';
+import '../screens/card_detail_screen.dart';
 import 'rule_link_mixin.dart';
 import 'formatted_content_mixin.dart';
 
@@ -319,6 +321,126 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
                   },
                   icon: const Icon(Icons.arrow_forward),
                   label: Text('Go to ${infraction.cleanTitle}'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Shows a bottom sheet preview for a card with rulings
+  void showCardBottomSheet({
+    required MagicCard card,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title
+              Text(
+                card.name,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                card.type,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Content - scrollable if needed
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Oracle text
+                      if (card.text != null && card.text!.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            card.text!,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              height: 1.6,
+                            ),
+                          ),
+                        ),
+                      // Rulings count
+                      if (card.rulings.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          '${card.rulings.length} ruling${card.rulings.length == 1 ? '' : 's'}',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.secondary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Show first ruling as preview
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                card.rulings.first.date,
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.secondary,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                card.rulings.first.text,
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  height: 1.6,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Action button
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context); // Close bottom sheet
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CardDetailScreen(card: card),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.arrow_forward),
+                  label: Text('View All Rulings (${card.rulings.length})'),
                 ),
               ),
             ],

@@ -109,6 +109,14 @@ The `.gitignore` is configured to exclude:
   - Do NOT use real device builds for validation (can fail due to connection issues)
   - If build fails, diagnose and fix before reporting completion
 
+### UI/Icon Conventions
+- **Icons.style (Cards icon) MUST ALWAYS be rotated 180 degrees (π radians)**
+  - This icon appears upside down by default
+  - Use: `Transform.rotate(angle: 3.14159, child: Icon(Icons.style))`
+  - Or if the widget has an iconRotation parameter: `iconRotation: pi`
+  - Apply this transformation EVERY time Icons.style is used for cards
+  - Locations currently using this: search results, filter sheet, bookmarks, rules categories
+
 ### Project Status
 - ✅ Flutter infrastructure initialized
 - ✅ Rules parsing script created
