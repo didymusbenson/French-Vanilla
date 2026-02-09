@@ -72,7 +72,7 @@ def download_and_decompress(data_dir):
     print("Decompressing...")
 
     result = subprocess.run(
-        ['unxz', str(compressed_file)],
+        ['unxz', '-f', str(compressed_file)],
         capture_output=True
     )
 
@@ -88,7 +88,7 @@ def download_and_decompress(data_dir):
     return True
 
 
-def extract_card_subset(card):
+def extract_card_subset(card, back_face=None):
     """
     Extract only the specified properties from a card object.
 
@@ -96,6 +96,7 @@ def extract_card_subset(card):
     - name, manaCost, type, text
     - subtypes, keywords, legalities
     - rulings (when present)
+    - backFace (for double-faced cards)
     """
     subset = {
         'name': card.get('name'),
@@ -111,6 +112,15 @@ def extract_card_subset(card):
     rulings = card.get('rulings')
     if rulings:
         subset['rulings'] = rulings
+
+    # Include back face information if present
+    if back_face:
+        subset['backFace'] = {
+            'faceName': back_face.get('faceName'),
+            'type': back_face.get('type'),
+            'text': back_face.get('text'),
+            'manaCost': back_face.get('manaCost'),
+        }
 
     return subset
 
@@ -145,13 +155,26 @@ def process_atomiccards(json_file_path):
             skipped_alchemy += 1
             continue
 
-        # Take the first variation (usually only one in AtomicCards)
-        card = card_variations[0] if card_variations else None
+        # For double-faced cards, prefer side "a" (front face)
+        # Otherwise take the first variation
+        card = None
+        back_face = None
+        if card_variations:
+            # Look for side "a" (front face) and side "b" (back face) for DFCs
+            for variation in card_variations:
+                if variation.get('side') == 'a':
+                    card = variation
+                elif variation.get('side') == 'b':
+                    back_face = variation
+            # If no side "a" found, take the first variation
+            if not card:
+                card = card_variations[0]
+
         if not card:
             continue
 
-        # Extract the subset of properties
-        card_subset = extract_card_subset(card)
+        # Extract the subset of properties, including back face if present
+        card_subset = extract_card_subset(card, back_face)
         all_cards.append(card_subset)
 
         # Progress indicator

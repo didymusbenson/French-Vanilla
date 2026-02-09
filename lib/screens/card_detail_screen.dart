@@ -71,6 +71,20 @@ class _CardDetailScreenState extends State<CardDetailScreen>
       content.writeln();
       content.writeln(widget.card.text);
     }
+    if (widget.card.backFace != null) {
+      content.writeln();
+      content.writeln('---');
+      if (widget.card.backFace!.faceName != null) {
+        content.writeln(widget.card.backFace!.faceName);
+      }
+      if (widget.card.backFace!.type != null) {
+        content.writeln(widget.card.backFace!.type);
+      }
+      if (widget.card.backFace!.text != null) {
+        content.writeln();
+        content.writeln(widget.card.backFace!.text);
+      }
+    }
     if (widget.card.rulings.isNotEmpty) {
       content.writeln();
       content.writeln('Rulings:');
@@ -98,6 +112,20 @@ class _CardDetailScreenState extends State<CardDetailScreen>
     if (widget.card.text != null) {
       content.writeln();
       content.writeln(widget.card.text);
+    }
+    if (widget.card.backFace != null) {
+      content.writeln();
+      content.writeln('---');
+      if (widget.card.backFace!.faceName != null) {
+        content.writeln(widget.card.backFace!.faceName);
+      }
+      if (widget.card.backFace!.type != null) {
+        content.writeln(widget.card.backFace!.type);
+      }
+      if (widget.card.backFace!.text != null) {
+        content.writeln();
+        content.writeln(widget.card.backFace!.text);
+      }
     }
 
     final box = context.findRenderObject() as RenderBox?;
@@ -143,12 +171,23 @@ class _CardDetailScreenState extends State<CardDetailScreen>
     }
   }
 
+  String _getFrontFaceName() {
+    // For DFCs, extract just the front face name (before " // ")
+    if (widget.card.backFace != null && widget.card.name.contains(' // ')) {
+      return widget.card.name.split(' // ')[0];
+    }
+    return widget.card.name;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDoubleFaced = widget.card.backFace != null;
+    final displayName = _getFrontFaceName();
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.card.name,
+          displayName,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -178,34 +217,150 @@ class _CardDetailScreenState extends State<CardDetailScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Card Name (large)
-              Text(
-                widget.card.name,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Card Type
-              Text(
-                widget.card.type,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Card Text (Oracle Text)
-              if (widget.card.text != null) ...[
+              // Double-faced card layout
+              if (isDoubleFaced) ...[
+                // Front Face
+                Text(
+                  'Front',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 8),
                 Card(
+                  margin: EdgeInsets.zero,
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      widget.card.text!,
-                      style: Theme.of(context).textTheme.bodyLarge,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Front face name
+                        Text(
+                          displayName,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Front face type
+                        Text(
+                          widget.card.type,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                        ),
+                        // Front face text
+                        if (widget.card.text != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            widget.card.text!,
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Back Face
+                Text(
+                  'Back',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Card(
+                  margin: EdgeInsets.zero,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Back face name
+                        if (widget.card.backFace!.faceName != null) ...[
+                          Text(
+                            widget.card.backFace!.faceName!,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        // Back face type
+                        if (widget.card.backFace!.type != null) ...[
+                          Text(
+                            widget.card.backFace!.type!,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                          ),
+                        ],
+                        // Back face text
+                        if (widget.card.backFace!.text != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            widget.card.backFace!.text!,
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ]
+              // Single-faced card layout
+              else ...[
+                Card(
+                  margin: EdgeInsets.zero,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Card name
+                        Text(
+                          widget.card.name,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Card type
+                        Text(
+                          widget.card.type,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                        ),
+                        // Card text
+                        if (widget.card.text != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            widget.card.text!,
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ),
@@ -287,6 +442,7 @@ class _CardDetailScreenState extends State<CardDetailScreen>
 
               if (widget.card.rulings.isEmpty) ...[
                 Card(
+                  margin: EdgeInsets.zero,
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Row(

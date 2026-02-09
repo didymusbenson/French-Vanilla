@@ -7,6 +7,7 @@ class MagicCard {
   final List<String> keywords;
   final Map<String, String> legalities;
   final List<Ruling> rulings;
+  final CardFace? backFace;
 
   MagicCard({
     required this.name,
@@ -17,6 +18,7 @@ class MagicCard {
     this.keywords = const [],
     this.legalities = const {},
     this.rulings = const [],
+    this.backFace,
   });
 
   factory MagicCard.fromJson(Map<String, dynamic> json) {
@@ -41,11 +43,37 @@ class MagicCard {
               ?.map((e) => Ruling.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      backFace: json['backFace'] != null
+          ? CardFace.fromJson(json['backFace'] as Map<String, dynamic>)
+          : null,
     );
   }
 
   @override
   String toString() => name;
+}
+
+class CardFace {
+  final String? faceName;
+  final String? type;
+  final String? text;
+  final String? manaCost;
+
+  CardFace({
+    this.faceName,
+    this.type,
+    this.text,
+    this.manaCost,
+  });
+
+  factory CardFace.fromJson(Map<String, dynamic> json) {
+    return CardFace(
+      faceName: json['faceName'] as String?,
+      type: json['type'] as String?,
+      text: json['text'] as String?,
+      manaCost: json['manaCost'] as String?,
+    );
+  }
 }
 
 class Ruling {

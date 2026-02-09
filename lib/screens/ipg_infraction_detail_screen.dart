@@ -144,7 +144,15 @@ class _IpgInfractionDetailScreenState extends State<IpgInfractionDetailScreen>
       buffer.writeln(widget.infraction.definition);
     }
 
-    Share.share(buffer.toString().trim());
+    final box = context.findRenderObject() as RenderBox?;
+    final sharePositionOrigin = box != null
+        ? box.localToGlobal(Offset.zero) & box.size
+        : null;
+
+    Share.share(
+      buffer.toString().trim(),
+      sharePositionOrigin: sharePositionOrigin,
+    );
   }
 
   Color _getPenaltyColor(String? penalty) {
@@ -183,6 +191,11 @@ class _IpgInfractionDetailScreenState extends State<IpgInfractionDetailScreen>
             icon: const Icon(Icons.copy),
             onPressed: _copyToClipboard,
             tooltip: 'Copy infraction',
+          ),
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: _shareInfraction,
+            tooltip: 'Share infraction',
           ),
         ],
       ),
