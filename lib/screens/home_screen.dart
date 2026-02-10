@@ -13,12 +13,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  final _bookmarksKey = GlobalKey<BookmarksScreenState>();
 
   List<Widget> get _screens => [
     const RulesCategoriesScreen(),
     const SearchScreen(),
-    BookmarksScreen(key: _bookmarksKey),
+    const BookmarksScreen(),
     const CreditsScreen(),
   ];
 
@@ -35,29 +34,11 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  List<Widget> _getAppBarActions() {
-    // Bookmarks (2) has edit button
-    if (_selectedIndex == 2) {
-      return [
-        IconButton(
-          icon: const Icon(Icons.edit),
-          onPressed: () {
-            _bookmarksKey.currentState?.toggleEditMode();
-          },
-          tooltip: 'Edit bookmarks',
-        ),
-      ];
-    }
-    // Other tabs have no actions
-    return [];
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(_titles[_selectedIndex]),
-        actions: _getAppBarActions(),
       ),
       body: _screens[_selectedIndex],
       bottomNavigationBar: NavigationBar(

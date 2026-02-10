@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
 enum BookmarkType { rule, glossary, card, mtr, ipg }
 
@@ -8,12 +9,14 @@ class BookmarkedItem {
   final String content; // Full text of the subrule or definition
   final BookmarkType type;
   final DateTime timestamp;
+  final List<String> listIds; // IDs of lists this bookmark belongs to
 
   BookmarkedItem({
     required this.identifier,
     required this.content,
     required this.type,
     required this.timestamp,
+    this.listIds = const [],
   });
 
   Map<String, dynamic> toJson() => {
@@ -21,6 +24,7 @@ class BookmarkedItem {
         'content': content,
         'type': type.name,
         'timestamp': timestamp.toIso8601String(),
+        'listIds': listIds,
       };
 
   factory BookmarkedItem.fromJson(Map<String, dynamic> json) =>
@@ -32,11 +36,75 @@ class BookmarkedItem {
           orElse: () => BookmarkType.rule,
         ),
         timestamp: DateTime.parse(json['timestamp'] as String),
+        listIds: json['listIds'] != null
+            ? List<String>.from(json['listIds'] as List)
+            : [], // Migration-safe: default to empty array
       );
+
+  /// Create a copy with updated listIds
+  BookmarkedItem copyWith({
+    String? identifier,
+    String? content,
+    BookmarkType? type,
+    DateTime? timestamp,
+    List<String>? listIds,
+  }) {
+    return BookmarkedItem(
+      identifier: identifier ?? this.identifier,
+      content: content ?? this.content,
+      type: type ?? this.type,
+      timestamp: timestamp ?? this.timestamp,
+      listIds: listIds ?? this.listIds,
+    );
+  }
+}
+
+class BookmarkList {
+  final String id; // Unique identifier (UUID)
+  final String name; // List name (user-provided)
+  final String? description; // Optional short description
+  final DateTime createdAt; // Creation timestamp
+
+  BookmarkList({
+    required this.id,
+    required this.name,
+    this.description,
+    required this.createdAt,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'description': description,
+        'createdAt': createdAt.toIso8601String(),
+      };
+
+  factory BookmarkList.fromJson(Map<String, dynamic> json) => BookmarkList(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        description: json['description'] as String?,
+        createdAt: DateTime.parse(json['createdAt'] as String),
+      );
+
+  /// Create a copy with updated fields
+  BookmarkList copyWith({
+    String? id,
+    String? name,
+    String? description,
+    DateTime? createdAt,
+  }) {
+    return BookmarkList(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 }
 
 class FavoritesService {
   static const String _key = 'bookmarked_items';
+  static const String _listsKey = 'bookmark_lists';
 
   /// Get all bookmarked items, ordered alphabetically
   Future<List<BookmarkedItem>> getBookmarks() async {
@@ -48,15 +116,22 @@ class FavoritesService {
             json.decode(jsonStr) as Map<String, dynamic>))
         .toList();
 
-    // Sort: rules by number, glossary terms and cards alphabetically
+    // Sort: type priority, then alphabetically within type
+    // Priority: Rules → Glossary → Cards → MTR → IPG
     bookmarks.sort((a, b) {
-      // Group by type first (rules before glossary before cards)
+      // Group by type first
       if (a.type != b.type) {
-        final typeOrder = {BookmarkType.rule: 0, BookmarkType.glossary: 1, BookmarkType.card: 2};
-        return (typeOrder[a.type] ?? 3).compareTo(typeOrder[b.type] ?? 3);
+        final typeOrder = {
+          BookmarkType.rule: 0,
+          BookmarkType.glossary: 1,
+          BookmarkType.card: 2,
+          BookmarkType.mtr: 3,
+          BookmarkType.ipg: 4,
+        };
+        return (typeOrder[a.type] ?? 5).compareTo(typeOrder[b.type] ?? 5);
       }
       // Within same type, sort appropriately
-      if (a.type == BookmarkType.rule) {
+      if (a.type == BookmarkType.rule || a.type == BookmarkType.mtr || a.type == BookmarkType.ipg) {
         return _compareRuleNumbers(a.identifier, b.identifier);
       } else {
         return a.identifier.toLowerCase().compareTo(b.identifier.toLowerCase());
@@ -156,5 +231,183 @@ class FavoritesService {
     }
 
     return 0;
+  }
+
+  // ===== LIST MANAGEMENT METHODS =====
+
+  /// Get all bookmark lists, sorted alphabetically by name
+  Future<List<BookmarkList>> getAllLists() async {
+    final prefs = await SharedPreferences.getInstance();
+    final listsJson = prefs.getStringList(_listsKey) ?? [];
+
+    final lists = listsJson
+        .map((jsonStr) => BookmarkList.fromJson(
+            json.decode(jsonStr) as Map<String, dynamic>))
+        .toList();
+
+    // Sort alphabetically by name
+    lists.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
+    return lists;
+  }
+
+  /// Create a new list
+  Future<BookmarkList> createList(String name, {String? description}) async {
+    final prefs = await SharedPreferences.getInstance();
+    var lists = await getAllLists();
+
+    // Generate unique ID
+    const uuid = Uuid();
+    final newList = BookmarkList(
+      id: uuid.v4(),
+      name: name,
+      description: description,
+      createdAt: DateTime.now(),
+    );
+
+    lists.add(newList);
+
+    // Save to preferences
+    final listsJson =
+        lists.map((list) => json.encode(list.toJson())).toList();
+    await prefs.setStringList(_listsKey, listsJson);
+
+    return newList;
+  }
+
+  /// Update an existing list
+  Future<void> updateList(BookmarkList updatedList) async {
+    final prefs = await SharedPreferences.getInstance();
+    var lists = await getAllLists();
+
+    // Find and replace the list
+    final index = lists.indexWhere((list) => list.id == updatedList.id);
+    if (index != -1) {
+      lists[index] = updatedList;
+
+      // Save to preferences
+      final listsJson =
+          lists.map((list) => json.encode(list.toJson())).toList();
+      await prefs.setStringList(_listsKey, listsJson);
+    }
+  }
+
+  /// Delete a list and optionally delete its bookmarks
+  /// If deleteBookmarks is true, removes bookmarks that are only in this list
+  /// If false, just removes the list membership
+  Future<void> deleteList(String listId, {bool deleteBookmarks = false}) async {
+    final prefs = await SharedPreferences.getInstance();
+    var lists = await getAllLists();
+    var bookmarks = await getBookmarks();
+
+    // Remove the list
+    lists.removeWhere((list) => list.id == listId);
+
+    if (deleteBookmarks) {
+      // Remove bookmarks that are ONLY in this list
+      bookmarks.removeWhere((bookmark) =>
+          bookmark.listIds.contains(listId) && bookmark.listIds.length == 1);
+
+      // For bookmarks in multiple lists, just remove this list ID
+      for (var i = 0; i < bookmarks.length; i++) {
+        if (bookmarks[i].listIds.contains(listId)) {
+          bookmarks[i] = bookmarks[i].copyWith(
+            listIds: bookmarks[i].listIds.where((id) => id != listId).toList(),
+          );
+        }
+      }
+    } else {
+      // Just remove list membership from all bookmarks
+      for (var i = 0; i < bookmarks.length; i++) {
+        if (bookmarks[i].listIds.contains(listId)) {
+          bookmarks[i] = bookmarks[i].copyWith(
+            listIds: bookmarks[i].listIds.where((id) => id != listId).toList(),
+          );
+        }
+      }
+    }
+
+    // Save both lists and bookmarks
+    final listsJson =
+        lists.map((list) => json.encode(list.toJson())).toList();
+    await prefs.setStringList(_listsKey, listsJson);
+
+    final bookmarksJson =
+        bookmarks.map((bookmark) => json.encode(bookmark.toJson())).toList();
+    await prefs.setStringList(_key, bookmarksJson);
+  }
+
+  /// Get bookmarks in a specific list
+  Future<List<BookmarkedItem>> getBookmarksInList(String listId) async {
+    final bookmarks = await getBookmarks();
+    return bookmarks.where((bookmark) => bookmark.listIds.contains(listId)).toList();
+  }
+
+  /// Add a bookmark to a list
+  Future<void> addBookmarkToList(String identifier, BookmarkType type, String listId) async {
+    final prefs = await SharedPreferences.getInstance();
+    var bookmarks = await getBookmarks();
+
+    // Find the bookmark
+    final index = bookmarks.indexWhere(
+      (bookmark) => bookmark.identifier == identifier && bookmark.type == type,
+    );
+
+    if (index != -1) {
+      // Add list ID if not already present
+      if (!bookmarks[index].listIds.contains(listId)) {
+        bookmarks[index] = bookmarks[index].copyWith(
+          listIds: [...bookmarks[index].listIds, listId],
+        );
+
+        // Save to preferences
+        final bookmarksJson =
+            bookmarks.map((bookmark) => json.encode(bookmark.toJson())).toList();
+        await prefs.setStringList(_key, bookmarksJson);
+      }
+    }
+  }
+
+  /// Remove a bookmark from a list
+  Future<void> removeBookmarkFromList(String identifier, BookmarkType type, String listId) async {
+    final prefs = await SharedPreferences.getInstance();
+    var bookmarks = await getBookmarks();
+
+    // Find the bookmark
+    final index = bookmarks.indexWhere(
+      (bookmark) => bookmark.identifier == identifier && bookmark.type == type,
+    );
+
+    if (index != -1) {
+      // Remove list ID
+      bookmarks[index] = bookmarks[index].copyWith(
+        listIds: bookmarks[index].listIds.where((id) => id != listId).toList(),
+      );
+
+      // Save to preferences
+      final bookmarksJson =
+          bookmarks.map((bookmark) => json.encode(bookmark.toJson())).toList();
+      await prefs.setStringList(_key, bookmarksJson);
+    }
+  }
+
+  /// Add a bookmark to multiple lists at once
+  Future<void> updateBookmarkLists(String identifier, BookmarkType type, List<String> listIds) async {
+    final prefs = await SharedPreferences.getInstance();
+    var bookmarks = await getBookmarks();
+
+    // Find the bookmark
+    final index = bookmarks.indexWhere(
+      (bookmark) => bookmark.identifier == identifier && bookmark.type == type,
+    );
+
+    if (index != -1) {
+      bookmarks[index] = bookmarks[index].copyWith(listIds: listIds);
+
+      // Save to preferences
+      final bookmarksJson =
+          bookmarks.map((bookmark) => json.encode(bookmark.toJson())).toList();
+      await prefs.setStringList(_key, bookmarksJson);
+    }
   }
 }
