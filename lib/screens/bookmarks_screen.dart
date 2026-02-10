@@ -39,6 +39,92 @@ class BookmarksScreenState extends State<BookmarksScreen> {
     );
   }
 
+  void _showEditListDialog(BookmarkList list) {
+    showDialog(
+      context: context,
+      builder: (context) => _CreateListDialog(
+        existingList: list,
+        onListCreated: _loadLists,
+      ),
+    );
+  }
+
+  Future<void> _showDeleteConfirmation(BookmarkList list) async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete List'),
+        content: Text('What would you like to do with "${list.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'cancel'),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'keep'),
+            child: const Text('Delete list but keep bookmarks'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, 'delete_all'),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Delete list and remove bookmarks'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == null || result == 'cancel') return;
+
+    // Delete the list
+    final deleteBookmarks = result == 'delete_all';
+    await _favoritesService.deleteList(list.id, deleteBookmarks: deleteBookmarks);
+    await _loadLists();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(deleteBookmarks
+              ? 'List and bookmarks deleted'
+              : 'List deleted, bookmarks kept'),
+        ),
+      );
+    }
+  }
+
+  void _showListOptions(BookmarkList list) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Edit list'),
+              onTap: () {
+                Navigator.pop(context);
+                _showEditListDialog(list);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
+              title: Text(
+                'Delete list',
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _showDeleteConfirmation(list);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -89,22 +175,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                   ),
             ),
           ),
-          ..._lists.map((list) => _buildListCard(
-                title: list.name,
-                description: list.description,
-                icon: Icons.folder,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => BookmarkListView(
-                        listId: list.id,
-                        title: list.name,
-                      ),
-                    ),
-                  ).then((_) => _loadLists()); // Reload when coming back
-                },
-              )),
+          ..._lists.map((list) => _buildListCardWithActions(list)),
         ],
 
         if (_lists.isEmpty)
@@ -147,6 +218,50 @@ class BookmarksScreenState extends State<BookmarksScreen> {
           ),
       ],
     );
+  }
+
+  Widget _buildListCardWithActions(BookmarkList list) {
+    Widget card = _buildListCard(
+      title: list.name,
+      description: list.description,
+      icon: Icons.folder,
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BookmarkListView(
+              listId: list.id,
+              title: list.name,
+            ),
+          ),
+        ).then((_) => _loadLists());
+      },
+    );
+
+    // Wrap with long-press detector
+    card = GestureDetector(
+      onLongPress: () => _showListOptions(list),
+      child: card,
+    );
+
+    // Wrap with Dismissible for swipe-to-delete
+    card = Dismissible(
+      key: Key(list.id),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) async {
+        await _showDeleteConfirmation(list);
+        return false; // Don't auto-dismiss, we handle it manually
+      },
+      background: Container(
+        color: Theme.of(context).colorScheme.error,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 16),
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      child: card,
+    );
+
+    return card;
   }
 
   Widget _buildListCard({
