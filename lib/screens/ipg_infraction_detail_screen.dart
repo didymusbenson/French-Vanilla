@@ -5,6 +5,7 @@ import '../models/ipg_infraction.dart';
 import '../services/favorites_service.dart';
 import '../mixins/rule_link_mixin.dart';
 import '../mixins/formatted_content_mixin.dart';
+import '../mixins/bookmark_list_assignment_mixin.dart';
 
 /// Screen showing the full content of a single IPG infraction.
 /// Displays all sections: Definition, Examples, Philosophy, Additional Remedy, Upgrade.
@@ -21,7 +22,7 @@ class IpgInfractionDetailScreen extends StatefulWidget {
 }
 
 class _IpgInfractionDetailScreenState extends State<IpgInfractionDetailScreen>
-    with RuleLinkMixin, FormattedContentMixin {
+    with RuleLinkMixin, FormattedContentMixin, BookmarkListAssignmentMixin {
   final _favoritesService = FavoritesService();
   bool _isBookmarked = false;
 
@@ -71,15 +72,10 @@ class _IpgInfractionDetailScreenState extends State<IpgInfractionDetailScreen>
     });
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _isBookmarked
-                ? 'Bookmarked ${widget.infraction.number}'
-                : 'Removed bookmark',
-          ),
-          duration: const Duration(seconds: 2),
-        ),
+      showBookmarkSnackbarWithListAction(
+        identifier: widget.infraction.number,
+        type: BookmarkType.ipg,
+        isNowBookmarked: _isBookmarked,
       );
     }
   }

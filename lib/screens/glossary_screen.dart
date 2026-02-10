@@ -7,6 +7,7 @@ import '../services/favorites_service.dart';
 import '../models/glossary_term.dart';
 import '../mixins/rule_link_mixin.dart';
 import '../mixins/aggregating_snackbar_mixin.dart';
+import '../mixins/bookmark_list_assignment_mixin.dart';
 
 class GlossaryScreen extends StatefulWidget {
   final String? highlightTerm;
@@ -18,7 +19,7 @@ class GlossaryScreen extends StatefulWidget {
 }
 
 class _GlossaryScreenState extends State<GlossaryScreen>
-    with RuleLinkMixin, AggregatingSnackBarMixin {
+    with RuleLinkMixin, AggregatingSnackBarMixin, BookmarkListAssignmentMixin {
   final _dataService = RulesDataService();
   final _favoritesService = FavoritesService();
   final ItemScrollController _itemScrollController = ItemScrollController();
@@ -93,8 +94,10 @@ class _GlossaryScreenState extends State<GlossaryScreen>
     });
 
     if (mounted) {
-      showAggregatingSnackBar(
-        isBookmarked ? 'Bookmark added' : 'Bookmark removed',
+      showBookmarkSnackbarWithListAction(
+        identifier: termName,
+        type: BookmarkType.glossary,
+        isNowBookmarked: isBookmarked,
       );
     }
   }

@@ -7,6 +7,7 @@ import '../services/favorites_service.dart';
 import '../mixins/rule_link_mixin.dart';
 import '../mixins/formatted_content_mixin.dart';
 import '../mixins/aggregating_snackbar_mixin.dart';
+import '../mixins/bookmark_list_assignment_mixin.dart';
 
 class RuleDetailScreen extends StatefulWidget {
   final Rule rule;
@@ -25,7 +26,7 @@ class RuleDetailScreen extends StatefulWidget {
 }
 
 class _RuleDetailScreenState extends State<RuleDetailScreen>
-    with RuleLinkMixin, FormattedContentMixin, AggregatingSnackBarMixin {
+    with RuleLinkMixin, FormattedContentMixin, AggregatingSnackBarMixin, BookmarkListAssignmentMixin {
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
   final _favoritesService = FavoritesService();
@@ -62,10 +63,12 @@ class _RuleDetailScreenState extends State<RuleDetailScreen>
       _bookmarkStatus[ruleNumber] = isBookmarked;
     });
 
-    // Show feedback
+    // Show feedback with "Add to list" option
     if (mounted) {
-      showAggregatingSnackBar(
-        isBookmarked ? 'Bookmark added' : 'Bookmark removed',
+      showBookmarkSnackbarWithListAction(
+        identifier: ruleNumber,
+        type: BookmarkType.rule,
+        isNowBookmarked: isBookmarked,
       );
     }
   }

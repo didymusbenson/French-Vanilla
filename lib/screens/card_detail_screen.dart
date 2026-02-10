@@ -5,6 +5,7 @@ import '../models/card.dart';
 import '../services/favorites_service.dart';
 import '../services/rules_data_service.dart';
 import '../mixins/aggregating_snackbar_mixin.dart';
+import '../mixins/bookmark_list_assignment_mixin.dart';
 import 'glossary_screen.dart';
 import 'search_screen.dart';
 
@@ -21,7 +22,7 @@ class CardDetailScreen extends StatefulWidget {
 }
 
 class _CardDetailScreenState extends State<CardDetailScreen>
-    with AggregatingSnackBarMixin {
+    with AggregatingSnackBarMixin, BookmarkListAssignmentMixin {
   final _favoritesService = FavoritesService();
   final _dataService = RulesDataService();
   bool _isBookmarked = false;
@@ -53,8 +54,10 @@ class _CardDetailScreenState extends State<CardDetailScreen>
     });
 
     if (mounted) {
-      showAggregatingSnackBar(
-        isBookmarked ? 'Bookmark added' : 'Bookmark removed',
+      showBookmarkSnackbarWithListAction(
+        identifier: widget.card.name,
+        type: BookmarkType.card,
+        isNowBookmarked: isBookmarked,
       );
     }
   }

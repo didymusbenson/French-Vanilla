@@ -8,6 +8,7 @@ import '../services/favorites_service.dart';
 import '../mixins/rule_link_mixin.dart';
 import '../mixins/formatted_content_mixin.dart';
 import '../mixins/aggregating_snackbar_mixin.dart';
+import '../mixins/bookmark_list_assignment_mixin.dart';
 
 /// Screen showing all rules in an MTR section (like comprehensive rules).
 /// Individual rules are displayed as "subrules" with titles in the header.
@@ -28,7 +29,7 @@ class MtrSectionDetailScreen extends StatefulWidget {
 }
 
 class _MtrSectionDetailScreenState extends State<MtrSectionDetailScreen>
-    with RuleLinkMixin, FormattedContentMixin, AggregatingSnackBarMixin {
+    with RuleLinkMixin, FormattedContentMixin, AggregatingSnackBarMixin, BookmarkListAssignmentMixin {
   final _judgeDocsService = JudgeDocsService();
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
@@ -94,8 +95,10 @@ class _MtrSectionDetailScreenState extends State<MtrSectionDetailScreen>
 
     // Show feedback
     if (mounted) {
-      showAggregatingSnackBar(
-        isBookmarked ? 'Bookmark added' : 'Bookmark removed',
+      showBookmarkSnackbarWithListAction(
+        identifier: ruleNumber,
+        type: BookmarkType.mtr,
+        isNowBookmarked: isBookmarked,
       );
     }
   }
