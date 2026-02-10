@@ -32,6 +32,7 @@ class _BookmarkListViewState extends State<BookmarkListView>
   final _cardService = CardDataService();
   final _judgeDocsService = JudgeDocsService();
   List<BookmarkedItem> _bookmarks = [];
+  List<BookmarkList> _allLists = []; // For showing list badges in "All" view
   bool _isLoading = true;
   bool _isEditMode = false;
   final Set<String> _selectedBookmarks = {}; // Stores identifiers
@@ -56,8 +57,16 @@ class _BookmarkListViewState extends State<BookmarkListView>
     final bookmarks = widget.listId == null
         ? await _favoritesService.getBookmarks()
         : await _favoritesService.getBookmarksInList(widget.listId!);
+
+    // Load all lists if showing "All" view (for list badges)
+    List<BookmarkList> lists = [];
+    if (widget.listId == null) {
+      lists = await _favoritesService.getAllLists();
+    }
+
     setState(() {
       _bookmarks = bookmarks;
+      _allLists = lists;
       _isLoading = false;
     });
   }
@@ -265,11 +274,7 @@ class _BookmarkListViewState extends State<BookmarkListView>
                     displayTitle,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  subtitle: Text(
-                    _getFirstLine(bookmark.content),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  subtitle: _buildSubtitleWithBadges(bookmark),
                   onTap: _isEditMode
                       ? () => _toggleSelection(bookmark.identifier)
                       : () => _showBookmarkPreview(bookmark),
@@ -309,6 +314,51 @@ class _BookmarkListViewState extends State<BookmarkListView>
               ),
             ),
           ),
+      ],
+    );
+  }
+
+  Widget _buildSubtitleWithBadges(BookmarkedItem bookmark) {
+    // Get list names for this bookmark (only in "All" view)
+    final listNames = <String>[];
+    if (widget.listId == null && bookmark.listIds.isNotEmpty) {
+      for (final listId in bookmark.listIds) {
+        final list = _allLists.where((l) => l.id == listId).firstOrNull;
+        if (list != null) {
+          listNames.add(list.name);
+        }
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _getFirstLine(bookmark.content),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        if (listNames.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            children: listNames.map((name) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.secondaryContainer,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                name,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                ),
+              ),
+            )).toList(),
+          ),
+        ],
       ],
     );
   }
