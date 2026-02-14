@@ -119,15 +119,19 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
                 child: FilledButton.icon(
                   onPressed: () {
                     Navigator.pop(context); // Close bottom sheet
-                    // Navigate to glossary screen with this term highlighted
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => GlossaryDetailScreen(
-                          highlightTerm: term,
-                        ),
-                      ),
-                    );
+                    // Navigate to glossary screen with this term highlighted after a frame
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (context.mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => GlossaryDetailScreen(
+                              highlightTerm: term,
+                            ),
+                          ),
+                        );
+                      }
+                    });
                   },
                   icon: const Icon(Icons.arrow_forward),
                   label: const Text('Go to Glossary'),
@@ -212,16 +216,21 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
                 child: FilledButton.icon(
                   onPressed: () {
                     Navigator.pop(context); // Close bottom sheet
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => RuleDetailScreen(
-                          rule: rule,
-                          sectionNumber: sectionNumber,
-                          highlightSubruleNumber: highlightSubruleNumber,
-                        ),
-                      ),
-                    );
+                    // Navigate after a frame to ensure smooth transition
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (context.mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => RuleDetailScreen(
+                              rule: rule,
+                              sectionNumber: sectionNumber,
+                              highlightSubruleNumber: highlightSubruleNumber,
+                            ),
+                          ),
+                        );
+                      }
+                    });
                   },
                   icon: const Icon(Icons.arrow_forward),
                   label: Text('Go to Rule ${rule.number}'),
@@ -304,16 +313,21 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
                 child: FilledButton.icon(
                   onPressed: () {
                     Navigator.pop(context); // Close bottom sheet
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => MtrSectionDetailScreen(
-                          sectionNumber: sectionNumber,
-                          sectionTitle: sectionTitle,
-                          highlightRuleNumber: rule.number,
-                        ),
-                      ),
-                    );
+                    // Navigate after a frame to ensure smooth transition
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (context.mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MtrSectionDetailScreen(
+                              sectionNumber: sectionNumber,
+                              sectionTitle: sectionTitle,
+                              highlightRuleNumber: rule.number,
+                            ),
+                          ),
+                        );
+                      }
+                    });
                   },
                   icon: const Icon(Icons.arrow_forward),
                   label: Text('Go to $sectionTitle'),
@@ -398,14 +412,19 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
                 child: FilledButton.icon(
                   onPressed: () {
                     Navigator.pop(context); // Close bottom sheet
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => IpgInfractionDetailScreen(
-                          infraction: infraction,
-                        ),
-                      ),
-                    );
+                    // Navigate after a frame to ensure smooth transition
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (context.mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => IpgInfractionDetailScreen(
+                              infraction: infraction,
+                            ),
+                          ),
+                        );
+                      }
+                    });
                   },
                   icon: const Icon(Icons.arrow_forward),
                   label: Text('Go to ${infraction.cleanTitle}'),
@@ -536,12 +555,17 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
                 child: FilledButton.icon(
                   onPressed: () {
                     Navigator.pop(context); // Close bottom sheet
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CardDetailScreen(card: card),
-                      ),
-                    );
+                    // Navigate after a frame to ensure smooth transition
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (context.mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CardDetailScreen(card: card),
+                          ),
+                        );
+                      }
+                    });
                   },
                   icon: const Icon(Icons.arrow_forward),
                   label: Text('View All Rulings (${card.rulings.length})'),

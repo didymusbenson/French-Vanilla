@@ -74,10 +74,16 @@ class _MtrSectionDetailScreenState extends State<MtrSectionDetailScreen>
   Future<void> _loadBookmarkStatuses() async {
     if (_rules == null) return;
 
-    for (final rule in _rules!) {
-      final isBookmarked = await _favoritesService.isBookmarked(rule.number, BookmarkType.mtr);
+    // Load all bookmark statuses in parallel for better performance
+    final results = await Future.wait(
+      _rules!.map((rule) => _favoritesService.isBookmarked(rule.number, BookmarkType.mtr))
+    );
+
+    if (mounted) {
       setState(() {
-        _bookmarkStatus[rule.number] = isBookmarked;
+        for (var i = 0; i < _rules!.length; i++) {
+          _bookmarkStatus[_rules![i].number] = results[i];
+        }
       });
     }
   }

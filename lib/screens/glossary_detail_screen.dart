@@ -84,13 +84,17 @@ class _GlossaryDetailScreenState extends State<GlossaryDetailScreen>
   }
 
   Future<void> _loadBookmarkStatuses() async {
-    for (final term in _terms) {
-      final isBookmarked = await _favoritesService.isBookmarked(term.term, BookmarkType.glossary);
-      if (mounted) {
-        setState(() {
-          _bookmarkStatus[term.term] = isBookmarked;
-        });
-      }
+    // Load all bookmark statuses in parallel for better performance
+    final results = await Future.wait(
+      _terms.map((term) => _favoritesService.isBookmarked(term.term, BookmarkType.glossary))
+    );
+
+    if (mounted) {
+      setState(() {
+        for (var i = 0; i < _terms.length; i++) {
+          _bookmarkStatus[_terms[i].term] = results[i];
+        }
+      });
     }
   }
 

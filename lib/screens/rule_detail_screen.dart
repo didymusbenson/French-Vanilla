@@ -48,10 +48,16 @@ class _RuleDetailScreenState extends State<RuleDetailScreen>
   }
 
   Future<void> _loadBookmarkStatuses() async {
-    for (final group in widget.rule.subruleGroups) {
-      final isBookmarked = await _favoritesService.isBookmarked(group.number, BookmarkType.rule);
+    // Load all bookmark statuses in parallel for better performance
+    final results = await Future.wait(
+      widget.rule.subruleGroups.map((group) => _favoritesService.isBookmarked(group.number, BookmarkType.rule))
+    );
+
+    if (mounted) {
       setState(() {
-        _bookmarkStatus[group.number] = isBookmarked;
+        for (var i = 0; i < widget.rule.subruleGroups.length; i++) {
+          _bookmarkStatus[widget.rule.subruleGroups[i].number] = results[i];
+        }
       });
     }
   }

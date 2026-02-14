@@ -31,8 +31,32 @@ void main() async {
   runApp(const FrenchVanillaApp());
 }
 
-class FrenchVanillaApp extends StatelessWidget {
+class FrenchVanillaApp extends StatefulWidget {
   const FrenchVanillaApp({super.key});
+
+  @override
+  State<FrenchVanillaApp> createState() => _FrenchVanillaAppState();
+}
+
+class _FrenchVanillaAppState extends State<FrenchVanillaApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    IAPService().dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Handle app lifecycle events if needed in the future
+    super.didChangeAppLifecycleState(state);
+  }
 
   @override
   Widget build(BuildContext context) {
