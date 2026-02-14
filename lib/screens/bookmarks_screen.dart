@@ -24,13 +24,14 @@ class BookmarksScreenState extends State<BookmarksScreen> {
   Future<void> _loadLists() async {
     setState(() => _isLoading = true);
     final lists = await _favoritesService.getAllLists();
+    if (!mounted) return;
     setState(() {
       _lists = lists;
       _isLoading = false;
     });
   }
 
-  void _showCreateListDialog() {
+  void showCreateListDialog() {
     showDialog(
       context: context,
       builder: (context) => _CreateListDialog(
@@ -127,14 +128,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _buildBody(),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showCreateListDialog,
-        tooltip: 'Create new list',
-        child: const Icon(Icons.add),
-      ),
-    );
+    return _buildBody();
   }
 
   Widget _buildBody() {
@@ -143,7 +137,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
     }
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(8.0),
       children: [
         // "All" card - shows all bookmarks
         _buildListCard(
@@ -164,18 +158,21 @@ class BookmarksScreenState extends State<BookmarksScreen> {
         ),
 
         if (_lists.isNotEmpty) ...[
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.only(left: 4, bottom: 4),
             child: Text(
               'Your Lists',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
             ),
           ),
-          ..._lists.map((list) => _buildListCardWithActions(list)),
+          ..._lists.expand((list) => [
+            _buildListCardWithActions(list),
+            const SizedBox(height: 8),
+          ]).toList()..removeLast(), // Remove trailing SizedBox
         ],
 
         if (_lists.isEmpty)
@@ -185,7 +182,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
               children: [
                 const SizedBox(height: 32),
                 Icon(
-                  Icons.folder_outlined,
+                  Icons.list_alt,
                   size: 64,
                   color: Theme.of(context)
                       .colorScheme
@@ -209,7 +206,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                 ),
                 const SizedBox(height: 16),
                 FilledButton.icon(
-                  onPressed: _showCreateListDialog,
+                  onPressed: showCreateListDialog,
                   icon: const Icon(Icons.add),
                   label: const Text('Create Your First List'),
                 ),
@@ -224,7 +221,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
     Widget card = _buildListCard(
       title: list.name,
       description: list.description,
-      icon: Icons.folder,
+      icon: Icons.format_list_bulleted,
       onTap: () {
         Navigator.push(
           context,
@@ -323,9 +320,10 @@ class _CreateListDialogState extends State<_CreateListDialog> {
   @override
   void initState() {
     super.initState();
-    if (widget.existingList != null) {
-      _nameController.text = widget.existingList!.name;
-      _descriptionController.text = widget.existingList!.description ?? '';
+    final existingList = widget.existingList;
+    if (existingList != null) {
+      _nameController.text = existingList.name;
+      _descriptionController.text = existingList.description ?? '';
     }
   }
 

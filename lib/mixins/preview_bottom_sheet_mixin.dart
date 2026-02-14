@@ -8,6 +8,8 @@ import '../screens/rule_detail_screen.dart';
 import '../screens/mtr_section_detail_screen.dart';
 import '../screens/ipg_infraction_detail_screen.dart';
 import '../screens/card_detail_screen.dart';
+import '../services/favorites_service.dart';
+import '../widgets/list_selection_sheet.dart';
 import 'rule_link_mixin.dart';
 import 'formatted_content_mixin.dart';
 
@@ -17,10 +19,33 @@ import 'formatted_content_mixin.dart';
 /// Uses FormattedContentMixin for consistent example rendering
 mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMixin<T>, FormattedContentMixin<T> {
 
+  /// Shows the list selection sheet for a bookmarked item
+  void _showListSelectionSheet({
+    required String identifier,
+    required BookmarkType type,
+  }) async {
+    final favoritesService = FavoritesService();
+    final bookmarks = await favoritesService.getBookmarks();
+    final bookmark = bookmarks.where((b) => b.identifier == identifier && b.type == type).firstOrNull;
+
+    if (bookmark != null && mounted) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        builder: (context) => ListSelectionSheet(
+          bookmarkIdentifier: identifier,
+          bookmarkType: type,
+          currentListIds: bookmark.listIds,
+        ),
+      );
+    }
+  }
+
   /// Shows a bottom sheet preview for a glossary term
   void showGlossaryBottomSheet({
     required String term,
     required String definition,
+    bool showListButton = false, // Show "Add to list" button when viewing from bookmarks
   }) {
     showModalBottomSheet(
       context: context,
@@ -35,12 +60,27 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title
-              Text(
-                term,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+              // Title row with optional list button
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      term,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  if (showListButton)
+                    IconButton(
+                      icon: const Icon(Icons.playlist_add),
+                      onPressed: () => _showListSelectionSheet(
+                        identifier: term,
+                        type: BookmarkType.glossary,
+                      ),
+                      tooltip: 'Add to list',
+                    ),
+                ],
               ),
               const SizedBox(height: 4),
               Text(
@@ -107,6 +147,7 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
     required String subruleNumber,
     required String content,
     String? highlightSubruleNumber, // Optional - if null, no highlighting on navigation
+    bool showListButton = false, // Show "Add to list" button when viewing from bookmarks
   }) {
     showModalBottomSheet(
       context: context,
@@ -121,12 +162,27 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title
-              Text(
-                '${rule.number}. ${rule.title}',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+              // Title row with optional list button
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${rule.number}. ${rule.title}',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  if (showListButton)
+                    IconButton(
+                      icon: const Icon(Icons.playlist_add),
+                      onPressed: () => _showListSelectionSheet(
+                        identifier: subruleNumber,
+                        type: BookmarkType.rule,
+                      ),
+                      tooltip: 'Add to list',
+                    ),
+                ],
               ),
               const SizedBox(height: 4),
               Text(
@@ -183,6 +239,7 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
     required MtrRule rule,
     required Object sectionNumber,
     required String sectionTitle,
+    bool showListButton = false, // Show "Add to list" button when viewing from bookmarks
   }) {
     showModalBottomSheet(
       context: context,
@@ -197,12 +254,27 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title
-              Text(
-                '${rule.number} ${rule.title}',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+              // Title row with optional list button
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${rule.number} ${rule.title}',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  if (showListButton)
+                    IconButton(
+                      icon: const Icon(Icons.playlist_add),
+                      onPressed: () => _showListSelectionSheet(
+                        identifier: rule.number,
+                        type: BookmarkType.mtr,
+                      ),
+                      tooltip: 'Add to list',
+                    ),
+                ],
               ),
               const SizedBox(height: 4),
               Text(
@@ -257,6 +329,7 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
   /// Shows a bottom sheet preview for an IPG infraction
   void showIpgBottomSheet({
     required IpgInfraction infraction,
+    bool showListButton = false, // Show "Add to list" button when viewing from bookmarks
   }) {
     // Use definition as preview content, fall back to first example
     final previewContent = infraction.definition ??
@@ -275,12 +348,27 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title
-              Text(
-                infraction.cleanTitle,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+              // Title row with optional list button
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      infraction.cleanTitle,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  if (showListButton)
+                    IconButton(
+                      icon: const Icon(Icons.playlist_add),
+                      onPressed: () => _showListSelectionSheet(
+                        identifier: infraction.number,
+                        type: BookmarkType.ipg,
+                      ),
+                      tooltip: 'Add to list',
+                    ),
+                ],
               ),
               const SizedBox(height: 4),
               Text(
@@ -333,6 +421,7 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
   /// Shows a bottom sheet preview for a card with rulings
   void showCardBottomSheet({
     required MagicCard card,
+    bool showListButton = false, // Show "Add to list" button when viewing from bookmarks
   }) {
     showModalBottomSheet(
       context: context,
@@ -347,12 +436,27 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title
-              Text(
-                card.name,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+              // Title row with optional list button
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      card.name,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  if (showListButton)
+                    IconButton(
+                      icon: const Icon(Icons.playlist_add),
+                      onPressed: () => _showListSelectionSheet(
+                        identifier: card.name,
+                        type: BookmarkType.card,
+                      ),
+                      tooltip: 'Add to list',
+                    ),
+                ],
               ),
               const SizedBox(height: 4),
               Text(

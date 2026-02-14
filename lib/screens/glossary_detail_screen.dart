@@ -7,6 +7,7 @@ import '../services/favorites_service.dart';
 import '../models/glossary_term.dart';
 import '../mixins/rule_link_mixin.dart';
 import '../mixins/aggregating_snackbar_mixin.dart';
+import '../mixins/bookmark_list_assignment_mixin.dart';
 
 /// Displays glossary terms in a format similar to rule subrules.
 /// Each term is shown as a card with the term name as header and definition as content.
@@ -20,7 +21,7 @@ class GlossaryDetailScreen extends StatefulWidget {
 }
 
 class _GlossaryDetailScreenState extends State<GlossaryDetailScreen>
-    with RuleLinkMixin, AggregatingSnackBarMixin {
+    with RuleLinkMixin, AggregatingSnackBarMixin, BookmarkListAssignmentMixin {
   final _dataService = RulesDataService();
   final _favoritesService = FavoritesService();
   final ItemScrollController _itemScrollController = ItemScrollController();
@@ -101,8 +102,10 @@ class _GlossaryDetailScreenState extends State<GlossaryDetailScreen>
     });
 
     if (mounted) {
-      showAggregatingSnackBar(
-        isBookmarked ? 'Bookmark added' : 'Bookmark removed',
+      showBookmarkSnackbarWithListAction(
+        identifier: termName,
+        type: BookmarkType.glossary,
+        isNowBookmarked: isBookmarked,
       );
     }
   }

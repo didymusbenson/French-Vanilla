@@ -35,7 +35,7 @@ class _BookmarkListViewState extends State<BookmarkListView>
   List<BookmarkList> _allLists = []; // For showing list badges in "All" view
   bool _isLoading = true;
   bool _isEditMode = false;
-  final Set<String> _selectedBookmarks = {}; // Stores identifiers
+  final Set<String> _selectedBookmarks = {}; // Stores "type:identifier" composite keys
 
   void toggleEditMode() {
     setState(() {
@@ -83,6 +83,126 @@ class _BookmarkListViewState extends State<BookmarkListView>
     await _loadBookmarks();
   }
 
+  void _removeBookmarkWithUndo(BookmarkedItem item) async {
+    // Optimistically remove from UI
+    final removedIndex = _bookmarks.indexOf(item);
+    setState(() {
+      _bookmarks.remove(item);
+    });
+
+    // Show snackbar with undo option
+    if (mounted) {
+      final snackBar = SnackBar(
+        content: Text(widget.listId != null
+            ? 'Removed from list'
+            : 'Bookmark deleted'),
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () {
+            // Restore to UI
+            setState(() {
+              _bookmarks.insert(removedIndex, item);
+            });
+          },
+        ),
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(snackBar).closed.then((reason) {
+        // Only permanently delete if not undone
+        if (reason != SnackBarClosedReason.action) {
+          _removeBookmark(item);
+        }
+      });
+    }
+  }
+
+  Future<void> _addSelectedBookmarksToLists() async {
+    if (_selectedBookmarks.isEmpty) return;
+
+    final allLists = await _favoritesService.getAllLists();
+
+    if (!mounted) return;
+
+    final selectedLists = await showDialog<Set<String>>(
+      context: context,
+      builder: (context) => _BulkListDialog(
+        allLists: allLists,
+        title: 'Add to List',
+        actionLabel: 'Add',
+      ),
+    );
+
+    if (selectedLists != null && selectedLists.isNotEmpty) {
+      // Add all selected bookmarks to the chosen lists (only if not already in them)
+      for (final compositeKey in _selectedBookmarks) {
+        final parts = compositeKey.split(':');
+        final type = BookmarkType.values.firstWhere((t) => t.name == parts[0]);
+        final identifier = parts.sublist(1).join(':');
+
+        // Get current bookmark
+        final bookmark = _bookmarks.firstWhere(
+          (b) => b.identifier == identifier && b.type == type,
+        );
+
+        // Add to selected lists (set union automatically handles duplicates)
+        final updatedListIds = {...bookmark.listIds, ...selectedLists}.toList();
+
+        await _favoritesService.updateBookmarkLists(
+          identifier,
+          type,
+          updatedListIds,
+        );
+      }
+
+      await _loadBookmarks();
+    }
+  }
+
+  Future<void> _removeSelectedBookmarksFromLists() async {
+    if (_selectedBookmarks.isEmpty) return;
+
+    final allLists = await _favoritesService.getAllLists();
+
+    if (!mounted) return;
+
+    final selectedLists = await showDialog<Set<String>>(
+      context: context,
+      builder: (context) => _BulkListDialog(
+        allLists: allLists,
+        title: 'Remove from List',
+        actionLabel: 'Remove',
+      ),
+    );
+
+    if (selectedLists != null && selectedLists.isNotEmpty) {
+      // Remove all selected bookmarks from the chosen lists
+      for (final compositeKey in _selectedBookmarks) {
+        final parts = compositeKey.split(':');
+        final type = BookmarkType.values.firstWhere((t) => t.name == parts[0]);
+        final identifier = parts.sublist(1).join(':');
+
+        // Get current bookmark
+        final bookmark = _bookmarks.firstWhere(
+          (b) => b.identifier == identifier && b.type == type,
+        );
+
+        // Remove from selected lists
+        final updatedListIds = bookmark.listIds
+            .where((id) => !selectedLists.contains(id))
+            .toList();
+
+        await _favoritesService.updateBookmarkLists(
+          identifier,
+          type,
+          updatedListIds,
+        );
+      }
+
+      await _loadBookmarks();
+    }
+  }
+
   Future<void> _deleteSelectedBookmarks() async {
     if (_selectedBookmarks.isEmpty) return;
 
@@ -106,17 +226,29 @@ class _BookmarkListViewState extends State<BookmarkListView>
     );
 
     if (confirmed == true) {
-      for (final identifier in _selectedBookmarks) {
-        final item = _bookmarks.firstWhere((b) => b.identifier == identifier);
-        if (widget.listId != null) {
-          // Remove from this list only
-          await _favoritesService.removeBookmarkFromList(
-              identifier, item.type, widget.listId!);
-        } else {
-          // Delete entirely
-          await _favoritesService.removeBookmark(identifier, item.type);
-        }
+      // Build lists of identifiers and types for bulk operation
+      final identifiers = <String>[];
+      final types = <BookmarkType>[];
+
+      for (final compositeKey in _selectedBookmarks) {
+        // Parse "type:identifier" format
+        final parts = compositeKey.split(':');
+        final type = BookmarkType.values.firstWhere((t) => t.name == parts[0]);
+        final identifier = parts.sublist(1).join(':'); // Handle identifiers with colons
+        identifiers.add(identifier);
+        types.add(type);
       }
+
+      // Use bulk delete methods for better performance
+      if (widget.listId != null) {
+        // Remove from this list only
+        await _favoritesService.removeBookmarksFromList(
+            identifiers, types, widget.listId!);
+      } else {
+        // Delete entirely
+        await _favoritesService.removeBookmarks(identifiers, types);
+      }
+
       setState(() {
         _selectedBookmarks.clear();
         _isEditMode = false;
@@ -125,12 +257,13 @@ class _BookmarkListViewState extends State<BookmarkListView>
     }
   }
 
-  void _toggleSelection(String identifier) {
+  void _toggleSelection(String identifier, BookmarkType type) {
+    final compositeKey = '${type.name}:$identifier';
     setState(() {
-      if (_selectedBookmarks.contains(identifier)) {
-        _selectedBookmarks.remove(identifier);
+      if (_selectedBookmarks.contains(compositeKey)) {
+        _selectedBookmarks.remove(compositeKey);
       } else {
-        _selectedBookmarks.add(identifier);
+        _selectedBookmarks.add(compositeKey);
       }
     });
   }
@@ -138,7 +271,8 @@ class _BookmarkListViewState extends State<BookmarkListView>
   void _selectAll() {
     setState(() {
       _selectedBookmarks.clear();
-      _selectedBookmarks.addAll(_bookmarks.map((b) => b.identifier));
+      _selectedBookmarks.addAll(
+          _bookmarks.map((b) => '${b.type.name}:${b.identifier}'));
     });
   }
 
@@ -155,10 +289,9 @@ class _BookmarkListViewState extends State<BookmarkListView>
         title: Text(widget.title),
         actions: [
           if (_bookmarks.isNotEmpty)
-            IconButton(
-              icon: Icon(_isEditMode ? Icons.close : Icons.edit),
+            TextButton(
               onPressed: toggleEditMode,
-              tooltip: _isEditMode ? 'Cancel' : 'Edit',
+              child: Text(_isEditMode ? 'Cancel' : 'Edit'),
             ),
         ],
       ),
@@ -238,8 +371,8 @@ class _BookmarkListViewState extends State<BookmarkListView>
             itemCount: _bookmarks.length,
             itemBuilder: (context, index) {
               final bookmark = _bookmarks[index];
-              final isSelected =
-                  _selectedBookmarks.contains(bookmark.identifier);
+              final compositeKey = '${bookmark.type.name}:${bookmark.identifier}';
+              final isSelected = _selectedBookmarks.contains(compositeKey);
 
               // Display title differently based on type
               String displayTitle;
@@ -267,7 +400,7 @@ class _BookmarkListViewState extends State<BookmarkListView>
                       ? Checkbox(
                           value: isSelected,
                           onChanged: (_) =>
-                              _toggleSelection(bookmark.identifier),
+                              _toggleSelection(bookmark.identifier, bookmark.type),
                         )
                       : _getBookmarkIcon(bookmark.type),
                   title: Text(
@@ -276,7 +409,7 @@ class _BookmarkListViewState extends State<BookmarkListView>
                   ),
                   subtitle: _buildSubtitleWithBadges(bookmark),
                   onTap: _isEditMode
-                      ? () => _toggleSelection(bookmark.identifier)
+                      ? () => _toggleSelection(bookmark.identifier, bookmark.type)
                       : () => _showBookmarkPreview(bookmark),
                 ),
               );
@@ -291,7 +424,7 @@ class _BookmarkListViewState extends State<BookmarkListView>
                     padding: const EdgeInsets.only(right: 16),
                     child: const Icon(Icons.delete, color: Colors.white),
                   ),
-                  onDismissed: (_) => _removeBookmark(bookmark),
+                  onDismissed: (_) => _removeBookmarkWithUndo(bookmark),
                   child: tile,
                 );
               }
@@ -302,16 +435,40 @@ class _BookmarkListViewState extends State<BookmarkListView>
         ),
         if (_isEditMode && _selectedBookmarks.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: FilledButton.icon(
-              onPressed: _deleteSelectedBookmarks,
-              icon: const Icon(Icons.delete),
-              label: Text(
-                  'Delete ${_selectedBookmarks.length} Bookmark${_selectedBookmarks.length == 1 ? '' : 's'}'),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(double.infinity, 48),
-                backgroundColor: Theme.of(context).colorScheme.error,
-              ),
+            padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 0),
+            child: Column(
+              children: [
+                FilledButton.icon(
+                  onPressed: _addSelectedBookmarksToLists,
+                  icon: const Icon(Icons.playlist_add),
+                  label: Text(
+                      'Add to List (${_selectedBookmarks.length} bookmark${_selectedBookmarks.length == 1 ? '' : 's'})'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                FilledButton.icon(
+                  onPressed: _removeSelectedBookmarksFromLists,
+                  icon: const Icon(Icons.playlist_remove),
+                  label: Text(
+                      'Remove from List (${_selectedBookmarks.length} bookmark${_selectedBookmarks.length == 1 ? '' : 's'})'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                FilledButton.icon(
+                  onPressed: _deleteSelectedBookmarks,
+                  icon: const Icon(Icons.delete),
+                  label: Text(
+                      'Delete ${_selectedBookmarks.length} Bookmark${_selectedBookmarks.length == 1 ? '' : 's'}'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ],
             ),
           ),
       ],
@@ -417,6 +574,7 @@ class _BookmarkListViewState extends State<BookmarkListView>
       showGlossaryBottomSheet(
         term: bookmark.identifier,
         definition: bookmark.content,
+        showListButton: true,
       );
       return;
     }
@@ -438,6 +596,7 @@ class _BookmarkListViewState extends State<BookmarkListView>
           );
         }
       } catch (e) {
+        debugPrint('Failed to load card preview: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to load card: $e')),
@@ -463,6 +622,7 @@ class _BookmarkListViewState extends State<BookmarkListView>
               rule: rule,
               sectionNumber: section.sectionNumber,
               sectionTitle: section.title,
+              showListButton: true,
             );
             return;
           }
@@ -475,6 +635,7 @@ class _BookmarkListViewState extends State<BookmarkListView>
           );
         }
       } catch (e) {
+        debugPrint('Failed to load MTR rule preview: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to load MTR rule: $e')),
@@ -498,6 +659,7 @@ class _BookmarkListViewState extends State<BookmarkListView>
             if (!mounted) return;
             showIpgBottomSheet(
               infraction: infraction,
+              showListButton: true,
             );
             return;
           }
@@ -510,6 +672,7 @@ class _BookmarkListViewState extends State<BookmarkListView>
           );
         }
       } catch (e) {
+        debugPrint('Failed to load IPG infraction preview: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to load IPG infraction: $e')),
@@ -556,13 +719,89 @@ class _BookmarkListViewState extends State<BookmarkListView>
         content: bookmark.content,
         highlightSubruleNumber:
             bookmark.identifier, // Highlight the bookmarked subrule
+        showListButton: true,
       );
     } catch (e) {
+      debugPrint('Failed to load rule preview: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to load rule: $e')),
         );
       }
     }
+  }
+}
+
+/// Dialog for bulk list operations (add/remove)
+class _BulkListDialog extends StatefulWidget {
+  final List<BookmarkList> allLists;
+  final String title;
+  final String actionLabel;
+
+  const _BulkListDialog({
+    required this.allLists,
+    required this.title,
+    required this.actionLabel,
+  });
+
+  @override
+  State<_BulkListDialog> createState() => _BulkListDialogState();
+}
+
+class _BulkListDialogState extends State<_BulkListDialog> {
+  final Set<String> _selectedListIds = {};
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: widget.allLists.isEmpty
+            ? const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('No lists available. Create a list first.'),
+              )
+            : ListView.builder(
+                shrinkWrap: true,
+                itemCount: widget.allLists.length,
+                itemBuilder: (context, index) {
+                  final list = widget.allLists[index];
+                  final isSelected = _selectedListIds.contains(list.id);
+
+                  return CheckboxListTile(
+                    title: Text(list.name),
+                    subtitle: list.description != null
+                        ? Text(
+                            list.description!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          )
+                        : null,
+                    value: isSelected,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        if (value == true) {
+                          _selectedListIds.add(list.id);
+                        } else {
+                          _selectedListIds.remove(list.id);
+                        }
+                      });
+                    },
+                  );
+                },
+              ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _selectedListIds),
+          child: Text(widget.actionLabel),
+        ),
+      ],
+    );
   }
 }

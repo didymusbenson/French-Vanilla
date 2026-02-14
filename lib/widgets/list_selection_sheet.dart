@@ -35,6 +35,7 @@ class _ListSelectionSheetState extends State<ListSelectionSheet> {
   Future<void> _loadLists() async {
     setState(() => _isLoading = true);
     final lists = await _favoritesService.getAllLists();
+    if (!mounted) return;
     setState(() {
       _allLists = lists;
       _isLoading = false;
@@ -54,13 +55,6 @@ class _ListSelectionSheetState extends State<ListSelectionSheet> {
 
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_selectedListIds.isEmpty
-                ? 'Removed from all lists'
-                : 'Updated list memberships'),
-          ),
-        );
       }
     } catch (e) {
       if (mounted) {
@@ -117,7 +111,7 @@ class _ListSelectionSheetState extends State<ListSelectionSheet> {
               child: Column(
                 children: [
                   Icon(
-                    Icons.folder_outlined,
+                    Icons.list_alt,
                     size: 48,
                     color: Theme.of(context)
                         .colorScheme

@@ -13,11 +13,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  final GlobalKey<BookmarksScreenState> _bookmarksKey = GlobalKey<BookmarksScreenState>();
 
   List<Widget> get _screens => [
     const RulesCategoriesScreen(),
     const SearchScreen(),
-    const BookmarksScreen(),
+    BookmarksScreen(key: _bookmarksKey),
     const CreditsScreen(),
   ];
 
@@ -39,6 +40,16 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_titles[_selectedIndex]),
+        actions: [
+          // Show "Create List" button only on Bookmarks tab
+          if (_selectedIndex == 2)
+            TextButton(
+              onPressed: () {
+                _bookmarksKey.currentState?.showCreateListDialog();
+              },
+              child: const Text('Add'),
+            ),
+        ],
       ),
       body: _screens[_selectedIndex],
       bottomNavigationBar: NavigationBar(

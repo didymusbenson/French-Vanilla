@@ -106,9 +106,25 @@ class FavoritesService {
   static const String _key = 'bookmarked_items';
   static const String _listsKey = 'bookmark_lists';
 
+  // Singleton pattern
+  static final FavoritesService _instance = FavoritesService._internal();
+
+  factory FavoritesService() {
+    return _instance;
+  }
+
+  FavoritesService._internal();
+
+  SharedPreferences? _prefsCache;
+
+  Future<SharedPreferences> _getPrefs() async {
+    _prefsCache ??= await SharedPreferences.getInstance();
+    return _prefsCache!;
+  }
+
   /// Get all bookmarked items, ordered alphabetically
   Future<List<BookmarkedItem>> getBookmarks() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     final bookmarksJson = prefs.getStringList(_key) ?? [];
 
     final bookmarks = bookmarksJson
@@ -150,7 +166,7 @@ class FavoritesService {
 
   /// Add an item to bookmarks
   Future<void> addBookmark(String identifier, String content, BookmarkType type) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     var bookmarks = await getBookmarks();
 
     // Remove existing bookmark if it exists
@@ -175,7 +191,7 @@ class FavoritesService {
 
   /// Remove an item from bookmarks
   Future<void> removeBookmark(String identifier, BookmarkType type) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     var bookmarks = await getBookmarks();
 
     // Remove the bookmark
@@ -199,7 +215,7 @@ class FavoritesService {
 
   /// Clear all bookmarks
   Future<void> clearAllBookmarks() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.remove(_key);
   }
 
@@ -237,7 +253,7 @@ class FavoritesService {
 
   /// Get all bookmark lists, sorted alphabetically by name
   Future<List<BookmarkList>> getAllLists() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     final listsJson = prefs.getStringList(_listsKey) ?? [];
 
     final lists = listsJson
@@ -253,7 +269,7 @@ class FavoritesService {
 
   /// Create a new list
   Future<BookmarkList> createList(String name, {String? description}) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     var lists = await getAllLists();
 
     // Generate unique ID
@@ -277,7 +293,7 @@ class FavoritesService {
 
   /// Update an existing list
   Future<void> updateList(BookmarkList updatedList) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     var lists = await getAllLists();
 
     // Find and replace the list
@@ -296,7 +312,7 @@ class FavoritesService {
   /// If deleteBookmarks is true, removes bookmarks that are only in this list
   /// If false, just removes the list membership
   Future<void> deleteList(String listId, {bool deleteBookmarks = false}) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     var lists = await getAllLists();
     var bookmarks = await getBookmarks();
 
@@ -307,23 +323,14 @@ class FavoritesService {
       // Remove bookmarks that are ONLY in this list
       bookmarks.removeWhere((bookmark) =>
           bookmark.listIds.contains(listId) && bookmark.listIds.length == 1);
+    }
 
-      // For bookmarks in multiple lists, just remove this list ID
-      for (var i = 0; i < bookmarks.length; i++) {
-        if (bookmarks[i].listIds.contains(listId)) {
-          bookmarks[i] = bookmarks[i].copyWith(
-            listIds: bookmarks[i].listIds.where((id) => id != listId).toList(),
-          );
-        }
-      }
-    } else {
-      // Just remove list membership from all bookmarks
-      for (var i = 0; i < bookmarks.length; i++) {
-        if (bookmarks[i].listIds.contains(listId)) {
-          bookmarks[i] = bookmarks[i].copyWith(
-            listIds: bookmarks[i].listIds.where((id) => id != listId).toList(),
-          );
-        }
+    // Always remove list membership from remaining bookmarks
+    for (var i = 0; i < bookmarks.length; i++) {
+      if (bookmarks[i].listIds.contains(listId)) {
+        bookmarks[i] = bookmarks[i].copyWith(
+          listIds: bookmarks[i].listIds.where((id) => id != listId).toList(),
+        );
       }
     }
 
@@ -345,7 +352,7 @@ class FavoritesService {
 
   /// Add a bookmark to a list
   Future<void> addBookmarkToList(String identifier, BookmarkType type, String listId) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     var bookmarks = await getBookmarks();
 
     // Find the bookmark
@@ -370,7 +377,7 @@ class FavoritesService {
 
   /// Remove a bookmark from a list
   Future<void> removeBookmarkFromList(String identifier, BookmarkType type, String listId) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     var bookmarks = await getBookmarks();
 
     // Find the bookmark
@@ -393,7 +400,7 @@ class FavoritesService {
 
   /// Add a bookmark to multiple lists at once
   Future<void> updateBookmarkLists(String identifier, BookmarkType type, List<String> listIds) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     var bookmarks = await getBookmarks();
 
     // Find the bookmark
@@ -409,5 +416,57 @@ class FavoritesService {
           bookmarks.map((bookmark) => json.encode(bookmark.toJson())).toList();
       await prefs.setStringList(_key, bookmarksJson);
     }
+  }
+
+  /// Bulk remove bookmarks (optimized for deleting multiple at once)
+  Future<void> removeBookmarks(List<String> identifiers, List<BookmarkType> types) async {
+    if (identifiers.length != types.length) {
+      throw ArgumentError('identifiers and types must have same length');
+    }
+
+    final prefs = await _getPrefs();
+    var bookmarks = await getBookmarks();
+
+    // Remove all bookmarks in one pass
+    for (var i = 0; i < identifiers.length; i++) {
+      bookmarks.removeWhere((bookmark) =>
+          bookmark.identifier == identifiers[i] && bookmark.type == types[i]);
+    }
+
+    // Single write operation
+    final bookmarksJson =
+        bookmarks.map((bookmark) => json.encode(bookmark.toJson())).toList();
+    await prefs.setStringList(_key, bookmarksJson);
+  }
+
+  /// Bulk remove bookmarks from a specific list (optimized for deleting multiple at once)
+  Future<void> removeBookmarksFromList(
+      List<String> identifiers, List<BookmarkType> types, String listId) async {
+    if (identifiers.length != types.length) {
+      throw ArgumentError('identifiers and types must have same length');
+    }
+
+    final prefs = await _getPrefs();
+    var bookmarks = await getBookmarks();
+
+    // Remove list membership from all specified bookmarks in one pass
+    for (var i = 0; i < identifiers.length; i++) {
+      final index = bookmarks.indexWhere(
+        (bookmark) =>
+            bookmark.identifier == identifiers[i] && bookmark.type == types[i],
+      );
+
+      if (index != -1) {
+        bookmarks[index] = bookmarks[index].copyWith(
+          listIds:
+              bookmarks[index].listIds.where((id) => id != listId).toList(),
+        );
+      }
+    }
+
+    // Single write operation
+    final bookmarksJson =
+        bookmarks.map((bookmark) => json.encode(bookmark.toJson())).toList();
+    await prefs.setStringList(_key, bookmarksJson);
   }
 }
