@@ -139,7 +139,6 @@ class FavoritesService {
       try {
         final result = await operation();
         completer.complete(result);
-        return result;
       } catch (e) {
         completer.completeError(e);
         rethrow;
