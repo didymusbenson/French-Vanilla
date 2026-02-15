@@ -1,76 +1,6 @@
-# IAP Platform Configuration & Testing
+# Upcoming Work
 
-> **Implementation Status**: ✅ Code 100% complete. Platform configuration required.
->
 > **For completed features and development history**, see `docs/development_log.md`
-
----
-## Pre-Release Technical Debt
-
-### Medium Priority
-- [ ] Review bookmark snackbar aggregation UX (optional)
-  - Implementation: `lib/mixins/aggregating_snackbar_mixin.dart`
-  - Consider if rapid bookmark behavior needs refinement
-
----
-
-## Universal Search - COMPLETE ✅
-
-**Status**: Shipped in v1.2.0. Card search, filtering UI, and relevance scoring all implemented.
-
-### Completed Features:
-
-#### 1. Card Rulings Search ✅
-**Data Layer:**
-- ✅ Added `searchCardRulings()` method to `CardDataService`
-  - Searches card name only (not oracle/ruling text to prevent result flooding)
-  - Only includes cards with rulings (`card.rulings.isNotEmpty`)
-
-**Model Updates:**
-- ✅ Added `card` to `SearchResultType` enum
-- ✅ Added `MagicCard? card` and `Ruling? cardRuling` fields to `SearchResult` class
-
-**UI Integration:**
-- ✅ Integrated card search into `_performSearch()` (runs in parallel with other searches)
-- ✅ Added card result icon (`Icons.style` with pi rotation) and tap handler
-- ✅ Implemented `showCardBottomSheet()` preview method
-  - Shows card name, type, oracle text, first ruling
-  - Action: "View All Rulings" → navigates to CardDetailScreen
-
-#### 2. Search Filtering UI ✅
-- ✅ Filter icon in app bar (always visible, even before searching)
-- ✅ Opens bottom sheet with checkbox selection
-- ✅ Implemented filter state management (`Set<SearchResultType>`)
-- ✅ Filter options: All, Rules, Glossary, MTR, IPG, Cards
-- ✅ Badge shows count when filters are active
-- ✅ Multi-select support (e.g., Rules + Glossary together)
-- ✅ "All" deselects specific filters; any specific filter deselects "All"
-
-#### 3. Relevance Scoring ✅
-- ✅ Implemented tiered scoring system with word boundary detection
-  - **Scoring System** (highest to lowest):
-    - 100: Exact title match (e.g., "layers" = "Layers")
-    - 90: Word boundary in title (e.g., "layers" matches "Layers" but not "Players")
-    - 75: Title starts with query
-    - 60: Word boundary in content (e.g., "layers" as complete word in rule text)
-    - 50: Substring in title (e.g., "layers" in "Players")
-    - 10: Substring in content
-  - Applied to all search types: Rules, Glossary, MTR, IPG, Cards
-  - Results automatically sorted by relevance score
-  - Word boundary matches ALWAYS rank higher than substring matches (even if substring is in title)
-
-**DESCOPED:**
-- ~~Update `SearchHistoryService` to track applied filters~~
-- ~~Display filters in search history (e.g., "devotion → 45 results (Rules, Glossary)")~~
-- ~~Performance testing with large result sets~~ (deferred until user reports issues)
-
-#### 4. Self-Referencing Subrule Links ✅
-- ✅ Fixed issue where lettered subrules would link to themselves on their own page
-- ✅ Modified `RuleLinkMixin` to accept `currentRuleNumber` parameter
-- ✅ When viewing rule 201.2, references to 201.2a/201.2b/etc. are now plain text instead of links
-- ✅ Cross-references to other rules still work normally
-
-**Reference:** See `docs/everything_searchable.md` (archived) for full implementation details.
 
 ---
 
@@ -112,16 +42,94 @@ Change "Copy Rule" → "Copy..." and "Share Rule" → "Share..." in context menu
 
 ---
 
-## Verification Steps for Wrapper Scripts
+## Outstanding Code Quality Items
 
-Quick tests to verify the new `getcards` and `getrules` wrapper scripts work correctly:
+From pre-release audit (2026-02-14). See `docs/implemented/prerelease_audit_feb_2026.md` for full details.
 
-- [ ] Run `./getcards` from project root - should execute without errors
-- [ ] Verify it calls `scripts/process_cards.py` and checks MTGJSON for updates
-- [ ] Run `./getrules` without parameters - should show usage error message
-- [ ] Run `./getrules "<url>"` with a valid rules URL - should execute update_rules.py
-- [ ] Verify all three commands (`./getjudgerules`, `./getcards`, `./getrules`) follow the same pattern
+### High Priority
+
+#### SharedPreferences Error Handling
+**Complexity**: Medium (3-4 hours)
+- Add try-catch blocks to all SharedPreferences write operations in `FavoritesService`
+- Show user feedback when saves fail
+- Revert in-memory state on failure
+- Prevents silent data loss on disk full/permissions errors
+
+#### List Deletion Bookmark Count
+**Complexity**: Low (30 min)
+- Show bookmark count in delete confirmation dialog
+- Query `getBookmarksInList()` before showing dialog
+- Prevents accidental deletion of many bookmarks
+
+#### Snackbar "Add to list" Validation
+**Complexity**: Low (1 hour)
+- Cancel previous snackbars when unbookmarking
+- Check bookmark exists before showing list selection sheet
+- Show error if bookmark was removed
+- Prevents confusing UX
+
+#### List Loading Optimization
+**Complexity**: Medium-High (requires state management)
+- Remove `.then((_) => _loadLists())` pattern
+- Use state management (Provider/Riverpod) to share list state
+- Only reload when actual changes occur
+- Improves navigation performance
+
+### Medium Priority
+
+- Bulk operation progress indicators (>10 items)
+- Empty state messaging improvements
+- List selection sheet scroll position persistence
+- Bulk delete feedback snackbars
+
+### Low Priority
+
+- Accessibility labels on IconButtons
+- Haptic feedback on Dismissible actions
+- Remove debug print statements (search_screen.dart:535, data_preloader.dart)
+- Dark mode contrast audit (WCAG AA compliance)
+- Crash reporting implementation (Firebase Crashlytics/Sentry)
+- Advanced search relevance scoring (TF-IDF)
 
 ---
 
-**Last Updated**: 2026-02-05
+## Future Phases - Bookmark Features
+
+### Manual Bookmark Reordering
+**Status**: Deferred - using automatic alphabetical ordering for now
+**Complexity**: Medium-High
+
+**As a general user**, I want the ability to re-order my bookmarks so that I can have instant access to the most important rules to me.
+
+**Implementation approach**:
+- Fractional indexing for sort order
+- Drag-and-drop UI with ReorderableListView
+- Per-list ordering (not global)
+
+### Decklist Import
+**Status**: Deferred to Phase 2
+**Complexity**: High
+
+**As an EDH player**, I want the ability to import an entire decklist to my bookmarks so that I don't have to manually search up individual card rulings.
+
+**Implementation approach**:
+- Parse decklist formats (text, .dek, .txt)
+- Match card names to database
+- Batch bookmark creation
+- Error handling for unknown cards
+
+### Keyword Import from Decklist
+**Status**: Deferred to Phase 2
+**Complexity**: Medium
+
+**As a new/learning player**, I want deck imports to optionally bookmark relevant keywords in addition to card rulings so that I don't have to look up those rules later.
+
+**Implementation approach**:
+- Extract keywords from imported cards
+- Match to glossary terms
+- Optional checkbox during import
+- Deduplicate keywords
+
+---
+
+**Last Updated**: 2026-02-14

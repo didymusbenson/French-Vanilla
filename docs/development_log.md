@@ -4,6 +4,135 @@ This document tracks completed features and historical development decisions.
 
 ---
 
+## Recent Work (2026-02-14)
+
+### Bookmark Lists Feature - COMPLETE ✅
+
+Implemented comprehensive bookmark organization with multi-list membership, completing Phase 1 of the bookmark overhaul.
+
+**What changed:**
+
+#### Data Model & Service Layer
+- Added `BookmarkList` model with id, name, description, createdAt fields
+- Extended `BookmarkedItem` model with `listIds: List<String>` field (migration-safe with empty list default)
+- Implemented complete CRUD operations in `FavoritesService`:
+  - List management: `createList()`, `updateList()`, `deleteList()`, `getAllLists()`
+  - Bookmark-to-list operations: `addBookmarkToList()`, `removeBookmarkFromList()`, `updateBookmarkLists()`
+  - Bulk operations: `removeBookmarks()`, `removeBookmarksFromList()`
+  - Query: `getBookmarksInList()`
+- **Design Decision**: Automatic alphabetical ordering with type priority (Rules → Glossary → Cards → MTR → IPG)
+  - **Reason**: Consistent experience, no manual sort management in MVP
+  - Deferred: Manual reordering via drag-and-drop to Phase 2
+
+#### UI - Landing Page & Navigation
+- Refactored bookmarks screen to show "All" view + user's custom lists
+- "All" displays all bookmarks with automatic sorting
+- Tap list name to view bookmarks in that specific list
+- + icon in app bar for creating new lists
+- List badges shown only in "All" view (not in specific list views)
+
+#### UI - List Management
+- List creation/edit dialog with name + optional description
+- 3-option delete confirmation dialog:
+  - "Delete list and remove bookmarks" - removes bookmarks only in this list
+  - "Delete list, keep bookmarks" - removes list, keeps bookmarks in "All"
+  - "Cancel"
+- Multiple interaction methods: long-press menu, swipe-to-delete, edit mode
+
+#### UI - Multi-List Assignment
+- Created `ListSelectionSheet` widget for multi-select list assignment
+- "Edit lists" button in bookmark preview bottom sheets
+- Snackbar "Add to list" action after bookmarking (all bookmark types)
+- Edit mode with batch add/remove to lists functionality
+- Remove from specific list preserves bookmark in other lists
+
+#### Behavior & UX
+- Same bookmark can exist in multiple lists simultaneously
+- Deleting from "All" view removes bookmark entirely
+- Deleting from specific list view removes from that list only
+- List badges display assigned lists using colored chips
+- Empty state messaging guides users through workflow
+
+**Files Created:**
+- `lib/models/bookmark_list.dart` - List data model
+- `lib/widgets/bookmark_list_view.dart` - Reusable list view widget
+- `lib/widgets/list_selection_sheet.dart` - Multi-select assignment UI
+- `lib/mixins/bookmark_list_assignment_mixin.dart` - Snackbar with "Add to list" action
+
+**Files Modified:**
+- `lib/models/bookmarked_item.dart` - Added listIds field
+- `lib/services/favorites_service.dart` - All list CRUD operations, operation queueing
+- `lib/screens/bookmarks_screen.dart` - Landing page refactor, list management UI
+- `lib/mixins/preview_bottom_sheet_mixin.dart` - "Edit lists" button integration
+- All bookmark detail screens (glossary, rule, card, mtr, ipg) - Added snackbar action
+
+**Design Decisions:**
+- Multi-list membership allows flexible organization without duplication
+- Automatic alphabetical sorting provides consistency in MVP
+- Type-based priority ensures related content stays grouped
+- Unified lists (mix any bookmark types) simplifies user mental model
+- Empty `listIds: []` default ensures backward compatibility
+
+**Reference:** See `docs/implemented/bookmarks_overhaul.md` for complete specification.
+
+---
+
+### Pre-Release Code Quality Fixes - COMPLETE ✅
+
+Performed comprehensive code quality audit and fixed all critical issues ahead of v1.0 release.
+
+**What changed:**
+
+#### Critical Fixes
+1. **IAP Service Memory Leak** - `lib/main.dart`, `lib/services/iap_service.dart`
+   - Converted `FrenchVanillaApp` to StatefulWidget with `WidgetsBindingObserver`
+   - Added proper lifecycle management to dispose IAP service streams
+   - Prevents memory leaks and resource exhaustion over app lifetime
+
+2. **Bookmark Race Condition** - `lib/services/favorites_service.dart`
+   - Added `_queueOperation<T>()` method with operation serialization
+   - All write operations now queued and executed sequentially
+   - Wrapped 13 methods including toggleBookmark, createList, updateList, etc.
+   - Eliminates data loss on rapid bookmark toggles
+
+#### Performance Optimizations
+3. **Bookmark Status Loading** - 4 screens optimized
+   - Changed from sequential `await` in loop to parallel `Future.wait()`
+   - Files: `glossary_detail_screen.dart`, `glossary_screen.dart`, `rule_detail_screen.dart`, `mtr_section_detail_screen.dart`
+   - Significantly faster initial render for screens with many bookmarkable items
+
+4. **Bottom Sheet Navigation** - `lib/mixins/preview_bottom_sheet_mixin.dart`
+   - Added `WidgetsBinding.instance.addPostFrameCallback()` for smoother transitions
+   - Fixed in all 5 preview bottom sheets (glossary, rule, MTR, IPG, card)
+   - Prevents lingering sheets during navigation
+
+5. **Search History** - `lib/services/search_history_service.dart`
+   - Verified already capped at 15 entries (no changes needed)
+
+**Files Modified:**
+- `lib/main.dart` - IAP lifecycle management
+- `lib/services/favorites_service.dart` - Operation queue, race condition fix
+- `lib/screens/glossary_detail_screen.dart` - Parallel loading
+- `lib/screens/glossary_screen.dart` - Parallel loading
+- `lib/screens/rule_detail_screen.dart` - Parallel loading
+- `lib/screens/mtr_section_detail_screen.dart` - Parallel loading
+- `lib/mixins/preview_bottom_sheet_mixin.dart` - Navigation timing
+
+**Results:**
+- Code quality improved from 7.5/10 to 8.5/10
+- All critical stability issues resolved
+- Performance gains in bookmark loading (visible on large screens)
+- Smoother navigation transitions
+
+**Documentation:**
+- Created comprehensive audit report in `docs/implemented/prerelease_audit_feb_2026.md`
+- Documented 14 outstanding issues (4 high, 4 medium, 6 low priority)
+- Provided complexity estimates and implementation guidance
+
+**Reference:** See `docs/implemented/prerelease_audit_feb_2026.md` for full audit details.
+
+---
+
 ## Recent Work (2026-02-07)
 
 ### Universal Search Completion - COMPLETE ✅
