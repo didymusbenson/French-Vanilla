@@ -190,47 +190,57 @@ class FavoritesService {
       bookmark.identifier == identifier && bookmark.type == type);
   }
 
+  /// Internal helper: Add bookmark without queueing (for use within queued operations)
+  Future<void> _addBookmarkInternal(String identifier, String content, BookmarkType type) async {
+    final prefs = await _getPrefs();
+    var bookmarks = await getBookmarks();
+
+    // Remove existing bookmark if it exists
+    bookmarks.removeWhere((bookmark) =>
+      bookmark.identifier == identifier && bookmark.type == type);
+
+    // Add new bookmark
+    bookmarks.add(
+      BookmarkedItem(
+        identifier: identifier,
+        content: content,
+        type: type,
+        timestamp: DateTime.now(),
+      ),
+    );
+
+    // Save to preferences
+    final bookmarksJson =
+        bookmarks.map((bookmark) => json.encode(bookmark.toJson())).toList();
+    await prefs.setStringList(_key, bookmarksJson);
+  }
+
+  /// Internal helper: Remove bookmark without queueing (for use within queued operations)
+  Future<void> _removeBookmarkInternal(String identifier, BookmarkType type) async {
+    final prefs = await _getPrefs();
+    var bookmarks = await getBookmarks();
+
+    // Remove the bookmark
+    bookmarks.removeWhere((bookmark) =>
+      bookmark.identifier == identifier && bookmark.type == type);
+
+    // Save to preferences
+    final bookmarksJson =
+        bookmarks.map((bookmark) => json.encode(bookmark.toJson())).toList();
+    await prefs.setStringList(_key, bookmarksJson);
+  }
+
   /// Add an item to bookmarks
   Future<void> addBookmark(String identifier, String content, BookmarkType type) async {
     return _queueOperation(() async {
-      final prefs = await _getPrefs();
-      var bookmarks = await getBookmarks();
-
-      // Remove existing bookmark if it exists
-      bookmarks.removeWhere((bookmark) =>
-        bookmark.identifier == identifier && bookmark.type == type);
-
-      // Add new bookmark
-      bookmarks.add(
-        BookmarkedItem(
-          identifier: identifier,
-          content: content,
-          type: type,
-          timestamp: DateTime.now(),
-        ),
-      );
-
-      // Save to preferences
-      final bookmarksJson =
-          bookmarks.map((bookmark) => json.encode(bookmark.toJson())).toList();
-      await prefs.setStringList(_key, bookmarksJson);
+      await _addBookmarkInternal(identifier, content, type);
     });
   }
 
   /// Remove an item from bookmarks
   Future<void> removeBookmark(String identifier, BookmarkType type) async {
     return _queueOperation(() async {
-      final prefs = await _getPrefs();
-      var bookmarks = await getBookmarks();
-
-      // Remove the bookmark
-      bookmarks.removeWhere((bookmark) =>
-        bookmark.identifier == identifier && bookmark.type == type);
-
-      // Save to preferences
-      final bookmarksJson =
-          bookmarks.map((bookmark) => json.encode(bookmark.toJson())).toList();
-      await prefs.setStringList(_key, bookmarksJson);
+      await _removeBookmarkInternal(identifier, type);
     });
   }
 
@@ -238,9 +248,9 @@ class FavoritesService {
   Future<void> toggleBookmark(String identifier, String content, BookmarkType type) async {
     return _queueOperation(() async {
       if (await isBookmarked(identifier, type)) {
-        await removeBookmark(identifier, type);
+        await _removeBookmarkInternal(identifier, type);
       } else {
-        await addBookmark(identifier, content, type);
+        await _addBookmarkInternal(identifier, content, type);
       }
     });
   }
