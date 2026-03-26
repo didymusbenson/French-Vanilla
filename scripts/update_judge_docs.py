@@ -58,8 +58,14 @@ def scrape_wpn_page():
     mtr_match = re.search(r'(https://media\.wizards\.com/[^"\']*MTG_MTR[^"\']*\.pdf)', html, re.IGNORECASE)
     ipg_match = re.search(r'(https://media\.wizards\.com/[^"\']*MTG_IPG[^"\']*\.pdf)', html, re.IGNORECASE)
 
-    if not mtr_match or not ipg_match:
-        print("Could not find PDF links on WPN page.")
+    result = {}
+    if mtr_match:
+        result['mtr'] = mtr_match.group(1)
+    if ipg_match:
+        result['ipg'] = ipg_match.group(1)
+
+    if not result:
+        print("Could not find any PDF links on WPN page.")
         print("Searching for any WPN PDF links...")
         all_pdfs = re.findall(r'(https://media\.wizards\.com/[^"\']*\.pdf)', html)
         if all_pdfs:
@@ -68,10 +74,12 @@ def scrape_wpn_page():
                 print(f"  {pdf}")
         return None
 
-    return {
-        'mtr': mtr_match.group(1),
-        'ipg': ipg_match.group(1)
-    }
+    if not mtr_match:
+        print("  Warning: MTR PDF not found on WPN page")
+    if not ipg_match:
+        print("  Warning: IPG PDF not found on WPN page")
+
+    return result
 
 
 def extract_effective_date_from_pdf(pdf_path):
@@ -222,86 +230,101 @@ def main():
         return 1
 
     print(f"\n✓ Found PDF links:")
-    print(f"  MTR: {pdf_links['mtr']}")
-    print(f"  IPG: {pdf_links['ipg']}")
+    if 'mtr' in pdf_links:
+        print(f"  MTR: {pdf_links['mtr']}")
+    if 'ipg' in pdf_links:
+        print(f"  IPG: {pdf_links['ipg']}")
     print()
 
     # Step 3: Download PDFs to temporary location to check dates
     temp_dir = data_dir / 'temp'
     temp_dir.mkdir(exist_ok=True)
 
-    temp_mtr = temp_dir / 'MTR_temp.pdf'
-    temp_ipg = temp_dir / 'IPG_temp.pdf'
+    mtr_date = None
+    ipg_date = None
 
-    if not download_pdf(pdf_links['mtr'], temp_mtr):
-        return 1
+    if 'mtr' in pdf_links:
+        temp_mtr = temp_dir / 'MTR_temp.pdf'
+        if not download_pdf(pdf_links['mtr'], temp_mtr):
+            return 1
+        mtr_date = extract_effective_date_from_pdf(temp_mtr)
+        if not mtr_date:
+            print("Could not extract effective date from MTR PDF.")
+            return 1
 
-    if not download_pdf(pdf_links['ipg'], temp_ipg):
-        return 1
+    if 'ipg' in pdf_links:
+        temp_ipg = temp_dir / 'IPG_temp.pdf'
+        if not download_pdf(pdf_links['ipg'], temp_ipg):
+            return 1
+        ipg_date = extract_effective_date_from_pdf(temp_ipg)
+        if not ipg_date:
+            print("Could not extract effective date from IPG PDF.")
+            return 1
 
     print()
-
-    # Step 4: Extract effective dates from PDFs
     print("Checking effective dates...")
-    mtr_date = extract_effective_date_from_pdf(temp_mtr)
-    ipg_date = extract_effective_date_from_pdf(temp_ipg)
 
-    if not mtr_date or not ipg_date:
-        print("\nCould not extract effective dates from PDFs.")
-        print(f"MTR date: {mtr_date}")
-        print(f"IPG date: {ipg_date}")
-        return 1
-
-    print(f"\nAvailable versions:")
-    print(f"  MTR: {mtr_date}")
-    print(f"  IPG: {ipg_date}")
-    print()
-
-    # Step 5: Compare versions
+    # Use existing dates for documents not found on WPN page
     existing_mtr_date = existing_versions.get('mtr', {}).get('effective_date')
     existing_ipg_date = existing_versions.get('ipg', {}).get('effective_date')
 
-    mtr_is_new = existing_mtr_date != mtr_date
-    ipg_is_new = existing_ipg_date != ipg_date
+    # Fall back to existing dates for documents not on WPN page
+    if mtr_date is None:
+        mtr_date = existing_mtr_date
+    if ipg_date is None:
+        ipg_date = existing_ipg_date
+
+    print(f"\nAvailable versions:")
+    if mtr_date:
+        print(f"  MTR: {mtr_date}")
+    if ipg_date:
+        print(f"  IPG: {ipg_date}")
+    print()
+
+    # Step 5: Compare versions
+    mtr_is_new = 'mtr' in pdf_links and existing_mtr_date != mtr_date
+    ipg_is_new = 'ipg' in pdf_links and existing_ipg_date != ipg_date
 
     if not mtr_is_new and not ipg_is_new:
         print("✓ Judge documents are already up to date!")
-        print(f"  MTR: {mtr_date}")
-        print(f"    → Existing file: {mtr_pdf_path}")
-        print(f"    → Text file: {mtr_txt_path}")
-        print(f"  IPG: {ipg_date}")
-        print(f"    → Existing file: {ipg_pdf_path}")
-        print(f"    → Text file: {ipg_txt_path}")
+        if mtr_date:
+            print(f"  MTR: {mtr_date}")
+        if ipg_date:
+            print(f"  IPG: {ipg_date}")
         print("\n  No download needed. Running parsers...")
 
         # Clean up temp files
-        temp_mtr.unlink()
-        temp_ipg.unlink()
-        temp_dir.rmdir()
-
-        # Skip to parsing step
+        if 'mtr' in pdf_links:
+            temp_mtr.unlink(missing_ok=True)
+        if 'ipg' in pdf_links:
+            temp_ipg.unlink(missing_ok=True)
+        if temp_dir.exists():
+            temp_dir.rmdir()
     else:
         # Step 6: Move new files to permanent location
         print("Updates available:")
         if mtr_is_new:
             print(f"  MTR: {existing_mtr_date or 'none'} → {mtr_date}")
             temp_mtr.replace(mtr_pdf_path)
-        else:
+        elif 'mtr' in pdf_links:
             print(f"  MTR: {mtr_date} (no change)")
-            temp_mtr.unlink()
+            temp_mtr.unlink(missing_ok=True)
 
         if ipg_is_new:
             print(f"  IPG: {existing_ipg_date or 'none'} → {ipg_date}")
             temp_ipg.replace(ipg_pdf_path)
-        else:
+        elif 'ipg' in pdf_links:
             print(f"  IPG: {ipg_date} (no change)")
-            temp_ipg.unlink()
+            temp_ipg.unlink(missing_ok=True)
 
         print()
 
         # Clean up temp directory
         if temp_dir.exists():
-            temp_dir.rmdir()
+            try:
+                temp_dir.rmdir()
+            except OSError:
+                pass
 
         # Step 7: Extract text from PDFs
         if mtr_is_new:
@@ -312,29 +335,32 @@ def main():
             if not extract_text_from_pdf(ipg_pdf_path, ipg_txt_path):
                 return 1
 
-    # Step 8: Save version info
-    new_versions = {
-        'mtr': {
+    # Step 8: Save version info - preserve existing entries for docs not found
+    new_versions = {}
+    if mtr_date:
+        new_versions['mtr'] = {
             'effective_date': mtr_date,
-            'pdf_url': pdf_links['mtr'],
+            'pdf_url': pdf_links.get('mtr', existing_versions.get('mtr', {}).get('pdf_url', '')),
             'pdf_file': mtr_pdf_path.name,
             'txt_file': mtr_txt_path.name
-        },
-        'ipg': {
+        }
+    if ipg_date:
+        new_versions['ipg'] = {
             'effective_date': ipg_date,
-            'pdf_url': pdf_links['ipg'],
+            'pdf_url': pdf_links.get('ipg', existing_versions.get('ipg', {}).get('pdf_url', '')),
             'pdf_file': ipg_pdf_path.name,
             'txt_file': ipg_txt_path.name
         }
-    }
 
     save_version_info(version_file, new_versions)
 
     print()
     print("=" * 80)
     print("✓ Download and extraction complete!")
-    print(f"  MTR: {mtr_date}")
-    print(f"  IPG: {ipg_date}")
+    if mtr_date:
+        print(f"  MTR: {mtr_date}")
+    if ipg_date:
+        print(f"  IPG: {ipg_date}")
     print("=" * 80)
     print()
 
@@ -343,36 +369,38 @@ def main():
     print()
 
     # Parse MTR
-    print("Parsing MTR...")
-    parse_mtr_script = script_dir / 'parse_mtr.py'
-    result = subprocess.run(
-        ['python3', str(parse_mtr_script)],
-        capture_output=True,
-        text=True
-    )
+    if mtr_date:
+        print("Parsing MTR...")
+        parse_mtr_script = script_dir / 'parse_mtr.py'
+        result = subprocess.run(
+            ['python3', str(parse_mtr_script)],
+            capture_output=True,
+            text=True
+        )
 
-    if result.returncode != 0:
-        print(f"ERROR: MTR parsing failed:")
-        print(result.stderr)
-        return 1
+        if result.returncode != 0:
+            print(f"ERROR: MTR parsing failed:")
+            print(result.stderr)
+            return 1
 
-    print(result.stdout)
+        print(result.stdout)
 
     # Parse IPG
-    print("Parsing IPG...")
-    parse_ipg_script = script_dir / 'parse_ipg.py'
-    result = subprocess.run(
-        ['python3', str(parse_ipg_script)],
-        capture_output=True,
-        text=True
-    )
+    if ipg_date:
+        print("Parsing IPG...")
+        parse_ipg_script = script_dir / 'parse_ipg.py'
+        result = subprocess.run(
+            ['python3', str(parse_ipg_script)],
+            capture_output=True,
+            text=True
+        )
 
-    if result.returncode != 0:
-        print(f"ERROR: IPG parsing failed:")
-        print(result.stderr)
-        return 1
+        if result.returncode != 0:
+            print(f"ERROR: IPG parsing failed:")
+            print(result.stderr)
+            return 1
 
-    print(result.stdout)
+        print(result.stdout)
 
     # Final success message
     print()
@@ -380,17 +408,19 @@ def main():
     print("✓ JUDGE DOCUMENTS UPDATE COMPLETE!")
     print("=" * 80)
     print()
-    print(f"Downloaded and parsed:")
-    print(f"  MTR: {mtr_date}")
-    print(f"    → PDF:  {mtr_pdf_path}")
-    print(f"    → Text: {mtr_txt_path}")
-    print(f"    → JSON: assets/judgedocs/mtr_*.json")
-    print()
-    print(f"  IPG: {ipg_date}")
-    print(f"    → PDF:  {ipg_pdf_path}")
-    print(f"    → Text: {ipg_txt_path}")
-    print(f"    → JSON: assets/judgedocs/ipg_*.json")
-    print()
+    print(f"Processed documents:")
+    if mtr_date:
+        print(f"  MTR: {mtr_date}")
+        print(f"    → PDF:  {mtr_pdf_path}")
+        print(f"    → Text: {mtr_txt_path}")
+        print(f"    → JSON: assets/judgedocs/mtr_*.json")
+        print()
+    if ipg_date:
+        print(f"  IPG: {ipg_date}")
+        print(f"    → PDF:  {ipg_pdf_path}")
+        print(f"    → Text: {ipg_txt_path}")
+        print(f"    → JSON: assets/judgedocs/ipg_*.json")
+        print()
     print("=" * 80)
     print()
 
