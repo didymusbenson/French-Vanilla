@@ -51,9 +51,11 @@ def scrape_wpn_page():
 
     html = result.stdout
 
-    # Look for PDF links
-    # MTR pattern: Magic: the Gathering Tournament Rules or MTG_MTR
-    # IPG pattern: Magic Infraction Procedure Guide or MTG_IPG
+    # The WPN page is a Nuxt SPA: only a few "featured" docs are server-rendered
+    # with normal URLs; the rest (including IPG) appear only in the hydration
+    # JSON with forward slashes escaped as /. Decode those so both forms
+    # match the same regex.
+    html = html.replace('\\u002F', '/').replace('\\u002f', '/')
 
     mtr_match = re.search(r'(https://media\.wizards\.com/[^"\']*MTG_MTR[^"\']*\.pdf)', html, re.IGNORECASE)
     ipg_match = re.search(r'(https://media\.wizards\.com/[^"\']*MTG_IPG[^"\']*\.pdf)', html, re.IGNORECASE)
