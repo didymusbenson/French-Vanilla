@@ -41,10 +41,39 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
     }
   }
 
+  /// A small info banner shown above bookmark preview content when the saved
+  /// item's live data has changed (drift) or is no longer present (orphan).
+  Widget _staleNoticeBanner(BuildContext context, String text) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: scheme.tertiaryContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, size: 18, color: scheme.onTertiaryContainer),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: scheme.onTertiaryContainer,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Shows a bottom sheet preview for a glossary term
   void showGlossaryBottomSheet({
     required String term,
     required String definition,
+    String? staleNotice, // Optional banner when the saved copy is stale/orphaned
     bool showListButton = false, // Show "Add to list" button when viewing from bookmarks
   }) {
     showModalBottomSheet(
@@ -90,6 +119,7 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
                 ),
               ),
               const SizedBox(height: 16),
+              if (staleNotice != null) _staleNoticeBanner(context, staleNotice),
               // Content - scrollable if needed
               Flexible(
                 child: SingleChildScrollView(
@@ -151,6 +181,7 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
     required String subruleNumber,
     required String content,
     String? highlightSubruleNumber, // Optional - if null, no highlighting on navigation
+    String? staleNotice, // Optional banner when the saved copy is stale/orphaned
     bool showListButton = false, // Show "Add to list" button when viewing from bookmarks
   }) {
     showModalBottomSheet(
@@ -196,6 +227,7 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
                 ),
               ),
               const SizedBox(height: 16),
+              if (staleNotice != null) _staleNoticeBanner(context, staleNotice),
               // Content - scrollable if needed
               Flexible(
                 child: SingleChildScrollView(
@@ -569,6 +601,64 @@ mixin PreviewBottomSheetMixin<T extends StatefulWidget> on State<T>, RuleLinkMix
                   },
                   icon: const Icon(Icons.arrow_forward),
                   label: Text('View All Rulings (${card.rulings.length})'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Shows a bookmark's saved snapshot when its live data can no longer be
+  /// found (renumbered/removed by a content update). No "Go to…" action, since
+  /// there is no live target to navigate to.
+  void showSnapshotBottomSheet({
+    required String title,
+    required String subtitle,
+    required String content,
+    required String staleNotice,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (subtitle.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              _staleNoticeBanner(context, staleNotice),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: buildFormattedContent(content),
+                  ),
                 ),
               ),
             ],

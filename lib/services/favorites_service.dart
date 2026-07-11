@@ -255,6 +255,26 @@ class FavoritesService {
     });
   }
 
+  /// Refresh the stored snapshot content of an existing bookmark in place,
+  /// preserving its list membership and timestamp. No-op if the bookmark
+  /// doesn't exist or the content is already current. Used to self-heal rule
+  /// bookmarks after a content update changes the underlying text.
+  Future<void> refreshBookmarkContent(
+      String identifier, BookmarkType type, String content) async {
+    return _queueOperation(() async {
+      final prefs = await _getPrefs();
+      final bookmarks = await getBookmarks();
+      final index = bookmarks.indexWhere(
+          (b) => b.identifier == identifier && b.type == type);
+      if (index == -1 || bookmarks[index].content == content) return;
+
+      bookmarks[index] = bookmarks[index].copyWith(content: content);
+      final bookmarksJson =
+          bookmarks.map((b) => json.encode(b.toJson())).toList();
+      await prefs.setStringList(_key, bookmarksJson);
+    });
+  }
+
   /// Clear all bookmarks
   Future<void> clearAllBookmarks() async {
     return _queueOperation(() async {

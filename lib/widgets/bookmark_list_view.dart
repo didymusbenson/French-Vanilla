@@ -568,12 +568,38 @@ class _BookmarkListViewState extends State<BookmarkListView>
     return content;
   }
 
+  /// Normalizes text for drift comparison: collapses runs of whitespace and
+  /// trims, so cosmetic formatting differences don't register as a change.
+  String _normalizeForCompare(String s) =>
+      s.replaceAll(RegExp(r'\s+'), ' ').trim();
+
   void _showBookmarkPreview(BookmarkedItem bookmark) async {
     if (bookmark.type == BookmarkType.glossary) {
-      // Use mixin method for glossary terms
+      // Prefer the live definition so glossary bookmarks reflect data updates;
+      // fall back to the saved snapshot if the term is gone (renamed/removed).
+      String definition = bookmark.content;
+      String? staleNotice;
+      try {
+        final terms = await _dataService.getGlossaryTerms();
+        final match = terms
+            .where((t) =>
+                t.term.toLowerCase() == bookmark.identifier.toLowerCase())
+            .firstOrNull;
+        if (match != null) {
+          definition = match.definition;
+        } else {
+          staleNotice =
+              'This term was bookmarked for an older version of the glossary '
+              'and may have been changed or removed. Showing your saved copy.';
+        }
+      } catch (_) {
+        // Live glossary unavailable — keep the snapshot silently.
+      }
+      if (!mounted) return;
       showGlossaryBottomSheet(
         term: bookmark.identifier,
-        definition: bookmark.content,
+        definition: definition,
+        staleNotice: staleNotice,
         showListButton: true,
       );
       return;
@@ -591,8 +617,15 @@ class _BookmarkListViewState extends State<BookmarkListView>
             ),
           );
         } else if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Card not found')),
+          // Not found live — card name may have changed. Show the saved copy.
+          showSnapshotBottomSheet(
+            title: bookmark.identifier,
+            subtitle: 'Card',
+            content: bookmark.content,
+            staleNotice:
+                'This card was bookmarked from an older version of the card '
+                'data and may have been changed or removed. Showing your '
+                'saved copy.',
           );
         }
       } catch (e) {
@@ -628,12 +661,17 @@ class _BookmarkListViewState extends State<BookmarkListView>
           }
         }
 
-        // Rule not found
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('MTR rule not found')),
-          );
-        }
+        // Not found live — likely renumbered/removed by an update. Show the
+        // saved snapshot instead of a dead end.
+        if (!mounted) return;
+        showSnapshotBottomSheet(
+          title: bookmark.identifier,
+          subtitle: 'Magic Tournament Rules',
+          content: bookmark.content,
+          staleNotice:
+              'This rule was bookmarked for an older version of the MTR and '
+              'may have been changed or removed. Showing your saved copy.',
+        );
       } catch (e) {
         debugPrint('Failed to load MTR rule preview: $e');
         if (mounted) {
@@ -665,12 +703,17 @@ class _BookmarkListViewState extends State<BookmarkListView>
           }
         }
 
-        // Infraction not found
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('IPG infraction not found')),
-          );
-        }
+        // Not found live — likely renumbered/removed by an update. Show the
+        // saved snapshot instead of a dead end.
+        if (!mounted) return;
+        showSnapshotBottomSheet(
+          title: bookmark.identifier,
+          subtitle: 'Infraction Procedure Guide',
+          content: bookmark.content,
+          staleNotice:
+              'This entry was bookmarked for an older version of the IPG and '
+              'may have been changed or removed. Showing your saved copy.',
+        );
       } catch (e) {
         debugPrint('Failed to load IPG infraction preview: $e');
         if (mounted) {
@@ -709,6 +752,35 @@ class _BookmarkListViewState extends State<BookmarkListView>
         orElse: () => throw Exception('Rule not found'),
       );
 
+      // Prefer the LIVE subrule text and flag drift against the saved snapshot.
+      // Rule bookmarks store the SubruleGroup number as their identifier and
+      // that group's full content as the snapshot, so this compares like-for-like.
+      final liveGroup = rule.subruleGroups
+          .where((g) => g.number == bookmark.identifier)
+          .firstOrNull;
+
+      String displayContent;
+      String? staleNotice;
+      if (liveGroup == null) {
+        // Subrule renumbered or removed — show the saved copy.
+        displayContent = bookmark.content;
+        staleNotice =
+            'This rule was bookmarked for an older version of the Comprehensive '
+            'Rules and may have been changed or removed. Showing your saved copy.';
+      } else {
+        displayContent = liveGroup.content;
+        if (_normalizeForCompare(liveGroup.content) !=
+            _normalizeForCompare(bookmark.content)) {
+          // Subrule still exists but its text changed — silently refresh the
+          // saved snapshot so the bookmark tracks the current rules. No notice.
+          await _favoritesService.refreshBookmarkContent(
+            bookmark.identifier,
+            BookmarkType.rule,
+            liveGroup.content,
+          );
+        }
+      }
+
       if (!mounted) return;
 
       // Use mixin method for rule preview
@@ -716,9 +788,10 @@ class _BookmarkListViewState extends State<BookmarkListView>
         rule: rule,
         sectionNumber: sectionNumber,
         subruleNumber: bookmark.identifier,
-        content: bookmark.content,
+        content: displayContent,
         highlightSubruleNumber:
             bookmark.identifier, // Highlight the bookmarked subrule
+        staleNotice: staleNotice,
         showListButton: true,
       );
     } catch (e) {
