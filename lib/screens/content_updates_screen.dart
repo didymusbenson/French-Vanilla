@@ -159,14 +159,19 @@ class _ContentUpdatesScreenState extends State<ContentUpdatesScreen> {
     }
   }
 
-  Future<void> _revert(CategoryUpdate update) async {
+  Future<void> _revertAll() async {
+    final overridden =
+        (_updates ?? const []).where((u) => u.hasOverride).toList();
+    if (overridden.isEmpty) return;
+
+    final labels = overridden.map((u) => u.remote.label).join(', ');
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Reset ${update.remote.label}?'),
-        content: const Text(
-          'This removes the downloaded data and reverts to the version '
-          'bundled with this app build.',
+        title: const Text('Reset to built-in?'),
+        content: Text(
+          'This removes all downloaded content ($labels) and reverts to the '
+          'versions bundled with this app build.',
         ),
         actions: [
           TextButton(
@@ -182,12 +187,14 @@ class _ContentUpdatesScreenState extends State<ContentUpdatesScreen> {
     );
     if (confirmed != true) return;
 
-    await ContentUpdateService.instance.revertCategory(update.remote.key);
-    _applyToLoadedData(update.remote.key);
+    for (final update in overridden) {
+      await ContentUpdateService.instance.revertCategory(update.remote.key);
+      _applyToLoadedData(update.remote.key);
+    }
     DataPreloader().reload();
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('${update.remote.label} reset to built-in version.'),
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Downloaded content reset to built-in versions.'),
     ));
     await _checkForUpdates();
   }
@@ -260,6 +267,7 @@ class _ContentUpdatesScreenState extends State<ContentUpdatesScreen> {
     final available = updates.where((u) => u.available).toList();
     final selectedCount =
         available.where((u) => _selected.contains(u.remote.key)).length;
+    final anyOverride = updates.any((u) => u.hasOverride);
 
     return Column(
       children: [
@@ -279,22 +287,34 @@ class _ContentUpdatesScreenState extends State<ContentUpdatesScreen> {
             ],
           ),
         ),
-        if (available.isNotEmpty)
+        if (available.isNotEmpty || anyOverride)
           SafeArea(
             top: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed:
-                      selectedCount == 0 ? null : _confirmAndDownload,
-                  icon: const Icon(Icons.download),
-                  label: Text(selectedCount == 0
-                      ? 'Select updates to download'
-                      : 'Download $selectedCount '
-                          '(${_formatBytes(_selectedBytes(available))})'),
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (available.isNotEmpty)
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed:
+                            selectedCount == 0 ? null : _confirmAndDownload,
+                        icon: const Icon(Icons.download),
+                        label: Text(selectedCount == 0
+                            ? 'Select updates to download'
+                            : 'Download $selectedCount '
+                                '(${_formatBytes(_selectedBytes(available))})'),
+                      ),
+                    ),
+                  if (anyOverride)
+                    TextButton.icon(
+                      onPressed: _revertAll,
+                      icon: const Icon(Icons.restore, size: 18),
+                      label: const Text('Reset to built-in'),
+                    ),
+                ],
               ),
             ),
           ),
@@ -335,54 +355,51 @@ class _ContentUpdatesScreenState extends State<ContentUpdatesScreen> {
   Widget _buildCategoryTile(CategoryUpdate update) {
     final theme = Theme.of(context);
     final remote = update.remote;
-
-    Widget trailing;
-    if (update.available) {
-      trailing = Checkbox(
-        value: _selected.contains(remote.key),
-        onChanged: (checked) => setState(() {
-          if (checked == true) {
-            _selected.add(remote.key);
-          } else {
-            _selected.remove(remote.key);
-          }
-        }),
-      );
-    } else {
-      trailing = Icon(Icons.check_circle,
-          color: theme.colorScheme.primary, size: 22);
-    }
-
-    final subtitleParts = <String>[];
-    if (remote.updated != null) subtitleParts.add('Updated ${remote.updated}');
-    if (update.available) {
-      subtitleParts.add('${_formatBytes(remote.size)} download');
-    } else {
-      subtitleParts.add('Up to date');
-    }
+    final subtitleStyle = theme.textTheme.bodyMedium
+        ?.copyWith(color: theme.colorScheme.onSurfaceVariant);
 
     return Card(
-      child: Column(
-        children: [
-          ListTile(
-            title: Text(remote.label,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text(subtitleParts.join('  ·  ')),
-            trailing: trailing,
-          ),
-          if (update.hasOverride)
-            Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 8, bottom: 4),
-                child: TextButton.icon(
-                  onPressed: () => _revert(update),
-                  icon: const Icon(Icons.restore, size: 18),
-                  label: const Text('Reset to built-in'),
+      child: ListTile(
+        title: Text(remote.label,
+            style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text.rich(
+          TextSpan(
+            style: subtitleStyle,
+            children: [
+              if (remote.updated != null)
+                TextSpan(text: 'Updated ${remote.updated}'),
+              if (update.available)
+                TextSpan(
+                  text: remote.updated != null
+                      ? '  ·  ${_formatBytes(remote.size)} download'
+                      : '${_formatBytes(remote.size)} download',
+                )
+              else ...[
+                if (remote.updated != null) const TextSpan(text: '  ·  '),
+                WidgetSpan(
+                  alignment: PlaceholderAlignment.middle,
+                  child: Icon(Icons.check_circle,
+                      size: 15, color: theme.colorScheme.primary),
                 ),
-              ),
-            ),
-        ],
+                const TextSpan(text: ' Up to date'),
+              ],
+            ],
+          ),
+        ),
+        // Only updatable categories get a selection checkbox; up-to-date ones
+        // show their status inline in the subtitle (no trailing widget).
+        trailing: update.available
+            ? Checkbox(
+                value: _selected.contains(remote.key),
+                onChanged: (checked) => setState(() {
+                  if (checked == true) {
+                    _selected.add(remote.key);
+                  } else {
+                    _selected.remove(remote.key);
+                  }
+                }),
+              )
+            : null,
       ),
     );
   }
