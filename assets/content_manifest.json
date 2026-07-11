@@ -3,7 +3,7 @@
   "categories": {
     "rules": {
       "label": "Comprehensive Rules",
-      "version": 2,
+      "version": 3,
       "archive": "rules.zip",
       "sha256": "0e61c12df347c1cffe8f97ef42cde0b40193bcdb765d7448ebfa77bc66023862",
       "size": 250465,
