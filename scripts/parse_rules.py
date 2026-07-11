@@ -16,6 +16,8 @@ import json
 import os
 import re
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -266,6 +268,19 @@ def sync_to_assets(output_dir: str):
     print(f"✓ Synced {copied_count} files to assets")
 
 
+def rebuild_content_manifest(category: str):
+    """Re-package a category's archive and bump the OTA content manifest so the
+    in-app 'Check for Updates' feature can serve the freshly-parsed data. A
+    no-op for version numbers if the packaged bytes are unchanged."""
+    script_dir = Path(__file__).parent
+    builder = script_dir / 'build_content_manifest.py'
+    if not builder.exists():
+        print(f"⚠ Skipping manifest rebuild — {builder.name} not found")
+        return
+    print(f"\nRebuilding OTA content manifest for '{category}'...")
+    subprocess.run([sys.executable, str(builder), category], check=False)
+
+
 def main():
     """Main entry point for the script."""
     # Determine paths relative to script location
@@ -283,6 +298,10 @@ def main():
 
     # Sync parsed JSON files to assets directory for Flutter app
     sync_to_assets(str(output_dir))
+
+    # Re-package the rules archive + bump the OTA manifest so existing app
+    # installs can fetch the new rules via "Check for Updates".
+    rebuild_content_manifest('rules')
 
     return 0
 

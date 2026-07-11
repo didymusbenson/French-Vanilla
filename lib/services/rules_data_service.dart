@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/services.dart';
+import 'content_resolver.dart';
 import '../models/section_data.dart';
 import '../models/rule.dart';
 import '../models/glossary_term.dart';
@@ -27,7 +27,8 @@ class RulesDataService {
   Future<SectionData> loadIndex() async {
     if (_indexData != null) return _indexData!;
 
-    final jsonString = await rootBundle.loadString('assets/rulesdocs/index.json');
+    final jsonString =
+        await ContentResolver.instance.loadString('rules', 'index.json');
     final jsonData = json.decode(jsonString) as Map<String, dynamic>;
     _indexData = SectionData.fromJson(jsonData);
     return _indexData!;
@@ -39,9 +40,8 @@ class RulesDataService {
       return _sectionCache[sectionNumber]!;
     }
 
-    final jsonString = await rootBundle.loadString(
-      'assets/rulesdocs/section_$sectionNumber.json'
-    );
+    final jsonString = await ContentResolver.instance
+        .loadString('rules', 'section_$sectionNumber.json');
     final jsonData = json.decode(jsonString) as Map<String, dynamic>;
     final sectionData = SectionData.fromJson(jsonData);
     _sectionCache[sectionNumber] = sectionData;
@@ -64,7 +64,8 @@ class RulesDataService {
   Future<SectionData> loadGlossary() async {
     if (_glossaryData != null) return _glossaryData!;
 
-    final jsonString = await rootBundle.loadString('assets/rulesdocs/glossary.json');
+    final jsonString =
+        await ContentResolver.instance.loadString('rules', 'glossary.json');
     final jsonData = json.decode(jsonString) as Map<String, dynamic>;
     _glossaryData = SectionData.fromJson(jsonData);
     return _glossaryData!;
@@ -83,10 +84,22 @@ class RulesDataService {
   Future<SectionData> loadCredits() async {
     if (_creditsData != null) return _creditsData!;
 
-    final jsonString = await rootBundle.loadString('assets/rulesdocs/credits.json');
+    final jsonString =
+        await ContentResolver.instance.loadString('rules', 'credits.json');
     final jsonData = json.decode(jsonString) as Map<String, dynamic>;
     _creditsData = SectionData.fromJson(jsonData);
     return _creditsData!;
+  }
+
+  /// Drop all cached rules data so the next access reloads from the (possibly
+  /// just-updated) active source. Called after an over-the-air rules update.
+  void reset() {
+    _indexData = null;
+    _sectionCache.clear();
+    _rulesCache.clear();
+    _glossaryData = null;
+    _glossaryTerms = null;
+    _creditsData = null;
   }
 
   /// Search across all rules content

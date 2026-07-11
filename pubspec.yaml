@@ -42,6 +42,11 @@ dependencies:
   in_app_purchase: ^3.2.0
   url_launcher: ^6.3.1
   uuid: ^4.5.1
+  # Over-the-air content updates (rules/mtr/ipg/rulings).
+  dio: ^5.7.0
+  crypto: ^3.0.6
+  path_provider: ^2.1.5
+  archive: ^3.6.1
 
 dev_dependencies:
   flutter_test:
@@ -70,6 +75,10 @@ flutter:
     - assets/rulesdocs/
     - assets/carddata/
     - assets/judgedocs/
+    # Bundled snapshot of the OTA manifest (also served remotely via raw.github).
+    # NOTE: the per-category archives in /archives are deliberately NOT bundled —
+    # they are publish-only and downloaded on demand.
+    - assets/content_manifest.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/rules_data_service.dart';
 import '../services/iap_service.dart';
+import 'content_updates_screen.dart';
 import '../widgets/heart_icon.dart';
 import '../widgets/purchase_menu.dart';
 import '../models/heart_style.dart';
@@ -180,6 +181,49 @@ class _CreditsScreenState extends State<CreditsScreen> {
                             icon: const Icon(Icons.favorite_border),
                             label: const Text('Support French Vanilla'),
                           ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Content Updates Section
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Content Updates',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Pull the latest Comprehensive Rules, Tournament Rules, '
+                    'Penalty Guide, and card rulings between app updates.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const ContentUpdatesScreen(),
+                        ),
+                      ),
+                      icon: const Icon(Icons.cloud_download_outlined),
+                      label: const Text('Check for Updates'),
+                    ),
                   ),
                 ],
               ),

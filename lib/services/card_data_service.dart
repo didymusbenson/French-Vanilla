@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/services.dart';
+import 'content_resolver.dart';
 import '../models/card.dart';
 
 class CardDataService {
@@ -14,7 +14,8 @@ class CardDataService {
   Future<List<MagicCard>> loadAllCards() async {
     if (_allCards != null) return _allCards!;
 
-    final jsonString = await rootBundle.loadString('assets/carddata/all_cards.json');
+    final jsonString = await ContentResolver.instance
+        .loadString('rulings', 'all_cards.json');
     final jsonList = json.decode(jsonString) as List<dynamic>;
 
     _allCards = jsonList
@@ -25,6 +26,12 @@ class CardDataService {
     _allCards!.sort((a, b) => a.name.compareTo(b.name));
 
     return _allCards!;
+  }
+
+  /// Drop the cached card list so the next load reads the (possibly
+  /// just-updated) active source. Called after an over-the-air rulings update.
+  void reset() {
+    _allCards = null;
   }
 
   /// Get cards with rulings only

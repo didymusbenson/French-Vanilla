@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/services.dart';
+import 'content_resolver.dart';
 import '../models/mtr_rule.dart';
 import '../models/ipg_infraction.dart';
 
@@ -23,7 +23,8 @@ class JudgeDocsService {
   Future<MtrIndex> loadMtrIndex() async {
     if (_mtrIndex != null) return _mtrIndex!;
 
-    final jsonString = await rootBundle.loadString('assets/judgedocs/mtr_index.json');
+    final jsonString =
+        await ContentResolver.instance.loadString('mtr', 'mtr_index.json');
     final jsonData = json.decode(jsonString) as Map<String, dynamic>;
     _mtrIndex = MtrIndex.fromJson(jsonData);
     return _mtrIndex!;
@@ -36,9 +37,8 @@ class JudgeDocsService {
       return _mtrSectionCache[sectionKey]!;
     }
 
-    final jsonString = await rootBundle.loadString(
-      'assets/judgedocs/$sectionKey.json'
-    );
+    final jsonString =
+        await ContentResolver.instance.loadString('mtr', '$sectionKey.json');
     final jsonData = json.decode(jsonString) as Map<String, dynamic>;
     final sectionData = MtrSection.fromJson(jsonData);
     _mtrSectionCache[sectionKey] = sectionData;
@@ -101,7 +101,8 @@ class JudgeDocsService {
   Future<IpgIndex> loadIpgIndex() async {
     if (_ipgIndex != null) return _ipgIndex!;
 
-    final jsonString = await rootBundle.loadString('assets/judgedocs/ipg_index.json');
+    final jsonString =
+        await ContentResolver.instance.loadString('ipg', 'ipg_index.json');
     final jsonData = json.decode(jsonString) as Map<String, dynamic>;
     _ipgIndex = IpgIndex.fromJson(jsonData);
     return _ipgIndex!;
@@ -114,9 +115,8 @@ class JudgeDocsService {
       return _ipgSectionCache[sectionKey]!;
     }
 
-    final jsonString = await rootBundle.loadString(
-      'assets/judgedocs/$sectionKey.json'
-    );
+    final jsonString =
+        await ContentResolver.instance.loadString('ipg', '$sectionKey.json');
     final jsonData = json.decode(jsonString) as Map<String, dynamic>;
     final sectionData = IpgSection.fromJson(jsonData);
     _ipgSectionCache[sectionKey] = sectionData;

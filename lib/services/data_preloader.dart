@@ -61,6 +61,13 @@ class DataPreloader {
     }
   }
 
+  /// Re-run preloading after content has been updated over-the-air. Resets the
+  /// completion gate so warmed singletons refill from the new active source.
+  Future<void> reload() async {
+    _isComplete = false;
+    await preloadAll();
+  }
+
   /// Check if preloading is complete
   bool get isComplete => _isComplete;
 

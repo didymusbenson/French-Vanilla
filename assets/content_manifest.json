@@ -1,0 +1,82 @@
+{
+  "generated": "2026-06-13",
+  "categories": {
+    "rules": {
+      "label": "Comprehensive Rules",
+      "version": 1,
+      "archive": "rules.zip",
+      "sha256": "c9c00d8e788586e824de8aea537c9c12df5c3bb4361396def254c9334022483e",
+      "size": 249510,
+      "updated": "April 17, 2026",
+      "files": [
+        "credits.json",
+        "glossary.json",
+        "index.json",
+        "section_1.json",
+        "section_2.json",
+        "section_3.json",
+        "section_4.json",
+        "section_5.json",
+        "section_6.json",
+        "section_7.json",
+        "section_8.json",
+        "section_9.json"
+      ]
+    },
+    "mtr": {
+      "label": "Tournament Rules (MTR)",
+      "version": 1,
+      "archive": "mtr.zip",
+      "sha256": "93addcd02d31e28f1aa196de6a11dfc59630ab7ad078b833d3d94231ee1beefa",
+      "size": 46392,
+      "updated": "February 27, 2026",
+      "files": [
+        "mtr_appendix_a.json",
+        "mtr_appendix_b.json",
+        "mtr_appendix_c.json",
+        "mtr_appendix_d.json",
+        "mtr_appendix_e.json",
+        "mtr_appendix_f.json",
+        "mtr_index.json",
+        "mtr_section_1.json",
+        "mtr_section_10.json",
+        "mtr_section_2.json",
+        "mtr_section_3.json",
+        "mtr_section_4.json",
+        "mtr_section_5.json",
+        "mtr_section_6.json",
+        "mtr_section_7.json",
+        "mtr_section_8.json",
+        "mtr_section_9.json"
+      ]
+    },
+    "ipg": {
+      "label": "Penalty Guide (IPG)",
+      "version": 1,
+      "archive": "ipg.zip",
+      "sha256": "070acb11ad4061720e4dc99734d9dcbdadd874c6ad49e87b8add31567a1112be",
+      "size": 24867,
+      "updated": "September 23, 2024",
+      "files": [
+        "ipg_appendix_a.json",
+        "ipg_appendix_b.json",
+        "ipg_index.json",
+        "ipg_section_1.json",
+        "ipg_section_2.json",
+        "ipg_section_3.json",
+        "ipg_section_4.json"
+      ]
+    },
+    "rulings": {
+      "label": "Card Rulings",
+      "version": 1,
+      "archive": "rulings.zip",
+      "sha256": "afa36075d24fa61518c4eec410ed937b8bfae435741d8922fe81078ba2193df0",
+      "size": 7172886,
+      "updated": "June 13, 2026",
+      "files": [
+        "all_cards.json"
+      ]
+    }
+  }
+}
