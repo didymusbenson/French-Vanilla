@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/rules_data_service.dart';
 import '../services/iap_service.dart';
+import '../services/content_update_service.dart';
 import 'content_updates_screen.dart';
 import '../widgets/heart_icon.dart';
 import '../widgets/purchase_menu.dart';
@@ -189,45 +190,77 @@ class _CreditsScreenState extends State<CreditsScreen> {
 
           const SizedBox(height: 16),
 
-          // Content Updates Section
-          Card(
-            clipBehavior: Clip.antiAlias,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Content Updates',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Pull the latest Comprehensive Rules, Tournament Rules, '
-                    'Penalty Guide, and card rulings between app updates.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const ContentUpdatesScreen(),
+          // Content Updates Section — reflects availability from the silent
+          // launch-time check via the shared hasUpdates flag.
+          ValueListenableBuilder<bool>(
+            valueListenable: ContentUpdateService.instance.hasUpdates,
+            builder: (context, hasUpdates, _) {
+              final colorScheme = Theme.of(context).colorScheme;
+              return Card(
+                clipBehavior: Clip.antiAlias,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'Content Updates',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          if (hasUpdates) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              width: 9,
+                              height: 9,
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        hasUpdates
+                            ? 'Updates are available. Review and download the '
+                                'latest rules, judge documents, and card rulings.'
+                            : 'Pull the latest Comprehensive Rules, Tournament '
+                                'Rules, Penalty Guide, and card rulings between '
+                                'app updates.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: hasUpdates
+                              ? colorScheme.primary
+                              : colorScheme.onSurfaceVariant,
+                          fontWeight: hasUpdates ? FontWeight.w600 : null,
+                          height: 1.5,
                         ),
                       ),
-                      icon: const Icon(Icons.cloud_download_outlined),
-                      label: const Text('Check for Updates'),
-                    ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: hasUpdates
+                            ? FilledButton.icon(
+                                onPressed: _openContentUpdates,
+                                icon: const Icon(Icons.download),
+                                label: const Text('View Available Updates'),
+                              )
+                            : OutlinedButton.icon(
+                                onPressed: _openContentUpdates,
+                                icon: const Icon(Icons.cloud_download_outlined),
+                                label: const Text('Check for Updates'),
+                              ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
 
           const SizedBox(height: 16),
@@ -417,6 +450,12 @@ class _CreditsScreenState extends State<CreditsScreen> {
         setState(() {}); // Refresh to show new hearts
       }
     }
+  }
+
+  void _openContentUpdates() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const ContentUpdatesScreen()),
+    );
   }
 
   Future<void> _openKofi() async {

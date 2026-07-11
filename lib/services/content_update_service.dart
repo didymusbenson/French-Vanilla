@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'content_resolver.dart';
 
@@ -78,6 +79,22 @@ class ContentUpdateService {
   static final ContentUpdateService instance = ContentUpdateService._();
 
   final Dio _dio = Dio();
+
+  /// Whether the most recent check found any available update. Backs the
+  /// launch-time badge on the Credits tab and the Content Updates card. Set by
+  /// [refreshUpdateFlag] at launch and by the Content Updates screen's checks.
+  final ValueNotifier<bool> hasUpdates = ValueNotifier<bool>(false);
+
+  /// Silent launch-time check: refreshes [hasUpdates] and never throws. Safe to
+  /// fire-and-forget from `main` after data preload kicks off.
+  Future<void> refreshUpdateFlag() async {
+    try {
+      final updates = await checkForUpdates();
+      hasUpdates.value = updates.any((u) => u.available);
+    } catch (_) {
+      // Offline or transient failure — leave the flag unchanged.
+    }
+  }
 
   /// Fetch the remote manifest and diff every category against the version
   /// currently active on this device. Throws on network / parse failure.

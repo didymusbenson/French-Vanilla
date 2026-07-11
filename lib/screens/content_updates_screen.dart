@@ -57,6 +57,10 @@ class _ContentUpdatesScreenState extends State<ContentUpdatesScreen> {
           ..addAll(updates.where((u) => u.available).map((u) => u.remote.key));
         _checking = false;
       });
+      // Keep the shared badge flag in sync (clears it once everything is
+      // downloaded, sets it if new updates appeared).
+      ContentUpdateService.instance.hasUpdates.value =
+          updates.any((u) => u.available);
     } catch (e) {
       if (!mounted) return;
       setState(() {

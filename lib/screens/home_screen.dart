@@ -3,6 +3,7 @@ import 'rules_categories_screen.dart';
 import 'credits_screen.dart';
 import 'search_screen.dart';
 import 'bookmarks_screen.dart';
+import '../services/content_update_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -33,6 +34,17 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  /// Credits tab icon, badged with a small dot when content updates are
+  /// available (populated by the silent launch-time check).
+  Widget _creditsIcon(IconData icon) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: ContentUpdateService.instance.hasUpdates,
+      builder: (context, hasUpdates, child) =>
+          hasUpdates ? Badge(smallSize: 10, child: child) : child!,
+      child: Icon(icon),
+    );
   }
 
   @override
@@ -71,9 +83,9 @@ class _HomeScreenState extends State<HomeScreen> {
             selectedIcon: Icon(Icons.bookmark),
             label: 'Bookmarks',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.info_outline),
-            selectedIcon: Icon(Icons.info),
+          NavigationDestination(
+            icon: _creditsIcon(Icons.info_outline),
+            selectedIcon: _creditsIcon(Icons.info),
             label: 'Credits',
           ),
         ],
