@@ -1,13 +1,13 @@
 {
-  "generated": "2026-07-11",
+  "generated": "2026-08-04",
   "categories": {
     "rules": {
       "label": "Comprehensive Rules",
-      "version": 2,
+      "version": 3,
       "archive": "rules.zip",
-      "sha256": "0e61c12df347c1cffe8f97ef42cde0b40193bcdb765d7448ebfa77bc66023862",
-      "size": 250465,
-      "updated": "June 19, 2026",
+      "sha256": "35e097b089dd28037597df96ab28764a31a63e5d544384371e8b6e55343084af",
+      "size": 251571,
+      "updated": "August 7, 2026",
       "files": [
         "credits.json",
         "glossary.json",
@@ -69,11 +69,11 @@
     },
     "rulings": {
       "label": "Card Rulings",
-      "version": 2,
+      "version": 3,
       "archive": "rulings.zip",
-      "sha256": "9947cd2914939267b3dd533ad979123e74926bbaf54f520388ac814692fd1218",
-      "size": 7305317,
-      "updated": "July 11, 2026",
+      "sha256": "9f48c93cc06e9f4e8cdf4a21f1eb426668c075150221b7182950ee4a9de8eb29",
+      "size": 7397694,
+      "updated": "August 04, 2026",
       "files": [
         "all_cards.json"
       ]
