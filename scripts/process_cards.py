@@ -11,6 +11,7 @@ This script:
 """
 
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -216,9 +217,37 @@ def save_version_info(version_file_path, version):
         json.dump({'version': version}, f, indent=2)
 
 
+def publish_app_data(source_path, project_root):
+    """Copy processed card data into the app and rebuild OTA artifacts."""
+    asset_path = project_root / 'assets' / 'carddata' / 'all_cards.json'
+    manifest_script = project_root / 'scripts' / 'build_content_manifest.py'
+
+    asset_path.parent.mkdir(parents=True, exist_ok=True)
+    if asset_path.exists() and source_path.read_bytes() == asset_path.read_bytes():
+        print("\n✓ App card data is already current")
+    else:
+        print(f"\nPublishing {source_path.name} to {asset_path}...")
+        shutil.copyfile(source_path, asset_path)
+        print("✓ App card data refreshed")
+
+    print("Rebuilding rulings OTA archive and content manifest...")
+    result = subprocess.run(
+        ['python3', str(manifest_script), 'rulings'],
+        cwd=project_root,
+        capture_output=False,
+    )
+    if result.returncode != 0:
+        print("Failed to rebuild rulings OTA artifacts")
+        return False
+
+    print("✓ Rulings OTA artifacts rebuilt")
+    return True
+
+
 def main():
     """Main entry point."""
     script_dir = Path(__file__).parent
+    project_root = script_dir.parent
     data_dir = script_dir / 'data'
 
     # Ensure data directory exists
@@ -226,6 +255,8 @@ def main():
 
     version_file = data_dir / 'version.json'
     atomiccards_file = data_dir / 'AtomicCards.json'
+    all_cards_output = data_dir / 'all_cards_deduplicated.json'
+    rulings_output = data_dir / 'cards_with_rulings_deduplicated.json'
 
     print("=" * 80)
     print("MTGJSON Card Data Update Script (AtomicCards)")
@@ -253,7 +284,13 @@ def main():
         print("✓ Card data is already up to date!")
         print(f"  Both versions are from {local_version}")
         print("  No download needed.")
-        return 0
+        if not all_cards_output.exists():
+            print("Processed card output is missing; regenerating it from local data.")
+            all_cards, cards_with_rulings = process_atomiccards(atomiccards_file)
+            save_json_file(all_cards, all_cards_output, "all deduplicated cards")
+            save_json_file(cards_with_rulings, rulings_output, "cards with rulings")
+
+        return 0 if publish_app_data(all_cards_output, project_root) else 1
 
     # Step 4: Download and decompress if needed
     if local_version:
@@ -269,14 +306,14 @@ def main():
     all_cards, cards_with_rulings = process_atomiccards(atomiccards_file)
 
     # Step 6: Save output files
-    all_cards_output = data_dir / 'all_cards_deduplicated.json'
-    rulings_output = data_dir / 'cards_with_rulings_deduplicated.json'
-
     save_json_file(all_cards, all_cards_output, "all deduplicated cards")
     save_json_file(cards_with_rulings, rulings_output, "cards with rulings")
 
     # Step 7: Save version info
     save_version_info(version_file, remote_version)
+
+    if not publish_app_data(all_cards_output, project_root):
+        return 1
 
     print("\n" + "=" * 80)
     print("✓ Update complete!")
