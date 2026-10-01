@@ -2,6 +2,12 @@
 
 > **For completed features and development history**, see `docs/development_log.md`
 
+## Reference Data Refresh — September 30, 2026
+
+- Comprehensive Rules updated to the September 25, 2026 edition; bundled JSON and OTA archive rebuilt (rules version 4).
+- MTGJSON card data refreshed to September 30, 2026: 35,065 cards, including 20,104 with rulings; bundled data and OTA archive rebuilt (rulings version 5).
+- Existing installs receive these updates through the content manifest on `master` using in-app "Check for Updates".
+
 ---
 
 ## Copy/Share Enhancements

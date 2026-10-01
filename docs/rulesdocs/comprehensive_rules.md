@@ -1,6 +1,6 @@
 Magic: The Gathering Comprehensive Rules
  
-These rules are effective as of August 7, 2026.
+These rules are effective as of September 25, 2026.
  
 Introduction
  
@@ -707,6 +707,8 @@ Example: Spitting Image is a sorcery that says, in part, “Create a token that�
 111.10v A Mutagen token is a colorless Mutagen artifact token with “{1}, {T}, Sacrifice this token: Put a +1/+1 counter on target creature. Activate only as a sorcery.”
  
 111.10w A Vibranium token is a colorless Vibranium artifact token with indestructible and “{T}: Add {C}. This mana can’t be spent to cast a nonartifact spell.”
+ 
+111.10x A Heartwood token is a red and green Heartwood artifact token with “{T}: Add {R} or {G}.”
  
 111.11. If an effect instructs a player to create a token by name, doesn’t define any other characteristics for that token, and the name is not one of the types in the list of predefined tokens above, that player uses the card with that name in the Oracle card reference to determine the characteristics of that token.
 Example: Disa the Restless has the ability “Whenever one or more creatures you control deal combat damage to a player, create a Tarmogoyf token.” As that ability resolves, its controller creates a token with the same characteristics as the card named Tarmogoyf, as determined by the Oracle card reference.
@@ -1428,7 +1430,7 @@ Example: When choosing a creature type, “Merfolk” or “Wizard” is accepta
  
 205.3f Many cards were printed with subtypes that are now obsolete. Many cards have retroactively received subtypes. Use the Oracle card reference to determine what a card’s subtypes are. (See rule 108.1.)
  
-205.3g Artifacts have their own unique set of subtypes; these subtypes are called artifact types. The artifact types are Attraction (see rule 717), Blood, Bobblehead, Book, Clue, Contraption, Equipment (see rule 301.5), Food, Fortification (see rule 301.6), Gold, Incubator, Infinity, Junk, Lander, Map, Mutagen, Powerstone, Spacecraft, Stone, Treasure, Vehicle (see rule 301.7), and Vibranium.
+205.3g Artifacts have their own unique set of subtypes; these subtypes are called artifact types. The artifact types are Attraction (see rule 717), Blood, Bobblehead, Book, Clue, Contraption, Equipment (see rule 301.5), Food, Fortification (see rule 301.6), Gold, Heartwood, Incubator, Infinity, Junk, Lander, Map, Mutagen, Powerstone, Spacecraft, Stone, Treasure, Vehicle (see rule 301.7), and Vibranium.
  
 205.3h Enchantments have their own unique set of subtypes; these subtypes are called enchantment types. The enchantment types are Aura (see rule 303.4), Background, Cartouche, Case (see rule 719), Class (see rule 716), Curse, Plan, Role (see rule 303.7), Room, Rune, Saga (see rule 714), Shard, and Shrine.
  
@@ -2234,23 +2236,25 @@ Example: Obeka, Splitter of Seconds says, in part, “Whenever Obeka deals comba
  
 506.5. A creature attacks alone if it’s the only creature declared as an attacker during the declare attackers step. A creature is attacking alone if it’s attacking but no other creatures are. A creature blocks alone if it’s the only creature declared as a blocker during the declare blockers step. A creature is blocking alone if it’s blocking but no other creatures are.
  
-506.6. Some abilities check to see whether or not a creature “had to attack” during a particular combat phase. A creature had to attack if one or more effects were requiring that creature to attack at the time attackers were declared in that combat. A creature did not “have to attack” if there were no such effects that required it to attack, even if there were no other legal attacks that could have been declared. (See rule 508.)
+506.6. A creature attacks a player alone if it’s declared as an attacker attacking a player during the declare attackers step and no other creature is declared as an attacker attacking that player. A creature is attacking a player alone if it’s attacking a player and no other creatures are attacking that player.
  
-506.7. Some spells state that they may be cast “only [before/after] [a particular point in the combat phase],” in which that point may be “attackers are declared,” “blockers are declared,” “the combat damage step,” “the end of combat step,” “the combat phase,” or “combat.”
+506.7. Some abilities check to see whether or not a creature “had to attack” during a particular combat phase. A creature had to attack if one or more effects were requiring that creature to attack at the time attackers were declared in that combat. A creature did not “have to attack” if there were no such effects that required it to attack, even if there were no other legal attacks that could have been declared. (See rule 508.)
  
-506.7a A spell that states it may be cast “only before (or after) attackers are declared” is referring to the turn-based action of declaring attackers. It may be cast only before (or after) the declare attackers step begins, regardless of whether any attackers are actually declared. (See rule 508.)
+506.8. Some spells state that they may be cast “only [before/after] [a particular point in the combat phase],” in which that point may be “attackers are declared,” “blockers are declared,” “the combat damage step,” “the end of combat step,” “the combat phase,” or “combat.”
  
-506.7b A spell that states it may be cast “only before (or after) blockers are declared” is referring to the turn-based action of declaring blockers. It may be cast only before (or after) the declare blockers step begins, regardless of whether any blockers are actually declared. (See rule 509.)
+506.8a A spell that states it may be cast “only before (or after) attackers are declared” is referring to the turn-based action of declaring attackers. It may be cast only before (or after) the declare attackers step begins, regardless of whether any attackers are actually declared. (See rule 508.)
  
-506.7c Some spells state that they may be cast only “during combat” or “during a certain player’s combat phase” in addition to the criteria described in rule 506.7. If a turn has multiple combat phases, such spells may be cast at an appropriate time during any of them.
+506.8b A spell that states it may be cast “only before (or after) blockers are declared” is referring to the turn-based action of declaring blockers. It may be cast only before (or after) the declare blockers step begins, regardless of whether any blockers are actually declared. (See rule 509.)
  
-506.7d Some spells state that they may be cast “only before (or after) [a particular point in the combat phase],” but don’t meet the additional criteria described in rule 506.7c. If a turn has multiple combat phases, such spells may be cast that turn only before (or after) the stated point of the first combat phase.
+506.8c Some spells state that they may be cast only “during combat” or “during a certain player’s combat phase” in addition to the criteria described in rule 506.8. If a turn has multiple combat phases, such spells may be cast at an appropriate time during any of them.
  
-506.7e If a spell states that it may be cast “only before [a particular point in the combat phase],” but the stated point doesn’t exist within the relevant combat phase because the declare blockers step and the combat damage step are skipped (see rule 508.8), then the spell may be cast only before the declare attackers step ends. If the stated point doesn’t exist because the relevant combat phase has been skipped, then the spell may be cast only before the precombat main phase ends.
+506.8d Some spells state that they may be cast “only before (or after) [a particular point in the combat phase],” but don’t meet the additional criteria described in rule 506.8c. If a turn has multiple combat phases, such spells may be cast that turn only before (or after) the stated point of the first combat phase.
  
-506.7f If a spell states that it may be cast “only during combat after blockers are declared,” but the declare blockers step is skipped that combat phase (see rule 508.8), then the spell may not be cast during that combat phase.
+506.8e If a spell states that it may be cast “only before [a particular point in the combat phase],” but the stated point doesn’t exist within the relevant combat phase because the declare blockers step and the combat damage step are skipped (see rule 508.8), then the spell may be cast only before the declare attackers step ends. If the stated point doesn’t exist because the relevant combat phase has been skipped, then the spell may be cast only before the precombat main phase ends.
  
-506.7g Rules 506.7 and 506.7a–f apply to abilities that state that they may be activated only at certain times with respect to combat just as they apply to spells that state that they may be cast only at certain times with respect to combat.
+506.8f If a spell states that it may be cast “only during combat after blockers are declared,” but the declare blockers step is skipped that combat phase (see rule 508.8), then the spell may not be cast during that combat phase.
+ 
+506.8g Rules 506.8 and 506.8a–f apply to abilities that state that they may be activated only at certain times with respect to combat just as they apply to spells that state that they may be cast only at certain times with respect to combat.
  
 507. Beginning of Combat Step
  
@@ -3853,7 +3857,6 @@ Example: A player owns and controls Midnight Scavengers and a token that’s a c
 701.67a “Waterbend [cost]” means “Pay [cost]. For each generic mana in that cost, you may tap an untapped artifact or creature you control rather than pay that mana.”
  
 701.67b If a waterbend cost is part of the total cost to cast a spell or activate an ability (usually because the waterbend cost itself is an additional cost), the alternate method to pay for mana described in rule 701.67a may be used only to pay for the amount of generic mana in the waterbend cost, even if the total cost to cast that spell or activate that ability includes other generic mana components.
- 
 Example: Spirit Water Revival is a spell that costs {1}{U}{U} and says, in part, “As an additional cost to cast this spell, waterbend {6}.” As you cast it, you may tap up to six artifacts and/or creatures you control to pay the for the {6} in its waterbend cost, but you can’t tap any artifacts or creatures to pay for any part of the {1}{U}{U} mana cost.
  
 701.67c An ability that triggers whenever a player waterbends triggers whenever that player pays a waterbend cost, regardless of how they paid that cost.
@@ -3875,6 +3878,10 @@ Example: Spirit Water Revival is a spell that costs {1}{U}{U} and says, in part,
 701.70. Recruit
  
 701.70a “Recruit” means “Draw a card, then discard a card. If you discarded a nonland card this way, create a 1/1 white Human Soldier creature token.”
+ 
+701.71. Empower Jace
+ 
+701.71a To empower Jace N means “If you don’t control a Jace planeswalker token, create a blue Jace planeswalker token with 0 loyalty, ‘[−1]: Surveil 1,’ and ‘[−3]: Draw a card.’ Choose a Jace planeswalker token you control. Put N loyalty counters on it.”
  
 702. Keyword Abilities
  
@@ -7725,6 +7732,9 @@ The middle player on each team in an Emperor game. See rule 809, “Emperor Vari
 Emperor Variant
 A multiplayer variant played among three-player teams. See rule 809, “Emperor Variant.”
  
+Empower Jace
+A keyword action that gives you a Jace planeswalker token and/or puts loyalty counters on a Jace token you already have. See rule 701.71, “Empower Jace.”
+ 
 Enchant
 A keyword ability that defines what an Aura spell can target and what an Aura permanent can be attached to. See rule 303, “Enchantments,” and rule 702.5, “Enchant.”
  
@@ -8012,6 +8022,9 @@ A keyword ability that exiles cards. A card exiled this way “haunts” a creat
  
 Heal
 To remove damage marked on a permanent. See rule 701.69, “Heal.”
+ 
+Heartwood Token
+A Heartwood token is a red and green artifact token with “{T}: Add {R} or {G}.” For more information about predefined tokens, see rule 111.10.
  
 Hexproof
 A keyword ability that precludes a permanent or player from being targeted by an opponent. See rule 702.11, “Hexproof.”
@@ -9340,7 +9353,7 @@ Thanks to all our project team members and the many others too numerous to menti
  
  
  
-These rules are effective as of August 7, 2026.
+These rules are effective as of September 25, 2026.
  
 Published by Wizards of the Coast LLC, PO Box 707, Renton, WA 98057-0707, USA. Wizards of the Coast, Magic: The Gathering, Magic, their respective logos, Mirrodin, Kamigawa, Lorwyn, Zendikar, Innistrad, Ravnica, Khans of Tarkir, Magic Origins, Magic: The Gathering—Conspiracy, Ixalan, Unfinity, Dominaria, Ikoria, Kaldheim, Baldur’s Gate, The Brothers’ War, and Planeswalker Decks are trademarks of Wizards of the Coast LLC in the USA and other countries. ©2026 Wizards. U.S. Pat. No. RE 37,957.
  
