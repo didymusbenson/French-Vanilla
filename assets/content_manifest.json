@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-30",
+  "generated": "2026-10-20",
   "categories": {
     "rules": {
       "label": "Comprehensive Rules",
@@ -69,11 +69,11 @@
     },
     "rulings": {
       "label": "Card Rulings",
-      "version": 5,
+      "version": 6,
       "archive": "rulings.zip",
-      "sha256": "073af5cbc6e0b3d7392d96a2430640a7da66f9be07368ed37e4509ee8f827ad0",
-      "size": 7528214,
-      "updated": "September 30, 2026",
+      "sha256": "2592aa9cfb41259518a5a1f9bf32b61d1d1b5b33d35d84fd92eb647f8cf8cd37",
+      "size": 7561754,
+      "updated": "October 20, 2026",
       "files": [
         "all_cards.json"
       ]
