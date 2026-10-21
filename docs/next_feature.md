@@ -2,10 +2,18 @@
 
 > **For completed features and development history**, see `docs/development_log.md`
 
-## Reference Data Refresh — September 30, 2026
+## Billing Dependency and Publication Sync - October 20, 2026
+
+- The default publication branch is `master`. Android 1.4.1 (versionCode 9) uses `in_app_purchase` 3.3.1 and `in_app_purchase_android` 0.5.0, which packages Google Play Billing Library 8.0.0.
+- The existing billing upgrade, lockfile, version bump, and Flutter 3.41.2 CI SDK (matching local validation) are now maintained together. CI enforces the lockfile and runs analysis and tests before deployment.
+- Local Android debug APK and iOS simulator builds passed. The Android APK reports version 1.4.1, versionCode 9, and Billing Library 8.0.0.
+- The saved September 1.4.1 build9 AAB also contains Billing Library 8.0.0. Its upload status and active Google Play tracks have not been verified; GitHub publication does not publish a Play Store release.
+- Updated the existing app smoke test to check the current Rules title and navigation instead of its obsolete title expectation.
+
+## Reference Data Refresh - October 20, 2026
 
 - Comprehensive Rules updated to the September 25, 2026 edition; bundled JSON and OTA archive rebuilt (rules version 4).
-- MTGJSON card data refreshed to September 30, 2026: 35,065 cards, including 20,104 with rulings; bundled data and OTA archive rebuilt (rulings version 5).
+- MTGJSON card data refreshed to October 20, 2026: 35,123 cards, including 20,106 with rulings; bundled data and OTA archive rebuilt (rulings version 6).
 - Existing installs receive these updates through the content manifest on `master` using in-app "Check for Updates".
 
 ---
