@@ -2,6 +2,13 @@
 
 > **For completed features and development history**, see `docs/development_log.md`
 
+## Signed Android Billing Release - October 30, 2026
+
+- Prepared Android 1.4.2 (versionCode 10) with the existing Billing 8.0.0 upgrade and signing identity. The actual AAB's manifest, structured dependency metadata, signature, package, and version were verified independently.
+- Added a reusable bundle verification script and 8 focused tests to catch wrong versions, old Billing dependencies, missing metadata, and signing failures before delivery.
+- Analyzer, all 3 Flutter tests, signed Android release build, and iOS simulator build passed. See [release evidence and remaining Play steps](android_release_1.4.2.md).
+- No Play submission or rollout was performed. The active policy warning and highest uploaded Play version code remain unverified.
+
 ## Billing Dependency and Publication Sync - October 20, 2026
 
 - The default publication branch is `master`. Android 1.4.1 (versionCode 9) uses `in_app_purchase` 3.3.1 and `in_app_purchase_android` 0.5.0, which packages Google Play Billing Library 8.0.0.
