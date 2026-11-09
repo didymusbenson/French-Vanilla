@@ -2,6 +2,14 @@
 
 > **For completed features and development history**, see `docs/development_log.md`
 
+## Reference Data Refresh - November 9, 2026
+
+- Comprehensive Rules refreshed from Wizards’ November 6, 2026 edition; bundled and source JSON synchronized, with OTA rules version 5.
+- Fresh MTGJSON November 9, 2026 download verified against its published SHA256: 35,487 cards, including 20,110 with rulings. OTA rulings version 7 adds 364 cards with no removed card names.
+- Official MTR (February 27, 2026) and IPG (September 23, 2024) were rechecked and reproduced unchanged; their content and versions remain unchanged.
+- Verified archive membership, payload equality, sizes, hashes, deterministic rebuilds, and decoding by existing app models. App release remains 1.4.1+9.
+- Flutter 3.41.2 analysis passed with 29 pre-existing info-level lints, all 3 tests passed, and the unsigned iOS simulator debug and web release builds passed.
+
 ## Billing Dependency and Publication Sync - October 20, 2026
 
 - The default publication branch is `master`. Android 1.4.1 (versionCode 9) uses `in_app_purchase` 3.3.1 and `in_app_purchase_android` 0.5.0, which packages Google Play Billing Library 8.0.0.
